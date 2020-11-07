@@ -4509,10 +4509,55 @@ import gameLogService from './service/gamelog.js'
     };
 
     $app.methods.updateGameLog = async function () {
-        var currentUserDisplayName = API.currentUser.displayName;
+        var {
+            displayName: currentUserDisplayName,
+            username: currentUserName
+        } = API.currentUser;
 
-        for (var gameLog of await gameLogService.poll(API.currentUser.username)) {
-            var tableData = null;
+        function convert_youtube_time(duration) {
+            var a = duration.match(/\d+/g);
+            if (duration.indexOf('M') >= 0 && duration.indexOf('H') == -1 && duration.indexOf('S') == -1) {
+                a = [0, a[0], 0];
+            }
+            if (duration.indexOf('H') >= 0 && duration.indexOf('M') == -1) {
+                a = [a[0], 0, a[1]];
+            }
+            if (duration.indexOf('H') >= 0 && duration.indexOf('M') == -1 && duration.indexOf('S') == -1) {
+                a = [a[0], 0, 0];
+            }
+            duration = 0;
+            if (a.length == 3) {
+                duration = duration + parseInt(a[0]) * 3600;
+                duration = duration + parseInt(a[1]) * 60;
+                duration = duration + parseInt(a[2]);
+            }
+            if (a.length == 2) {
+                duration = duration + parseInt(a[0]) * 60;
+                duration = duration + parseInt(a[1]);
+            }
+            if (a.length == 1) {
+                duration = duration + parseInt(a[0]);
+            }
+            return duration
+        }
+
+        function urlGetFunction(url) {
+          return $.ajax({
+            url: url,
+            async: false
+          });
+        }
+        //var videoTableJSON = urlGetFunction("https://qwertyuiop.nz/pypy/PyPyVideoLookup?JSON").responseText;
+        var videoTableJSON = urlGetFunction("PyPyVideos.json").responseText;
+        var tableobj = JSON.parse(videoTableJSON);
+
+        for (var [fileName, dt, type, ...args] of await LogWatcher.Get()) {
+            var gameLogContext = gameLogContextMap.get(fileName);
+            if (gameLogContext === undefined) {
+                gameLogContext = {
+                    // auth
+                    loginProvider: null,
+                    loginUser: null,
 
             switch (gameLog.type) {
                 case 'location':

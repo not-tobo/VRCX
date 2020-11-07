@@ -12,6 +12,18 @@ import locale from 'element-ui/lib/locale/lang/en';
 import sharedRepository from './repository/shared.js';
 import configRepository from './repository/config.js';
 import webApiService from './service/webapi.js';
+import ProgressBar from 'progressbar.js';
+import $ from 'jquery';
+window.$ = window.jQuery = $;
+
+var bar = new ProgressBar.Circle(vroverlay, {
+  strokeWidth: 50,
+  easing: 'easeInOut',
+  duration: 500,
+  color: '#aaa',
+  trailWidth: 0,
+  svgStyle: null
+});
 
 (async function () {
     await CefSharp.BindObjectAsync(
