@@ -4551,24 +4551,10 @@ import gameLogService from './service/gamelog.js'
         var videoTableJSON = urlGetFunction("PyPyVideos.json").responseText;
         var tableobj = JSON.parse(videoTableJSON);
 
-        for (var [fileName, dt, type, ...args] of await LogWatcher.Get()) {
-            var gameLogContext = gameLogContextMap.get(fileName);
-            if (gameLogContext === undefined) {
-                gameLogContext = {
-                    // auth
-                    loginProvider: null,
-                    loginUser: null,
+        for (var gameLog of await gameLogService.poll(API.currentUser.username)) {
+            var tableData = null;
 
             switch (gameLog.type) {
-                case 'location':
-                    this.lastLocation = gameLog.location;
-                    tableData = {
-                        created_at: gameLog.dt,
-                        type: 'Location',
-                        data: gameLog.location
-                    };
-                    break;
-
                 case 'location':
                     tableData = {
                         created_at: gameLog.dt,
@@ -4609,10 +4595,10 @@ import gameLogService from './service/gamelog.js'
 
                 case 'video-change':
                     var videoobj = {};
-                    videoobj.videoURL = args[0];
+                    videoobj.videoURL = gameLog.videoURL;
+                    videoobj.playerRequest = gameLog.playerRequest;
+                    videoobj.playerPlayer = gameLog.playerPlayer;
                     videoobj.videoName = videoobj.videoURL;
-                    videoobj.playerRequest = args[1];
-                    videoobj.playerPlayer = args[2];
                     videoobj.videoID = '';
                     videoobj.playerYeet = '';
                     videoobj.videoVolume = '';
