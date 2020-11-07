@@ -187,6 +187,35 @@ button {
     overflow: hidden auto;
 }
 
+.x-containerbottom {
+    padding: 0px 10px;
+    overflow: hidden;
+    font-size: 20px;
+    white-space: nowrap;
+}
+
+.x-containerbottom span {
+    padding: 0px;
+    display: block;
+    overflow: hidden;
+}
+
+#progress {
+    width: 0%;
+    height: 2px;
+    background-color: white;
+}
+
+#vroverlay {
+    font-size: 10px;
+    color: #fff;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 50px;
+    height: 50px;
+}
+
 .x-friend-item {
     box-sizing: border-box;
     display: flex;

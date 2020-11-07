@@ -12,6 +12,7 @@ html
         link(rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Sans+JP|Noto+Sans+KR&display=swap")
         link(rel="stylesheet" href="vr.css")
     body
+        #vroverlay
         .x-app#x-app(style="display:none" :class="{ 'x-app-type': appType === '1' }")
             .x-container(style="flex:1")
                 .x-friend-list(ref="list" style="color:#aaa")
@@ -52,6 +53,13 @@ html
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
                                         location(:location="feed.data")
+                            div(v-else-if="feed.type === 'VideoChange'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
+                                .detail
+                                    span.extra
+                                        span.time {{ feed.created_at | formatDate('HH:MI') }}
+                                        | 🎵 #[span(style="color: red;" v-text="feed.data.playerYeet")]
+                                        | #[span.name(v-text="feed.data.playerPlayer")]
+                                        | #[span(v-text="feed.data.videoName")]
                     template(v-else)
                         template(v-for="feed in feeds")
                             .x-friend-item(v-if="feed.type === 'GPS'" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
@@ -89,6 +97,13 @@ html
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
                                         location(:location="feed.data")
+                            div(v-else-if="feed.type === 'VideoChange'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
+                                .detail
+                                    span.extra
+                                        span.time {{ feed.created_at | formatDate('HH:MI') }}
+                                        | #[span(style="color: red;" v-text="feed.data.playerYeet")]
+                                        | #[span.name(v-text="feed.data.playerPlayer")] changed video to
+                                        | #[span(v-text="feed.data.videoName")]
             .x-container
                 div(style="display:flex;flex-direction:row")
                     template(v-if="devices.length")
@@ -129,7 +144,10 @@ html
                                 img(v-else src="images/other_status_ready.png" style="width:32px;height:32px")
                                 br
                                 span {{ device[2] }}%
-            .x-container
+            .x-containerbottom
+                span(style="float:right") {{ nowPlayingobj.videoProgressText }}
+                span {{ nowPlayingobj.videoName }}
+                #progress
                 span(style="float:right") {{ currentTime | formatDate('YYYY-MM-DD HH:MI:SS AMPM') }}
                 span CPU {{ cpuUsage }}%
         script(src="vr.js")

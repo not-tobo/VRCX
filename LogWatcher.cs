@@ -27,6 +27,8 @@ namespace VRCX
         private readonly List<string[]> m_LogList;
         private Thread m_Thread;
         private bool m_ResetLog;
+        private static string playerPlayer = string.Empty;
+        private static string playerRequest = string.Empty;
 
         // NOTE
         // FileSystemWatcher() is unreliable
@@ -170,7 +172,9 @@ namespace VRCX
                                 ParseLogNotification(fileInfo, line) == true ||
                                 ParseLogLocation(fileInfo, line) == true ||
                                 ParseLogHMDModel(fileInfo, line) == true ||
-                                ParseLogAuth(fileInfo, line) == true)
+                                ParseLogAuth(fileInfo, line) == true ||
+                                ParseLogVideoChange(fileInfo, line) == true ||
+                                ParseLogVideoBeep(fileInfo, line) == true)
                             {
                                 continue;
                             }
@@ -365,6 +369,59 @@ namespace VRCX
                 "player-left",
                 userDisplayName
             });
+
+            return true;
+        }
+
+        private bool ParseLogVideoChange(FileInfo fileInfo, string line)
+        {
+            // 2020.10.16 14:42:33 Log        -  [Video Playback] Attempting to resolve URL 'http://storage.llss.io/yUKvv_nCpj0.mp4'
+
+            if (line.Length <= 78 ||
+                line[35] != 'V' ||
+                string.Compare(line, 34, "[Video Playback] Attempting to resolve URL '", 0, 44, StringComparison.Ordinal) != 0)
+            {
+                return false;
+            }
+
+            var pos = line.LastIndexOf("'");
+            if (pos < 0)
+            {
+                return false;
+            }
+            var data = line.Substring(78);
+            data = data.Remove(data.Length - 1);
+
+            AppendLog(new[]
+            {
+                fileInfo.Name,
+                ConvertLogTimeToISO8601(line),
+                "video-change",
+                data,
+                playerRequest,
+                playerPlayer
+            });
+            playerPlayer = string.Empty;
+            playerRequest = string.Empty;
+
+            return true;
+        }
+
+        private bool ParseLogVideoBeep(FileInfo fileInfo, string line)
+        {
+            // 2020.10.16 14:42:31 Log        -  [UdonSync] vrcw executing Beep at the behest of Natsumi-sama
+
+            if (line.Length <= 82 ||
+                line[35] != 'U' ||
+                string.Compare(line, 34, "[UdonSync] vrcw executing Beep at the behest of ", 0, 48, StringComparison.Ordinal) != 0)
+            {
+                return false;
+            }
+
+            var data = line.Substring(82);
+
+            playerRequest = playerPlayer;
+            playerPlayer = data;
 
             return true;
         }

@@ -10,6 +10,12 @@ import VueLazyload from 'vue-lazyload';
 import { DataTables } from 'vue-data-tables';
 import ElementUI from 'element-ui';
 import locale from 'element-ui/lib/locale/lang/en';
+import copy from 'copy-to-clipboard';
+import $ from 'jquery';
+window.$ = window.jQuery = $;
+
+var playerPlayer = '';
+var playerRequest = '';
 
 import sharedRepository from './repository/shared.js';
 import configRepository from './repository/config.js';
@@ -647,7 +653,7 @@ window.configRepository = configRepository;
     };
 
     Vue.component('launch', {
-        template: '<el-button @click="confirm" size="mini" icon="el-icon-link" circle></el-button>',
+        template: '<el-button @click="confirm" size="mini" icon="el-icon-info" circle></el-button>',
         props: {
             location: String
         },
@@ -4506,6 +4512,43 @@ window.configRepository = configRepository;
     $app.methods.updateGameLog = async function () {
         var currentUser = API.currentUser.username;
 
+        function convert_youtube_time(duration) {
+            var a = duration.match(/\d+/g);
+            if (duration.indexOf('M') >= 0 && duration.indexOf('H') == -1 && duration.indexOf('S') == -1) {
+                a = [0, a[0], 0];
+            }
+            if (duration.indexOf('H') >= 0 && duration.indexOf('M') == -1) {
+                a = [a[0], 0, a[1]];
+            }
+            if (duration.indexOf('H') >= 0 && duration.indexOf('M') == -1 && duration.indexOf('S') == -1) {
+                a = [a[0], 0, 0];
+            }
+            duration = 0;
+            if (a.length == 3) {
+                duration = duration + parseInt(a[0]) * 3600;
+                duration = duration + parseInt(a[1]) * 60;
+                duration = duration + parseInt(a[2]);
+            }
+            if (a.length == 2) {
+                duration = duration + parseInt(a[0]) * 60;
+                duration = duration + parseInt(a[1]);
+            }
+            if (a.length == 1) {
+                duration = duration + parseInt(a[0]);
+            }
+            return duration
+        }
+
+        function urlGetFunction(url) {
+          return $.ajax({
+            url: url,
+            async: false
+          });
+        }
+        //var videoTableJSON = urlGetFunction("https://qwertyuiop.nz/pypy/PyPyVideoLookup?JSON").responseText;
+        var videoTableJSON = urlGetFunction("PyPyVideos.json").responseText;
+        var tableobj = JSON.parse(videoTableJSON);
+
         for (var [fileName, dt, type, ...args] of await LogWatcher.Get()) {
             var gameLogContext = gameLogContextMap.get(fileName);
             if (gameLogContext === undefined) {
@@ -4524,6 +4567,10 @@ window.configRepository = configRepository;
             }
 
             var gameLogTableData = null;
+
+            if (API.currentUser.displayName === args[0]) {
+                continue;
+            }
 
             switch (type) {
                 case 'auth':
@@ -4576,6 +4623,65 @@ window.configRepository = configRepository;
                         created_at: dt,
                         type: 'Notification',
                         data: json
+                    };
+                    break;
+
+                case 'video-change':
+                    var videoobj = {};
+                    videoobj.videoURL = args[0];
+                    videoobj.videoName = videoobj.videoURL;
+                    videoobj.playerRequest = args[1];
+                    videoobj.playerPlayer = args[2];
+                    videoobj.videoID = '';
+                    videoobj.playerYeet = '';
+                    videoobj.videoVolume = '';
+                    if ((videoobj.playerPlayer != '') && (videoobj.playerRequest != '') && (videoobj.playerPlayer != videoobj.playerRequest)) {
+                        videoobj.playerYeet = videoobj.playerPlayer;
+                        videoobj.playerPlayer = videoobj.playerRequest;
+                    }
+                    if (videoobj.videoURL.substring(0, 23) === "http://storage.llss.io/") {
+                        videoobj.fileName = videoobj.videoURL.substring(23);
+                        for (var video of tableobj) {
+                            if (video.FileName === videoobj.fileName) {
+                                videoobj.videoName = video.Video_Name;
+                                videoobj.videoID = video.Video_ID;
+                                videoobj.videoLength = video.VideoLength;
+                                videoobj.videoVolume = video.Video_Volume;
+                                break;
+                            }
+                        }
+                    }
+                    else if ((videoobj.videoURL.substring(0, 29) === "https://www.youtube.com/watch") && (this.youtubeAPI === true)) {
+                        var videoParams = videoobj.videoURL.substring(29);
+                        var urlParams = new URLSearchParams(videoParams);
+                        var videoID = urlParams.get('v');
+                        var youtubeAPIKey = "";
+
+                        var youtubeAPIGet = urlGetFunction("https://www.googleapis.com/youtube/v3/videos?id=" + videoID + "&part=snippet,contentDetails&key=" + youtubeAPIKey).responseText;
+                        var youtubeAPIResult = JSON.parse(youtubeAPIGet);
+                        if (youtubeAPIResult.pageInfo.totalResults !== "0") {
+                          videoobj.videoName = youtubeAPIResult.items[0].snippet.title;
+                          videoobj.videoLength = convert_youtube_time(youtubeAPIResult.items[0].contentDetails.duration);
+                          videoobj.videoID = 'YouTube';
+                        }
+                    }
+                    else if ((videoobj.videoURL.substring(0, 17) === "https://youtu.be/") && (this.youtubeAPI === true)) {
+                        var videoID = videoobj.videoURL.substring(17, 28);
+                        var youtubeAPIKey = "";
+
+                        var youtubeAPIGet = urlGetFunction("https://www.googleapis.com/youtube/v3/videos?id=" + videoID + "&part=snippet,contentDetails&key=" + youtubeAPIKey).responseText;
+                        var youtubeAPIResult = JSON.parse(youtubeAPIGet);
+                        if (youtubeAPIResult.pageInfo.totalResults !== "0") {
+                          videoobj.videoName = youtubeAPIResult.items[0].snippet.title;
+                          videoobj.videoLength = convert_youtube_time(youtubeAPIResult.items[0].contentDetails.duration);
+                          videoobj.videoID = 'YouTube';
+                        }
+                    }
+
+                    gameLogTableData = {
+                        created_at: dt,
+                        type: 'VideoChange',
+                        data: videoobj
                     };
                     break;
             }
@@ -4663,6 +4769,19 @@ window.configRepository = configRepository;
         this.search();
         this.$refs.menu.activeIndex = 'search';
         this.$refs.searchTab.currentName = '0';
+    };
+
+    $app.methods.getVideoName = function (videoChange) {
+        var playerPlayer = "";
+        if (videoChange.playerPlayer != "") {
+            playerPlayer = " (" + videoChange.playerPlayer + ")";
+        }
+        if (videoChange.videoID != "") {
+            return videoChange.videoID + " : " + videoChange.videoName + playerPlayer;
+        }
+        else {
+            return videoChange.videoURL + playerPlayer;
+        }
     };
 
     // App: Search
@@ -5605,6 +5724,21 @@ window.configRepository = configRepository;
     $app.watch.isStartAtWindowsStartup = saveVRCXWindowOption;
     $app.watch.isStartAsMinimizedState = saveVRCXWindowOption;
     $app.watch.isCloseToTray = saveVRCXWindowOption;
+
+    $app.data.progressPie = configRepository.getBool('VRCX_progressPie');
+    $app.data.videoNotification = configRepository.getBool('VRCX_videoNotification');
+    $app.data.volumeNormalize = configRepository.getBool('VRCX_volumeNormalize');
+    $app.data.youtubeAPI = configRepository.getBool('VRCX_youtubeAPI');
+    var saveVRCXPyPyOption = function () {
+        configRepository.setBool('VRCX_progressPie', this.progressPie);
+        configRepository.setBool('VRCX_videoNotification', this.videoNotification);
+        configRepository.setBool('VRCX_volumeNormalize', this.volumeNormalize);
+        configRepository.setBool('VRCX_youtubeAPI', this.youtubeAPI);
+    };
+    $app.watch.progressPie = saveVRCXPyPyOption;
+    $app.watch.videoNotification = saveVRCXPyPyOption;
+    $app.watch.volumeNormalize = saveVRCXPyPyOption;
+    $app.watch.youtubeAPI = saveVRCXPyPyOption;
 
     API.$on('LOGIN', function () {
         $app.currentUserTreeData = [];
@@ -7363,6 +7497,30 @@ window.configRepository = configRepository;
         }
         VRCX.StartGame(args.join(' '));
         D.visible = false;
+    };
+
+    $app.methods.copyInstanceUrl = function (URL) {
+        copy(URL);
+        this.$message({
+            message: 'URL copied to Clipboard',
+            type: 'success'
+        });
+        this.launchDialog.visible = false;
+        this.newInstanceDialog.visible = false;
+    };
+
+    $app.methods.copyUrl = function (URL) {
+        var L = API.parseLocation(URL);
+        if (L.instanceId) {
+            var urlOut = `https://vrchat.net/launch?worldId=${encodeURIComponent(L.worldId)}&instanceId=${encodeURIComponent(L.instanceId)}`;
+        } else {
+            var urlOut = `https://vrchat.net/launch?worldId=${encodeURIComponent(L.worldId)}`;
+        }
+        copy(urlOut);
+        new Noty({
+            type: 'success',
+            text: 'instance URL copied to clipboard'
+        }).show();
     };
 
     $app = new Vue($app);
