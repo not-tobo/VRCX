@@ -4645,8 +4645,8 @@ import gameLogService from './service/gamelog.js'
                         }
                     }
 
-                    gameLogTableData = {
-                        created_at: dt,
+                    tableData = {
+                        created_at: gameLog.dt,
                         type: 'VideoChange',
                         data: videoobj
                     };
