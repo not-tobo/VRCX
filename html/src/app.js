@@ -3053,7 +3053,6 @@ import gameLogService from './service/gamelog.js'
                 break;
 
             case 'friend-location':
-                // it seems to only come when a friend is in a private world :/
                 if (content.location !== 'private') {
                     this.$emit('WORLD', {
                         json: content.world,
@@ -3300,16 +3299,21 @@ import gameLogService from './service/gamelog.js'
         methods: {},
         watch: {},
         el: '#x-app',
-        mounted() {
-            LogWatcher.Reset().then(() => {
-                API.$on('SHOW_WORLD_DIALOG', (tag) => this.showWorldDialog(tag));
-                API.$on('SHOW_LAUNCH_DIALOG', (tag) => this.showLaunchDialog(tag));
-                this.updateLoop();
-                this.updateGameLogLoop();
-                this.$nextTick(function () {
-                    this.$el.style.display = '';
-                    this.loginForm.loading = true;
-                    API.getConfig().catch((err) => {
+        async mounted() {
+            this.checkAppVersion();
+            await gameLogService.reset();
+            API.$on('SHOW_WORLD_DIALOG', (tag) => this.showWorldDialog(tag));
+            API.$on('SHOW_LAUNCH_DIALOG', (tag) => this.showLaunchDialog(tag));
+            this.updateLoop();
+            this.updateGameLogLoop();
+            this.$nextTick(function () {
+                this.$el.style.display = '';
+                this.loginForm.loading = true;
+                API.getConfig().catch((err) => {
+                    this.loginForm.loading = false;
+                    throw err;
+                }).then((args) => {
+                    API.getCurrentUser().finally(() => {
                         this.loginForm.loading = false;
                     });
                     return args;
@@ -4481,10 +4485,9 @@ import gameLogService from './service/gamelog.js'
         }
     };
 
-    $app.methods.resetGameLog = function () {
-        LogWatcher.Reset().then(() => {
-            this.gameLogTable.data = [];
-        });
+    $app.methods.resetGameLog = async function () {
+        await gameLogService.reset();
+        this.gameLogTable.data = [];
     };
 
     $app.methods.updateGameLogLoop = async function () {
@@ -4506,43 +4509,19 @@ import gameLogService from './service/gamelog.js'
     };
 
     $app.methods.updateGameLog = async function () {
-        var currentUser = API.currentUser.username;
+        var currentUserDisplayName = API.currentUser.displayName;
 
-        for (var [fileName, dt, type, ...args] of await LogWatcher.Get()) {
-            var gameLogContext = gameLogContextMap.get(fileName);
-            if (gameLogContext === undefined) {
-                gameLogContext = {
-                    // auth
-                    loginProvider: null,
-                    loginUser: null,
+        for (var gameLog of await gameLogService.poll(API.currentUser.username)) {
+            var tableData = null;
 
-                    // hmd
-                    hmdModel: null,
-
-                    // location
-                    location: null,
-                };
-                gameLogContextMap.set(fileName, gameLogContext);
-            }
-
-            var gameLogTableData = null;
-
-            switch (type) {
-                case 'auth':
-                    gameLogContext.loginProvider = args[0];
-                    gameLogContext.loginUser = args[1];
-                    break;
-
-                case 'hmd-model':
-                    gameLogContext.hmdModel = args[0];
-                    break;
-
+            switch (gameLog.type) {
                 case 'location':
-                    var location = args[0];
-                    gameLogContext.location = location;
-                    if (gameLogContext.loginUser === currentUser) {
-                        this.lastLocation = location;
-                    }
+                    this.lastLocation = gameLog.location;
+                    tableData = {
+                        created_at: gameLog.dt,
+                        type: 'Location',
+                        data: gameLog.location
+                    };
                     break;
 
                 case 'location':
@@ -4554,18 +4533,22 @@ import gameLogService from './service/gamelog.js'
                     break;
 
                 case 'player-joined':
-                    var userDisplayName = args[0];
-                    gameLogTableData = {
-                        created_at: dt,
+                    if (currentUserDisplayName === gameLog.userDisplayName) {
+                        continue;
+                    }
+                    tableData = {
+                        created_at: gameLog.dt,
                         type: 'OnPlayerJoined',
                         data: gameLog.userDisplayName
                     };
                     break;
 
                 case 'player-left':
-                    var userDisplayName = args[0];
-                    gameLogTableData = {
-                        created_at: dt,
+                    if (currentUserDisplayName === gameLog.userDisplayName) {
+                        continue;
+                    }
+                    tableData = {
+                        created_at: gameLog.dt,
                         type: 'OnPlayerLeft',
                         data: gameLog.userDisplayName
                     };
@@ -4639,9 +4622,8 @@ import gameLogService from './service/gamelog.js'
                     break;
             }
 
-            if (gameLogTableData !== null &&
-                gameLogContext.loginUser === currentUser) {
-                this.gameLogTable.data.push(gameLogTableData);
+            if (tableData !== null) {
+                this.gameLogTable.data.push(tableData);
             }
         }
     }
