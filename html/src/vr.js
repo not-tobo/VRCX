@@ -11,24 +11,11 @@ import locale from 'element-ui/lib/locale/lang/en';
 
 import sharedRepository from './repository/shared.js';
 import configRepository from './repository/config.js';
-import ProgressBar from 'progressbar.js';
-import $ from 'jquery';
-window.$ = window.jQuery = $;
-
-var bar = new ProgressBar.Circle(vroverlay, {
-  strokeWidth: 50,
-  easing: 'easeInOut',
-  duration: 500,
-  color: '#aaa',
-  trailWidth: 0,
-  svgStyle: null
-});
-
-window.sharedRepository = sharedRepository;
-window.configRepository = configRepository;
+import webApiService from './service/webapi.js';
 
 (async function () {
     await CefSharp.BindObjectAsync(
+        'WebApi',
         'VRCX',
         'SharedVariable',
         'SQLite'
@@ -166,30 +153,25 @@ window.configRepository = configRepository;
     API.pendingGetRequests = new Map();
 
     API.call = function (endpoint, options) {
-        var resource = `https://api.vrchat.cloud/api/1/${endpoint}`;
         var init = {
+            url: `https://api.vrchat.cloud/api/1/${endpoint}`,
             method: 'GET',
-            mode: 'cors',
-            credentials: 'include',
-            cache: 'no-cache',
-            redirect: 'follow',
-            referrerPolicy: 'no-referrer',
             ...options
         };
         var { params } = init;
         var isGetRequest = init.method === 'GET';
-        if (isGetRequest) {
+        if (isGetRequest === true) {
             // transform body to url
             if (params === Object(params)) {
-                var url = new URL(resource);
+                var url = new URL(init.url);
                 var { searchParams } = url;
                 for (var key in params) {
                     searchParams.set(key, params[key]);
                 }
-                resource = url.toString();
+                init.url = url.toString();
             }
             // merge requests
-            var req = this.pendingGetRequests.get(resource);
+            var req = this.pendingGetRequests.get(init.url);
             if (req !== undefined) {
                 return req;
             }
@@ -202,45 +184,50 @@ window.configRepository = configRepository;
                 ? JSON.stringify(params)
                 : '{}';
         }
-        var req = fetch(resource, init).catch((err) => {
+        var req = webApiService.execute(init).catch((err) => {
             this.$throw(0, err);
-        }).then((res) => res.json().catch(() => {
-            if (res.ok) {
+        }).then((response) => {
+            try {
+                response.data = JSON.parse(response.data);
+                return response;
+            } catch (e) {
+            }
+            if (response.status === 200) {
                 this.$throw(0, 'Invalid JSON response');
             }
             this.$throw(res.status);
-        }).then((json) => {
-            if (res.ok) {
-                if (json.success === Object(json.success)) {
-                    new Noty({
-                        type: 'success',
-                        text: escapeTag(json.success.message)
-                    }).show();
+        }).then(({ data, status }) => {
+            if (data === Object(data)) {
+                if (status === 200) {
+                    if (data.success === Object(data.success)) {
+                        new Noty({
+                            type: 'success',
+                            text: escapeTag(data.success.message)
+                        }).show();
+                    }
+                    return data;
                 }
-                return json;
-            }
-            if (json === Object(json)) {
-                if (json.error === Object(json.error)) {
+                if (data.error === Object(data.error)) {
                     this.$throw(
-                        json.error.status_code || res.status,
-                        json.error.message,
-                        json.error.data
+                        data.error.status_code || status,
+                        data.error.message,
+                        data.error.data
                     );
-                } else if (typeof json.error === 'string') {
+                } else if (typeof data.error === 'string') {
                     this.$throw(
-                        json.status_code || res.status,
-                        json.error
+                        data.status_code || status,
+                        data.error
                     );
                 }
             }
-            this.$throw(res.status, json);
-            return json;
-        }));
-        if (isGetRequest) {
+            this.$throw(status, data);
+            return data;
+        });
+        if (isGetRequest === true) {
             req.finally(() => {
-                this.pendingGetRequests.delete(resource);
+                this.pendingGetRequests.delete(init.url);
             });
-            this.pendingGetRequests.set(resource, req);
+            this.pendingGetRequests.set(init.url, req);
         }
         return req;
     };

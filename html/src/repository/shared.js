@@ -1,10 +1,15 @@
 // requires binding of SharedVariable
 
 class SharedRepository {
+    remove(key) {
+        key = transformKey(key);
+        return SharedVariable.Remove(key);
+    }
+
     getString(key, defaultValue = null) {
         key = transformKey(key);
         var value = SharedVariable.Get(key);
-        if (value === undefined) {
+        if (value === null) {
             return defaultValue;
         }
         return value;
@@ -97,6 +102,7 @@ function transformKey(key) {
 }
 
 var self = new SharedRepository();
+window.sharedRepository = self;
 
 export {
     self as default,

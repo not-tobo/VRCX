@@ -19,16 +19,16 @@ var playerRequest = '';
 
 import sharedRepository from './repository/shared.js';
 import configRepository from './repository/config.js';
-
-window.sharedRepository = sharedRepository;
-window.configRepository = configRepository;
+import webApiService from './service/webapi.js';
+import gameLogService from './service/gamelog.js'
 
 (async function () {
     await CefSharp.BindObjectAsync(
+        'WebApi',
         'VRCX',
-        'SharedVariable', // DO NOT DIRECT ACCESS
+        'SharedVariable',
         'VRCXStorage',
-        'SQLite', // DO NOT DIRECT ACCESS
+        'SQLite',
         'LogWatcher',
         'Discord'
     );
@@ -336,30 +336,25 @@ window.configRepository = configRepository;
     API.pendingGetRequests = new Map();
 
     API.call = function (endpoint, options) {
-        var resource = `https://api.vrchat.cloud/api/1/${endpoint}`;
         var init = {
+            url: `https://api.vrchat.cloud/api/1/${endpoint}`,
             method: 'GET',
-            mode: 'cors',
-            credentials: 'include',
-            cache: 'no-cache',
-            redirect: 'follow',
-            referrerPolicy: 'no-referrer',
             ...options
         };
         var { params } = init;
         var isGetRequest = init.method === 'GET';
-        if (isGetRequest) {
+        if (isGetRequest === true) {
             // transform body to url
             if (params === Object(params)) {
-                var url = new URL(resource);
+                var url = new URL(init.url);
                 var { searchParams } = url;
                 for (var key in params) {
                     searchParams.set(key, params[key]);
                 }
-                resource = url.toString();
+                init.url = url.toString();
             }
             // merge requests
-            var req = this.pendingGetRequests.get(resource);
+            var req = this.pendingGetRequests.get(init.url);
             if (req !== undefined) {
                 return req;
             }
@@ -372,45 +367,50 @@ window.configRepository = configRepository;
                 ? JSON.stringify(params)
                 : '{}';
         }
-        var req = fetch(resource, init).catch((err) => {
+        var req = webApiService.execute(init).catch((err) => {
             this.$throw(0, err);
-        }).then((res) => res.json().catch(() => {
-            if (res.ok) {
+        }).then((response) => {
+            try {
+                response.data = JSON.parse(response.data);
+                return response;
+            } catch (e) {
+            }
+            if (response.status === 200) {
                 this.$throw(0, 'Invalid JSON response');
             }
             this.$throw(res.status);
-        }).then((json) => {
-            if (res.ok) {
-                if (json.success === Object(json.success)) {
-                    new Noty({
-                        type: 'success',
-                        text: escapeTag(json.success.message)
-                    }).show();
+        }).then(({ data, status }) => {
+            if (data === Object(data)) {
+                if (status === 200) {
+                    if (data.success === Object(data.success)) {
+                        new Noty({
+                            type: 'success',
+                            text: escapeTag(data.success.message)
+                        }).show();
+                    }
+                    return data;
                 }
-                return json;
-            }
-            if (json === Object(json)) {
-                if (json.error === Object(json.error)) {
+                if (data.error === Object(data.error)) {
                     this.$throw(
-                        json.error.status_code || res.status,
-                        json.error.message,
-                        json.error.data
+                        data.error.status_code || status,
+                        data.error.message,
+                        data.error.data
                     );
-                } else if (typeof json.error === 'string') {
+                } else if (typeof data.error === 'string') {
                     this.$throw(
-                        json.status_code || res.status,
-                        json.error
+                        data.status_code || status,
+                        data.error
                     );
                 }
             }
-            this.$throw(res.status, json);
-            return json;
-        }));
-        if (isGetRequest) {
+            this.$throw(status, data);
+            return data;
+        });
+        if (isGetRequest === true) {
             req.finally(() => {
-                this.pendingGetRequests.delete(resource);
+                this.pendingGetRequests.delete(init.url);
             });
-            this.pendingGetRequests.set(resource, req);
+            this.pendingGetRequests.set(init.url, req);
         }
         return req;
     };
@@ -823,7 +823,7 @@ window.configRepository = configRepository;
     API.currentUser = {};
 
     API.$on('LOGOUT', function () {
-        VRCX.DeleteAllCookies();
+        webApiService.clearCookies();
         this.isLoggedIn = false;
     });
 
@@ -885,11 +885,10 @@ window.configRepository = configRepository;
         }
     */
     API.login = function (params) {
-        var auth = `${params.username}:${params.password}`;
-        auth = encodeURIComponent(auth);
-        auth = auth.replace(/%([0-9A-F]{2})/g, (_, s) => String.fromCharCode(parseInt(s, 16)));
-        auth = auth.replace('%', '%25');
-        auth = btoa(auth);
+        var { username, password } = params;
+        username = encodeURIComponent(username);
+        password = encodeURIComponent(password);
+        var auth = btoa(`${username}:${password}`);
         return this.call(`auth/user?apiKey=${this.cachedConfig.clientApiKey}`, {
             method: 'GET',
             headers: {
@@ -3312,16 +3311,10 @@ window.configRepository = configRepository;
                     this.loginForm.loading = true;
                     API.getConfig().catch((err) => {
                         this.loginForm.loading = false;
-                        throw err;
-                    }).then((args) => {
-                        API.getCurrentUser().finally(() => {
-                            this.loginForm.loading = false;
-                        });
-                        return args;
                     });
+                    return args;
                 });
             });
-            this.checkAppVersion();
         }
     };
 
@@ -3347,28 +3340,33 @@ window.configRepository = configRepository;
         return style;
     };
 
-    $app.methods.checkAppVersion = function () {
-        var url = 'https://api.github.com/repos/pypy-vrc/VRCX/releases/latest';
-        fetch(url).then((res) => res.json()).then((json) => {
-            if (json === Object(json) &&
-                json.name &&
-                json.published_at) {
-                this.latestAppVersion = `${json.name} (${formatDate(json.published_at, 'YYYY-MM-DD HH24:MI:SS')})`;
-                if (json.name > this.appVersion) {
-                    new Noty({
-                        type: 'info',
-                        text: `Update available!!<br>${this.latestAppVersion}`,
-                        timeout: 60000,
-                        callbacks: {
-                            onClick: () => VRCX.OpenLink('https://github.com/pypy-vrc/VRCX/releases')
-                        }
-                    }).show();
-                    this.notifyMenu('more');
-                }
-            } else {
-                this.latestAppVersion = 'Error occured';
+    $app.methods.checkAppVersion = async function () {
+        var response = await webApiService.execute({
+            url: 'https://api.github.com/repos/pypy-vrc/VRCX/releases/latest',
+            method: 'GET',
+            headers: {
+                'User-Agent': 'VRCX'
             }
         });
+        var json = JSON.parse(response.data);
+        if (json === Object(json) &&
+            json.name &&
+            json.published_at) {
+            this.latestAppVersion = `${json.name} (${formatDate(json.published_at, 'YYYY-MM-DD HH24:MI:SS')})`;
+            if (json.name > this.appVersion) {
+                new Noty({
+                    type: 'info',
+                    text: `Update available!!<br>${this.latestAppVersion}`,
+                    timeout: 60000,
+                    callbacks: {
+                        onClick: () => VRCX.OpenLink('https://github.com/pypy-vrc/VRCX/releases')
+                    }
+                }).show();
+                this.notifyMenu('more');
+            }
+        } else {
+            this.latestAppVersion = 'Error occured';
+        }
     };
 
     $app.methods.updateLoop = function () {
@@ -4438,8 +4436,6 @@ window.configRepository = configRepository;
 
     // App: gameLog
 
-    var gameLogContextMap = new Map();
-
     $app.data.lastLocation = '';
     $app.data.lastLocation$ = {};
     $app.data.discordActive = configRepository.getBool('discordActive');
@@ -4512,43 +4508,6 @@ window.configRepository = configRepository;
     $app.methods.updateGameLog = async function () {
         var currentUser = API.currentUser.username;
 
-        function convert_youtube_time(duration) {
-            var a = duration.match(/\d+/g);
-            if (duration.indexOf('M') >= 0 && duration.indexOf('H') == -1 && duration.indexOf('S') == -1) {
-                a = [0, a[0], 0];
-            }
-            if (duration.indexOf('H') >= 0 && duration.indexOf('M') == -1) {
-                a = [a[0], 0, a[1]];
-            }
-            if (duration.indexOf('H') >= 0 && duration.indexOf('M') == -1 && duration.indexOf('S') == -1) {
-                a = [a[0], 0, 0];
-            }
-            duration = 0;
-            if (a.length == 3) {
-                duration = duration + parseInt(a[0]) * 3600;
-                duration = duration + parseInt(a[1]) * 60;
-                duration = duration + parseInt(a[2]);
-            }
-            if (a.length == 2) {
-                duration = duration + parseInt(a[0]) * 60;
-                duration = duration + parseInt(a[1]);
-            }
-            if (a.length == 1) {
-                duration = duration + parseInt(a[0]);
-            }
-            return duration
-        }
-
-        function urlGetFunction(url) {
-          return $.ajax({
-            url: url,
-            async: false
-          });
-        }
-        //var videoTableJSON = urlGetFunction("https://qwertyuiop.nz/pypy/PyPyVideoLookup?JSON").responseText;
-        var videoTableJSON = urlGetFunction("PyPyVideos.json").responseText;
-        var tableobj = JSON.parse(videoTableJSON);
-
         for (var [fileName, dt, type, ...args] of await LogWatcher.Get()) {
             var gameLogContext = gameLogContextMap.get(fileName);
             if (gameLogContext === undefined) {
@@ -4568,10 +4527,6 @@ window.configRepository = configRepository;
 
             var gameLogTableData = null;
 
-            if (API.currentUser.displayName === args[0]) {
-                continue;
-            }
-
             switch (type) {
                 case 'auth':
                     gameLogContext.loginProvider = args[0];
@@ -4590,12 +4545,11 @@ window.configRepository = configRepository;
                     }
                     break;
 
-                case 'world':
-                    // var worldName = params[0];
-                    gameLogTableData = {
-                        created_at: dt,
+                case 'location':
+                    tableData = {
+                        created_at: gameLog.dt,
                         type: 'Location',
-                        data: gameLogContext.location
+                        data: gameLog.location
                     };
                     break;
 
@@ -4604,7 +4558,7 @@ window.configRepository = configRepository;
                     gameLogTableData = {
                         created_at: dt,
                         type: 'OnPlayerJoined',
-                        data: userDisplayName
+                        data: gameLog.userDisplayName
                     };
                     break;
 
@@ -4613,16 +4567,15 @@ window.configRepository = configRepository;
                     gameLogTableData = {
                         created_at: dt,
                         type: 'OnPlayerLeft',
-                        data: userDisplayName
+                        data: gameLog.userDisplayName
                     };
                     break;
 
                 case 'notification':
-                    var json = args[0];
-                    gameLogTableData = {
-                        created_at: dt,
+                    tableData = {
+                        created_at: gameLog.dt,
                         type: 'Notification',
-                        data: json
+                        data: gameLog.json
                     };
                     break;
 
