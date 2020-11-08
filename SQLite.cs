@@ -9,7 +9,7 @@ namespace VRCX
 {
     public class SQLite
     {
-        public static SQLite Instance { get; private set; }
+        public static readonly SQLite Instance;
         private readonly ReaderWriterLockSlim m_ConnectionLock;
         private readonly SQLiteConnection m_Connection;
 
@@ -22,7 +22,7 @@ namespace VRCX
         {
             m_ConnectionLock = new ReaderWriterLockSlim();
 
-            var dataSource = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "VRCX.sqlite3");
+            var dataSource = Path.Combine(Program.BaseDirectory, "VRCX.sqlite3");
             m_Connection = new SQLiteConnection($"Data Source=\"{dataSource}\";Version=3;PRAGMA locking_mode=NORMAL;PRAGMA busy_timeout=5000", true);
         }
 

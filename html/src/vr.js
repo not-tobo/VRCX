@@ -27,8 +27,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
 
 (async function () {
     await CefSharp.BindObjectAsync(
+        'AppApi',
         'WebApi',
-        'VRCX',
         'SharedVariable',
         'SQLite'
     );
@@ -577,7 +577,6 @@ var bar = new ProgressBar.Circle(vroverlay, {
     var $app = {
         data: {
             API,
-            VRCX,
             // 1 = 대시보드랑 손목에 보이는거
             // 2 = 항상 화면에 보이는 거
             appType: location.href.substr(-1),
@@ -633,7 +632,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             this.currentTime = new Date().toJSON();
             this.currentUserStatus = sharedRepository.getString('current_user_status');
             if (configRepository.getBool('VRCX_hideDevicesFromFeed') === false) {
-                VRCX.GetVRDevices().then((devices) => {
+                AppApi.GetVRDevices().then((devices) => {
                     devices.forEach((device) => {
                         device[2] = parseInt(device[2], 10);
                     });
@@ -652,8 +651,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
 
     $app.methods.updateCpuUsageLoop = async function () {
         try {
-            var cpuUsage = await VRCX.CpuUsage();
-            this.cpuUsage = cpuUsage.toFixed(0);
+            var cpuUsage = await AppApi.CpuUsage();
+            this.cpuUsage = cpuUsage.toFixed(2);
         } catch (err) {
             console.error(err);
         }

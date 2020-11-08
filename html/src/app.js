@@ -24,8 +24,8 @@ import gameLogService from './service/gamelog.js'
 
 (async function () {
     await CefSharp.BindObjectAsync(
+        'AppApi',
         'WebApi',
-        'VRCX',
         'SharedVariable',
         'VRCXStorage',
         'SQLite',
@@ -65,7 +65,7 @@ import gameLogService from './service/gamelog.js'
     document.addEventListener('keyup', function (e) {
         if (e.ctrlKey) {
             if (e.shiftKey && e.code === 'KeyI') {
-                VRCX.ShowDevTools();
+                AppApi.ShowDevTools();
             } else if (e.code === 'KeyR') {
                 location.reload();
             }
@@ -3144,6 +3144,7 @@ import gameLogService from './service/gamelog.js'
                 try {
                     var json = JSON.parse(data);
                     json.content = JSON.parse(json.content);
+                    console.log('WebSocket', json);
                     this.$emit('PIPELINE', {
                         json
                     });
@@ -3285,7 +3286,6 @@ import gameLogService from './service/gamelog.js'
     var $app = {
         data: {
             API,
-            VRCX,
             nextRefresh: 0,
             isGameRunning: false,
             isGameNoVR: false,
@@ -3329,7 +3329,7 @@ import gameLogService from './service/gamelog.js'
             type: 'info',
             callback: (action) => {
                 if (action === 'confirm') {
-                    VRCX.OpenLink(link);
+                    AppApi.OpenLink(link);
                 }
             }
         });
@@ -3363,7 +3363,7 @@ import gameLogService from './service/gamelog.js'
                     text: `Update available!!<br>${this.latestAppVersion}`,
                     timeout: 60000,
                     callbacks: {
-                        onClick: () => VRCX.OpenLink('https://github.com/pypy-vrc/VRCX/releases')
+                        onClick: () => AppApi.OpenLink('https://github.com/pypy-vrc/VRCX/releases')
                     }
                 }).show();
                 this.notifyMenu('more');
@@ -3397,7 +3397,7 @@ import gameLogService from './service/gamelog.js'
                     });
                 }
                 this.checkActiveFriends();
-                VRCX.CheckGameRunning().then(([isGameRunning, isGameNoVR]) => {
+                AppApi.CheckGameRunning().then(([isGameRunning, isGameNoVR]) => {
                     if (isGameRunning !== this.isGameRunning) {
                         this.isGameRunning = isGameRunning;
                         Discord.SetTimestamps(Date.now(), 0);
@@ -3643,7 +3643,7 @@ import gameLogService from './service/gamelog.js'
     $app.methods.loginWithSteam = function () {
         if (!this.loginForm.loading) {
             this.loginForm.loading = true;
-            VRCX.LoginWithSteam().catch((err) => {
+            AppApi.LoginWithSteam().catch((err) => {
                 this.loginForm.loading = false;
                 throw err;
             }).then((steamTicket) => {
@@ -5685,7 +5685,7 @@ import gameLogService from './service/gamelog.js'
         configRepository.setBool('VRCX_StartAtWindowsStartup', this.isStartAtWindowsStartup);
         configRepository.setBool('VRCX_StartAsMinimizedState', this.isStartAsMinimizedState);
         configRepository.setBool('VRCX_CloseToTray', this.isCloseToTray);
-        VRCX.SetStartup(this.isStartAtWindowsStartup);
+        AppApi.SetStartup(this.isStartAtWindowsStartup);
     };
     $app.watch.isStartAtWindowsStartup = saveVRCXWindowOption;
     $app.watch.isStartAsMinimizedState = saveVRCXWindowOption;
@@ -5759,9 +5759,9 @@ import gameLogService from './service/gamelog.js'
         if (this.openVR &&
             this.isGameNoVR === false &&
             (this.isGameRunning || this.openVRAlways)) {
-            VRCX.StartVR();
+            AppApi.StartVR();
         } else {
-            VRCX.StopVR();
+            AppApi.StopVR();
         }
     };
 
@@ -7461,7 +7461,7 @@ import gameLogService from './service/gamelog.js'
         if (D.desktop === true) {
             args.push('--no-vr');
         }
-        VRCX.StartGame(args.join(' '));
+        AppApi.StartGame(args.join(' '));
         D.visible = false;
     };
 

@@ -15,13 +15,13 @@ using System.IO;
 
 namespace VRCX
 {
-    public class VRCX
+    public class AppApi
     {
-        public static VRCX Instance { get; private set; }
+        public static readonly AppApi Instance;
 
-        static VRCX()
+        static AppApi()
         {
-            Instance = new VRCX();
+            Instance = new AppApi();
         }
 
         public void ChangeVolume(string Volume)
@@ -167,22 +167,22 @@ namespace VRCX
 
         public void StartVR()
         {
-            VRCXVR.SetActive(true);
+            VRCXVR.Instance.SetActive(true);
         }
 
         public void StopVR()
         {
-            VRCXVR.SetActive(false);
+            VRCXVR.Instance.SetActive(false);
         }
 
         public void RefreshVR()
         {
-            VRCXVR.Refresh();
+            VRCXVR.Instance.Refresh();
         }
 
         public string[][] GetVRDevices()
         {
-            return VRCXVR.GetDevices();
+            return VRCXVR.Instance.GetDevices();
         }
 
         public float CpuUsage()

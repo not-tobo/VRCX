@@ -15,8 +15,8 @@ namespace VRCX
 {
     public partial class MainForm : Form
     {
-        public static MainForm Instance { get; private set; }
-        public ChromiumWebBrowser Browser { get; private set; }
+        public static MainForm Instance;
+        public ChromiumWebBrowser Browser;
         private int LastLocationX;
         private int LastLocationY;
         private int LastSizeWidth;
@@ -26,6 +26,7 @@ namespace VRCX
         {
             Instance = this;
             InitializeComponent();
+
             try
             {
                 var location = Assembly.GetExecutingAssembly().Location;
@@ -36,22 +37,26 @@ namespace VRCX
             catch
             {
             }
-            // AppDomain.CurrentDomain.BaseDirectory + "/html/index.html"
-            Browser = new ChromiumWebBrowser(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "html/index.html"))
+
+            Browser = new ChromiumWebBrowser(
+                Path.Combine(Program.BaseDirectory, "html/index.html")
+            )
             {
                 DragHandler = new NoopDragHandler(),
                 BrowserSettings =
                 {
-                    // UniversalAccessFromFileUrls = CefState.Enabled,
                     DefaultEncoding = "UTF-8",
                 },
-                Dock = DockStyle.Fill,
+                Dock = DockStyle.Fill
             };
-            Util.ApplyJavascriptBindings(Browser.JavascriptObjectRepository);
+
             Browser.IsBrowserInitializedChanged += (A, B) =>
             {
                 // Browser.ShowDevTools();
             };
+
+            Util.ApplyJavascriptBindings(Browser.JavascriptObjectRepository);
+
             Controls.Add(Browser);
         }
 
@@ -162,6 +167,5 @@ namespace VRCX
         {
             Application.Exit();
         }
-
     }
 }
