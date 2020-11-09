@@ -762,7 +762,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     else {
                         var mixerVolumeFloat = "0.50";
                     }
-                    VRCX.ChangeVolume(mixerVolumeFloat);
+                    AppApi.ChangeVolume(mixerVolumeFloat);
                 }
             }
         }
