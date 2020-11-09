@@ -13,8 +13,6 @@ import sharedRepository from './repository/shared.js';
 import configRepository from './repository/config.js';
 import webApiService from './service/webapi.js';
 import ProgressBar from 'progressbar.js';
-import $ from 'jquery';
-window.$ = window.jQuery = $;
 
 var bar = new ProgressBar.Circle(vroverlay, {
   strokeWidth: 50,
@@ -652,7 +650,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
     $app.methods.updateCpuUsageLoop = async function () {
         try {
             var cpuUsage = await AppApi.CpuUsage();
-            this.cpuUsage = cpuUsage.toFixed(2);
+            this.cpuUsage = cpuUsage.toFixed(0);
         } catch (err) {
             console.error(err);
         }

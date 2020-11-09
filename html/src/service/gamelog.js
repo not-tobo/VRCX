@@ -46,8 +46,7 @@ class GameLogService {
 
             context.updatedAt = now;
 
-            if (loginUser !== null &&
-                loginUser === context.loginUser) {
+            if (loginUser !== null) {
                 gameLogs.push(gameLog);
             }
         }

@@ -11,8 +11,8 @@ import { DataTables } from 'vue-data-tables';
 import ElementUI from 'element-ui';
 import locale from 'element-ui/lib/locale/lang/en';
 import copy from 'copy-to-clipboard';
-import $ from 'jquery';
-window.$ = window.jQuery = $;
+import PyPyVideos from './PyPyVideos.json';
+var PyPyVideosTable = JSON.parse(atob(PyPyVideos.json));
 
 var playerPlayer = '';
 var playerRequest = '';
@@ -4541,16 +4541,6 @@ import gameLogService from './service/gamelog.js'
             return duration
         }
 
-        function urlGetFunction(url) {
-          return $.ajax({
-            url: url,
-            async: false
-          });
-        }
-        //var videoTableJSON = urlGetFunction("https://qwertyuiop.nz/pypy/PyPyVideoLookup?JSON").responseText;
-        var videoTableJSON = urlGetFunction("PyPyVideos.json").responseText;
-        var tableobj = JSON.parse(videoTableJSON);
-
         for (var gameLog of await gameLogService.poll(API.currentUser.username)) {
             var tableData = null;
 
@@ -4608,7 +4598,7 @@ import gameLogService from './service/gamelog.js'
                     }
                     if (videoobj.videoURL.substring(0, 23) === "http://storage.llss.io/") {
                         videoobj.fileName = videoobj.videoURL.substring(23);
-                        for (var video of tableobj) {
+                        for (var video of PyPyVideosTable) {
                             if (video.FileName === videoobj.fileName) {
                                 videoobj.videoName = video.Video_Name;
                                 videoobj.videoID = video.Video_ID;
@@ -4624,9 +4614,13 @@ import gameLogService from './service/gamelog.js'
                         var videoID = urlParams.get('v');
                         var youtubeAPIKey = "";
 
-                        var youtubeAPIGet = urlGetFunction("https://www.googleapis.com/youtube/v3/videos?id=" + videoID + "&part=snippet,contentDetails&key=" + youtubeAPIKey).responseText;
+                        var response = await webApiService.execute({
+                            url: "https://www.googleapis.com/youtube/v3/videos?id=" + videoID + "&part=snippet,contentDetails&key=" + youtubeAPIKey,
+                            method: 'GET'
+                        });
+                        var youtubeAPIGet = response.data;
                         var youtubeAPIResult = JSON.parse(youtubeAPIGet);
-                        if (youtubeAPIResult.pageInfo.totalResults !== "0") {
+                        if (youtubeAPIResult.pageInfo.totalResults !== 0) {
                           videoobj.videoName = youtubeAPIResult.items[0].snippet.title;
                           videoobj.videoLength = convert_youtube_time(youtubeAPIResult.items[0].contentDetails.duration);
                           videoobj.videoID = 'YouTube';
@@ -4636,9 +4630,13 @@ import gameLogService from './service/gamelog.js'
                         var videoID = videoobj.videoURL.substring(17, 28);
                         var youtubeAPIKey = "";
 
-                        var youtubeAPIGet = urlGetFunction("https://www.googleapis.com/youtube/v3/videos?id=" + videoID + "&part=snippet,contentDetails&key=" + youtubeAPIKey).responseText;
+                        var response = await webApiService.execute({
+                            url: "https://www.googleapis.com/youtube/v3/videos?id=" + videoID + "&part=snippet,contentDetails&key=" + youtubeAPIKey,
+                            method: 'GET'
+                        });
+                        var youtubeAPIGet = response.data;
                         var youtubeAPIResult = JSON.parse(youtubeAPIGet);
-                        if (youtubeAPIResult.pageInfo.totalResults !== "0") {
+                        if (youtubeAPIResult.pageInfo.totalResults !== 0) {
                           videoobj.videoName = youtubeAPIResult.items[0].snippet.title;
                           videoobj.videoLength = convert_youtube_time(youtubeAPIResult.items[0].contentDetails.duration);
                           videoobj.videoID = 'YouTube';
