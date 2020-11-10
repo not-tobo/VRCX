@@ -28,7 +28,7 @@ namespace VRCX
         {
             ProcessStartInfo Stuff = new ProcessStartInfo()
             {
-                FileName = Path.GetFullPath("nircmd.exe"),
+                FileName = Path.Combine(Program.BaseDirectory, "nircmd.exe"),
                 Arguments = $"setappvolume VRChat.exe {Volume}"
             };
             Process.Start(Stuff);
