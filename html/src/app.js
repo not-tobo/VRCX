@@ -4600,10 +4600,10 @@ import gameLogService from './service/gamelog.js'
                     if (videoobj.videoURL.substring(0, 23) === "http://storage.llss.io/") {
                         videoobj.fileName = videoobj.videoURL.substring(23);
                         for (var video of PyPyVideosTable) {
-                            if (video.FileName === videoobj.fileName) {
+                            if (video.File_Name === videoobj.fileName) {
                                 videoobj.videoName = video.Video_Name;
                                 videoobj.videoID = video.Video_ID;
-                                videoobj.videoLength = video.VideoLength;
+                                videoobj.videoLength = video.Video_Length;
                                 videoobj.videoVolume = video.Video_Volume;
                                 break;
                             }
