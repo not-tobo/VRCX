@@ -684,7 +684,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 locationChange = true;
                 this.worldJoinTime = feed.created_at;
             }
-            if ((feed.type === "VideoChange") && (newPlayingobj.videoURL === '')) {
+            else if ((feed.type === "VideoChange") && (newPlayingobj.videoURL === '')) {
                 newPlayingobj = feed.data;
                 videoChangeTime = feed.created_at;
             }
