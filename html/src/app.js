@@ -4551,6 +4551,21 @@ import gameLogService from './service/gamelog.js'
             return duration
         }
 
+        async function youtubeAPI(videoID) {
+            var youtubeAPIKey = '';
+            var response = await webApiService.execute({
+                url: "https://www.googleapis.com/youtube/v3/videos?id=" + videoID + "&part=snippet,contentDetails&key=" + youtubeAPIKey,
+                method: 'GET'
+            });
+            var youtubeAPIGet = response.data;
+            var youtubeAPIResult = JSON.parse(youtubeAPIGet);
+            if (youtubeAPIResult.pageInfo.totalResults !== 0) {
+                videoobj.videoName = youtubeAPIResult.items[0].snippet.title;
+                videoobj.videoLength = convert_youtube_time(youtubeAPIResult.items[0].contentDetails.duration);
+                videoobj.videoID = 'YouTube';
+            }
+        }
+
         for (var gameLog of await gameLogService.poll(API.currentUser.username)) {
             var tableData = null;
 
@@ -4622,35 +4637,11 @@ import gameLogService from './service/gamelog.js'
                         var videoParams = videoobj.videoURL.substring(29);
                         var urlParams = new URLSearchParams(videoParams);
                         var videoID = urlParams.get('v');
-                        var youtubeAPIKey = "";
-
-                        var response = await webApiService.execute({
-                            url: "https://www.googleapis.com/youtube/v3/videos?id=" + videoID + "&part=snippet,contentDetails&key=" + youtubeAPIKey,
-                            method: 'GET'
-                        });
-                        var youtubeAPIGet = response.data;
-                        var youtubeAPIResult = JSON.parse(youtubeAPIGet);
-                        if (youtubeAPIResult.pageInfo.totalResults !== 0) {
-                          videoobj.videoName = youtubeAPIResult.items[0].snippet.title;
-                          videoobj.videoLength = convert_youtube_time(youtubeAPIResult.items[0].contentDetails.duration);
-                          videoobj.videoID = 'YouTube';
-                        }
+                        await youtubeAPI(videoID);
                     }
                     else if ((videoobj.videoURL.substring(0, 17) === "https://youtu.be/") && (this.youtubeAPI === true)) {
                         var videoID = videoobj.videoURL.substring(17, 28);
-                        var youtubeAPIKey = "";
-
-                        var response = await webApiService.execute({
-                            url: "https://www.googleapis.com/youtube/v3/videos?id=" + videoID + "&part=snippet,contentDetails&key=" + youtubeAPIKey,
-                            method: 'GET'
-                        });
-                        var youtubeAPIGet = response.data;
-                        var youtubeAPIResult = JSON.parse(youtubeAPIGet);
-                        if (youtubeAPIResult.pageInfo.totalResults !== 0) {
-                          videoobj.videoName = youtubeAPIResult.items[0].snippet.title;
-                          videoobj.videoLength = convert_youtube_time(youtubeAPIResult.items[0].contentDetails.duration);
-                          videoobj.videoID = 'YouTube';
-                        }
+                        await youtubeAPI(videoID);
                     }
 
                     tableData = {
