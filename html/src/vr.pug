@@ -60,6 +60,17 @@ html
                                         | 🎵 #[span(style="color: red;" v-text="feed.data.playerYeet")]
                                         | #[span.name(v-text="feed.data.playerPlayer")]
                                         | #[span(v-text="feed.data.videoName")]
+                            div(v-else-if="feed.type === 'invite'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
+                                .detail
+                                    span.extra
+                                        span.time {{ feed.created_at | formatDate('HH:MI') }}
+                                        | 📨 #[span.name(v-text="feed.senderUsername")]
+                                        | #[span(v-text="feed.details.worldName")]
+                            div(v-else class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
+                                .detail
+                                    span.extra
+                                        span.time {{ feed.created_at | formatDate('HH:MI') }}
+                                        | test: #[span(v-text="feed.type")]
                     template(v-else)
                         template(v-for="feed in feeds")
                             .x-friend-item(v-if="feed.type === 'GPS'" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
@@ -104,6 +115,12 @@ html
                                         | #[span(style="color: red;" v-text="feed.data.playerYeet")]
                                         | #[span.name(v-text="feed.data.playerPlayer")] changed video to
                                         | #[span(v-text="feed.data.videoName")]
+                            div(v-else-if="feed.type === 'invite'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
+                                .detail
+                                    span.extra
+                                        span.time {{ feed.created_at | formatDate('HH:MI') }}
+                                        | #[span.name(v-text="feed.senderUsername")] has invited you to
+                                        | #[span(v-text="feed.details.worldName")]
             .x-container
                 div(style="display:flex;flex-direction:row")
                     template(v-if="devices.length")

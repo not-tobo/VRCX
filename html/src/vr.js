@@ -702,7 +702,13 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         map[feed.displayName] = feed.created_at;
                     }
                 }
-             }
+            }
+            if (feed.type === 'invite') {
+                if (!map[feed.senderUsername] ||
+                    map[feed.senderUsername] < feed.created_at) {
+                    map[feed.senderUsername] = feed.created_at;
+                }
+            }
         });
 
         if (newPlayingobj.videoURL != '') {
@@ -775,7 +781,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             document.getElementById("progress").style.width = percentage + "%";
         }
 
-        if ((this.appType === '2') && (configRepository.getBool('VRCX_VIPNotifications') === true)) {
+        if ((this.appType === '2') && (configRepository.getBool('VRCX_overlayNotifications') === true)) {
 
             // disable notification on busy
             if (this.currentUserStatus === 'busy') {
@@ -800,6 +806,13 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             }
                         }
                     }
+                if (feed.type === 'invite') {
+                    if (!map[feed.senderUsername] ||
+                        map[feed.senderUsername] < feed.created_at) {
+                            map[feed.senderUsername] = feed.created_at;
+                            notys.push(feed);
+                        }
+                }
             });
             var bias = new Date(Date.now() - 60000).toJSON();
             notys.forEach((noty) => {
@@ -831,6 +844,13 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                 type: 'alert',
                                 theme: theme,
                                 text: `<strong>${noty.displayName}</strong> has logged out`
+                            }).show();
+                            break;
+                        case 'invite':
+                            new Noty({
+                                type: 'alert',
+                                theme: theme,
+                                text: `<strong>${noty.senderUsername}</strong> has invited you to ${noty.details.worldName}`
                             }).show();
                             break;
                     }
