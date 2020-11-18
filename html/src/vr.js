@@ -709,6 +709,18 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     map[feed.senderUsername] = feed.created_at;
                 }
             }
+            else if (feed.type === 'requestInvite') {
+                if (!map[feed.senderUsername] ||
+                    map[feed.senderUsername] < feed.created_at) {
+                    map[feed.senderUsername] = feed.created_at;
+                }
+            }
+            else if (feed.type === 'friendRequest') {
+                if (!map[feed.senderUsername] ||
+                    map[feed.senderUsername] < feed.created_at) {
+                    map[feed.senderUsername] = feed.created_at;
+                }
+            }
         });
 
         if (newPlayingobj.videoURL != '') {
@@ -813,6 +825,20 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         notys.push(feed);
                     }
                 }
+                else if (feed.type === 'requestInvite') {
+                    if (!map[feed.senderUsername] ||
+                        map[feed.senderUsername] < feed.created_at) {
+                        map[feed.senderUsername] = feed.created_at;
+                        notys.push(feed);
+                    }
+                }
+                else if (feed.type === 'friendRequest') {
+                    if (!map[feed.senderUsername] ||
+                        map[feed.senderUsername] < feed.created_at) {
+                        map[feed.senderUsername] = feed.created_at;
+                        notys.push(feed);
+                    }
+                }
             });
             var bias = new Date(Date.now() - 60000).toJSON();
             notys.forEach((noty) => {
@@ -851,6 +877,20 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                 type: 'alert',
                                 theme: theme,
                                 text: `<strong>${noty.senderUsername}</strong> has invited you to ${noty.details.worldName}`
+                            }).show();
+                            break;
+                        case 'requestInvite':
+                            new Noty({
+                                type: 'alert',
+                                theme: theme,
+                                text: `<strong>${noty.senderUsername}</strong> has requested an invite`
+                            }).show();
+                            break;
+                        case 'friendRequest':
+                            new Noty({
+                                type: 'alert',
+                                theme: theme,
+                                text: `<strong>${noty.senderUsername}</strong> has sent you a friend request`
                             }).show();
                             break;
                     }
