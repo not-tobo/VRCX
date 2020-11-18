@@ -794,24 +794,24 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     feed.type === 'Offline') {
                         if (!map[feed.displayName] ||
                             map[feed.displayName] < feed.created_at) {
-                                map[feed.displayName] = feed.created_at;
-                                notys.push(feed);
-                            }
+                            map[feed.displayName] = feed.created_at;
+                            notys.push(feed);
+                        }
                     } else if (feed.type === 'OnPlayerJoined' ||
                     feed.type === 'OnPlayerLeft') {
                         if (!map[feed.data] ||
                             map[feed.data] < feed.created_at) {
-                                map[feed.data] = feed.created_at;
-                                notys.push(feed);
-                            }
+                            map[feed.data] = feed.created_at;
+                            notys.push(feed);
                         }
                     }
+                }
                 if (feed.type === 'invite') {
                     if (!map[feed.senderUsername] ||
                         map[feed.senderUsername] < feed.created_at) {
-                            map[feed.senderUsername] = feed.created_at;
-                            notys.push(feed);
-                        }
+                        map[feed.senderUsername] = feed.created_at;
+                        notys.push(feed);
+                    }
                 }
             });
             var bias = new Date(Date.now() - 60000).toJSON();
