@@ -4736,19 +4736,6 @@ import gameLogService from './service/gamelog.js'
         this.$refs.searchTab.currentName = '0';
     };
 
-    $app.methods.getVideoName = function (videoChange) {
-        var playerPlayer = "";
-        if (videoChange.playerPlayer != "") {
-            playerPlayer = " (" + videoChange.playerPlayer + ")";
-        }
-        if (videoChange.videoID != "") {
-            return videoChange.videoID + " : " + videoChange.videoName + playerPlayer;
-        }
-        else {
-            return videoChange.videoURL + playerPlayer;
-        }
-    };
-
     // App: Search
 
     $app.data.searchText = '';

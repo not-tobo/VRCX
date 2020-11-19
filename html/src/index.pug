@@ -168,7 +168,15 @@ html
                     el-table-column(label="Detail" prop="data")
                         template(v-once #default="scope")
                             location(v-if="scope.row.type === 'Location'" :location="scope.row.data")
-                            span.x-link(v-else-if="scope.row.type === 'VideoChange'" @click="openExternalLink(scope.row.data.videoURL)" v-text="getVideoName(scope.row.data)")
+                            template(v-else-if="scope.row.type === 'VideoChange'")
+                                template(v-if="scope.row.data.videoID")
+                                    span(v-text="scope.row.data.videoID")
+                                    |  : 
+                                span.x-link(@click="openExternalLink(scope.row.data.videoURL)" v-text="scope.row.data.videoName")
+                                template(v-if="scope.row.data.playerPlayer")
+                                    |  (
+                                    span.x-link(@click="lookupUser(scope.row.data.playerPlayer)" v-text="scope.row.data.playerPlayer")
+                                    |)
                             span.x-link(v-else-if="scope.row.type !== 'Notification'" v-text="scope.row.data" @click="lookupUser(scope.row.data)")
 
             //- search
