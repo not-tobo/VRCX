@@ -655,9 +655,12 @@ var bar = new ProgressBar.Circle(vroverlay, {
     };
 
     $app.methods.updateSharedFeed = async function () {
-        this.isMinimalFeed = configRepository.getBool('VRCX_minimalFeed');
         // TODO: block mute hideAvatar unfriend
-
+        this.isMinimalFeed = configRepository.getBool('VRCX_minimalFeed');
+        var notificationTimeout = configRepository.getString('VRCX_notificationTimeout');
+        if (notificationTimeout == '' || isNaN(notificationTimeout)) {
+            notificationTimeout = 3000;
+        }
         var theme = 'relax';
         if (configRepository.getBool('isDarkMode') === true) {
             theme = 'sunset';
@@ -749,6 +752,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     new Noty({
                         type: 'alert',
                         theme: theme,
+                        timeout: notificationTimeout,
                         text: newPlayingobj.videoName
                     }).show();
                 }
@@ -826,6 +830,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             new Noty({
                                 type: 'alert',
                                 theme: theme,
+                                timeout: notificationTimeout,
                                 text: `<strong>${noty.data}</strong> has joined`
                             }).show();
                             break;
@@ -833,6 +838,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             new Noty({
                                 type: 'alert',
                                 theme: theme,
+                                timeout: notificationTimeout,
                                 text: `<strong>${noty.data}</strong> has left`
                             }).show();
                             break;
@@ -840,6 +846,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             new Noty({
                                 type: 'alert',
                                 theme: theme,
+                                timeout: notificationTimeout,
                                 text: `<strong>${noty.displayName}</strong> has logged in`
                             }).show();
                             break;
@@ -847,6 +854,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             new Noty({
                                 type: 'alert',
                                 theme: theme,
+                                timeout: notificationTimeout,
                                 text: `<strong>${noty.displayName}</strong> has logged out`
                             }).show();
                             break;
@@ -854,6 +862,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             new Noty({
                                 type: 'alert',
                                 theme: theme,
+                                timeout: notificationTimeout,
                                 text: `<strong>${noty.senderUsername}</strong> has invited you to ${noty.details.worldName}`
                             }).show();
                             break;
@@ -861,6 +870,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             new Noty({
                                 type: 'alert',
                                 theme: theme,
+                                timeout: notificationTimeout,
                                 text: `<strong>${noty.senderUsername}</strong> has requested an invite`
                             }).show();
                             break;
@@ -868,6 +878,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             new Noty({
                                 type: 'alert',
                                 theme: theme,
+                                timeout: notificationTimeout,
                                 text: `<strong>${noty.senderUsername}</strong> has sent you a friend request`
                             }).show();
                             break;
