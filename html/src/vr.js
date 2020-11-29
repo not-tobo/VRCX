@@ -661,9 +661,6 @@ var bar = new ProgressBar.Circle(vroverlay, {
         var notificationOnlineOfflineFilter = configRepository.getString('VRCX_notificationOnlineOfflineFilter');
         var notificationPosition = configRepository.getString('VRCX_notificationPosition');
         var notificationTimeout = configRepository.getString('VRCX_notificationTimeout');
-        if (notificationTimeout == '' || isNaN(notificationTimeout)) {
-            notificationTimeout = 3000;
-        }
         var theme = 'relax';
         if (configRepository.getBool('isDarkMode') === true) {
             theme = 'sunset';
