@@ -657,6 +657,9 @@ var bar = new ProgressBar.Circle(vroverlay, {
     $app.methods.updateSharedFeed = async function () {
         // TODO: block mute hideAvatar unfriend
         this.isMinimalFeed = configRepository.getBool('VRCX_minimalFeed');
+        var notificationJoinLeaveFilter = configRepository.getString('VRCX_notificationJoinLeaveFilter');
+        var notificationOnlineOfflineFilter = configRepository.getString('VRCX_notificationOnlineOfflineFilter');
+        var notificationPosition = configRepository.getString('VRCX_notificationPosition');
         var notificationTimeout = configRepository.getString('VRCX_notificationTimeout');
         if (notificationTimeout == '' || isNaN(notificationTimeout)) {
             notificationTimeout = 3000;
@@ -691,19 +694,17 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 newPlayingobj = feed.data;
                 videoChangeTime = feed.created_at;
             }
-            if (feed.isFavorite) {
-                if (feed.type === 'OnPlayerJoined' ||
+            if (feed.type === 'OnPlayerJoined' ||
                 feed.type === 'OnPlayerLeft') {
-                    if (!map[feed.data] ||
-                        map[feed.data] < feed.created_at) {
-                        map[feed.data] = feed.created_at;
-                    }
-                } else if (feed.type === 'Online' ||
+                if (!map[feed.data] ||
+                    map[feed.data] < feed.created_at) {
+                    map[feed.data] = feed.created_at;
+                }
+            } else if (feed.type === 'Online' ||
                 feed.type === 'Offline') {
-                    if (!map[feed.displayName] ||
-                        map[feed.displayName] < feed.created_at) {
-                        map[feed.displayName] = feed.created_at;
-                    }
+                if (!map[feed.displayName] ||
+                    map[feed.displayName] < feed.created_at) {
+                    map[feed.displayName] = feed.created_at;
                 }
             }
             if (feed.type === 'invite' ||
@@ -753,6 +754,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         type: 'alert',
                         theme: theme,
                         timeout: notificationTimeout,
+                        layout: notificationPosition,
                         text: newPlayingobj.videoName
                     }).show();
                 }
@@ -795,7 +797,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
             }
             var notys = [];
             this.feeds.forEach((feed) => {
-                if (feed.isFavorite) {
+                if (((notificationOnlineOfflineFilter === "Friends") && (feed.isFriend)) ||
+                    ((notificationOnlineOfflineFilter === "VIP") && (feed.isFavorite))) {
                     if (feed.type === 'Online' ||
                     feed.type === 'Offline') {
                         if (!map[feed.displayName] ||
@@ -803,7 +806,12 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             map[feed.displayName] = feed.created_at;
                             notys.push(feed);
                         }
-                    } else if (feed.type === 'OnPlayerJoined' ||
+                    }
+                }
+                if ((notificationJoinLeaveFilter === "Everyone") ||
+                    ((notificationJoinLeaveFilter === "Friends") && (feed.isFriend)) ||
+                    ((notificationJoinLeaveFilter === "VIP") && (feed.isFavorite))) {
+                    if (feed.type === 'OnPlayerJoined' ||
                     feed.type === 'OnPlayerLeft') {
                         if (!map[feed.data] ||
                             map[feed.data] < feed.created_at) {
@@ -831,6 +839,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                 type: 'alert',
                                 theme: theme,
                                 timeout: notificationTimeout,
+                                layout: notificationPosition,
                                 text: `<strong>${noty.data}</strong> has joined`
                             }).show();
                             break;
@@ -839,6 +848,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                 type: 'alert',
                                 theme: theme,
                                 timeout: notificationTimeout,
+                                layout: notificationPosition,
                                 text: `<strong>${noty.data}</strong> has left`
                             }).show();
                             break;
@@ -847,6 +857,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                 type: 'alert',
                                 theme: theme,
                                 timeout: notificationTimeout,
+                                layout: notificationPosition,
                                 text: `<strong>${noty.displayName}</strong> has logged in`
                             }).show();
                             break;
@@ -855,6 +866,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                 type: 'alert',
                                 theme: theme,
                                 timeout: notificationTimeout,
+                                layout: notificationPosition,
                                 text: `<strong>${noty.displayName}</strong> has logged out`
                             }).show();
                             break;
@@ -863,6 +875,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                 type: 'alert',
                                 theme: theme,
                                 timeout: notificationTimeout,
+                                layout: notificationPosition,
                                 text: `<strong>${noty.senderUsername}</strong> has invited you to ${noty.details.worldName}`
                             }).show();
                             break;
@@ -871,6 +884,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                 type: 'alert',
                                 theme: theme,
                                 timeout: notificationTimeout,
+                                layout: notificationPosition,
                                 text: `<strong>${noty.senderUsername}</strong> has requested an invite`
                             }).show();
                             break;
@@ -879,6 +893,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                 type: 'alert',
                                 theme: theme,
                                 timeout: notificationTimeout,
+                                layout: notificationPosition,
                                 text: `<strong>${noty.senderUsername}</strong> has sent you a friend request`
                             }).show();
                             break;
