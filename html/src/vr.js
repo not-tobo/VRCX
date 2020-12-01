@@ -703,8 +703,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     map[feed.displayName] < feed.created_at) {
                     map[feed.displayName] = feed.created_at;
                 }
-            }
-            if (feed.type === 'invite' ||
+            } else if (feed.type === 'invite' ||
                 feed.type === 'requestInvite' ||
                 feed.type === 'friendRequest') {
                 if (!map[feed.senderUsername] ||
@@ -804,8 +803,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             notys.push(feed);
                         }
                     }
-                }
-                if ((notificationJoinLeaveFilter === "Everyone") ||
+                } else if ((notificationJoinLeaveFilter === "Everyone") ||
                     ((notificationJoinLeaveFilter === "Friends") && (feed.isFriend)) ||
                     ((notificationJoinLeaveFilter === "VIP") && (feed.isFavorite))) {
                     if (feed.type === 'OnPlayerJoined' ||
@@ -816,8 +814,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             notys.push(feed);
                         }
                     }
-                }
-                if (feed.type === 'invite' ||
+                } else if (feed.type === 'invite' ||
                     feed.type === 'requestInvite' ||
                     feed.type === 'friendRequest') {
                     if (!map[feed.senderUsername] ||
