@@ -728,7 +728,7 @@ html
                                         template(#default v-if="userDialog.instance.occupants") ({{ userDialog.instance.occupants }})
                                     launch(:location="userDialog.ref.location" style="margin-left:5px")
                                     invite-yourself(:location="userDialog.ref.location" style="margin-left:5px")
-                                    el-button(@click="copyUrl(userDialog.ref.location)" size="mini" icon="el-icon-link" style="margin-left:5px" circle)
+                                    el-button(v-if="copyUrlInstanceCheck(userDialog.ref.location)" @click="copyUrl(userDialog.ref.location)" size="mini" icon="el-icon-link" style="margin-left:5px" circle)
                                 .x-friend-list(style="flex:1;margin-top:10px")
                                     .x-friend-item(v-if="userDialog.$location.userId" @click="showUserDialog(userDialog.$location.userId)")
                                         template(v-if="userDialog.$location.user")
@@ -853,7 +853,7 @@ html
                                     span.x-link(@click="showLaunchDialog(room.$location.tag)").
                                         \#{{ room.$location.instanceName }} {{ room.$location.accessType }} #[template(v-if="room.occupants") ({{ room.occupants }})]
                                     invite-yourself(:location="room.$location.tag" style="margin-left:5px")
-                                    el-button(@click="copyUrl(room.$location.tag)" size="mini" icon="el-icon-link" style="margin-left:5px" circle)
+                                    el-button(v-if="copyUrlInstanceCheck(room.$location.tag)" @click="copyUrl(room.$location.tag)" size="mini" icon="el-icon-link" style="margin-left:5px" circle)
                                 .x-friend-list(style="margin:10px 0" v-if="room.$location.userId || room.users.length")
                                     .x-friend-item(v-if="room.$location.userId" @click="showUserDialog(room.$location.userId)")
                                         template(v-if="room.$location.user")

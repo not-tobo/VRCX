@@ -7544,6 +7544,16 @@ import gameLogService from './service/gamelog.js'
         }).show();
     };
 
+    $app.methods.copyUrlInstanceCheck = function (URL) {
+        var L = API.parseLocation(URL);
+        if (L.isOffline ||
+            L.isPrivate ||
+            L.worldId === '') {
+            return false;
+        }
+        return true;
+    }
+
     $app = new Vue($app);
     window.$app = $app;
 })();
