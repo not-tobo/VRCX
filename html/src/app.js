@@ -4735,14 +4735,16 @@ import gameLogService from './service/gamelog.js'
             }
         }
         this.searchText = name;
-        this.$refs.searchTab.currentName = '0';
-        await this.search();
-        for (var ref of API.cachedUsers.values()) {
+        await this.searchUser();
+        for (var ref of this.searchUserResults) {
             if (ref.displayName === name) {
+                this.searchText = '';
+                this.clearSearch();
                 this.showUserDialog(ref.id);
                 return;
             }
         }
+        this.$refs.searchTab.currentName = '0';
         this.$refs.menu.activeIndex = 'search';
     };
 
@@ -4780,8 +4782,8 @@ import gameLogService from './service/gamelog.js'
         this.searchAvatarResults = [];
     };
 
-    $app.methods.search = async function () {
-        await this.searchUser();
+    $app.methods.search = function () {
+        this.searchUser();
         this.searchWorld({});
     };
 
