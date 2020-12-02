@@ -4725,7 +4725,7 @@ import gameLogService from './service/gamelog.js'
         Discord.SetActive(this.discordActive);
     };
 
-    $app.methods.lookupUser = function (name) {
+    $app.methods.lookupUser = async function (name) {
         for (var ref of API.cachedUsers.values()) {
             if (ref.displayName === name) {
                 this.showUserDialog(ref.id);
@@ -4733,9 +4733,15 @@ import gameLogService from './service/gamelog.js'
             }
         }
         this.searchText = name;
-        this.search();
-        this.$refs.menu.activeIndex = 'search';
         this.$refs.searchTab.currentName = '0';
+        await this.search();
+        for (var ref of API.cachedUsers.values()) {
+            if (ref.displayName === name) {
+                this.showUserDialog(ref.id);
+                return;
+            }
+        }
+        this.$refs.menu.activeIndex = 'search';
     };
 
     // App: Search
@@ -4772,21 +4778,21 @@ import gameLogService from './service/gamelog.js'
         this.searchAvatarResults = [];
     };
 
-    $app.methods.search = function () {
-        this.searchUser();
+    $app.methods.search = async function () {
+        await this.searchUser();
         this.searchWorld({});
     };
 
-    $app.methods.searchUser = function () {
+    $app.methods.searchUser = async function () {
         this.searchUserParams = {
             n: 10,
             offset: 0,
             search: this.searchText
         };
-        this.moreSearchUser();
+        await this.moreSearchUser();
     };
 
-    $app.methods.moreSearchUser = function (go) {
+    $app.methods.moreSearchUser = async function (go) {
         var params = this.searchUserParams;
         if (go) {
             params.offset += params.n * go;
@@ -4795,7 +4801,7 @@ import gameLogService from './service/gamelog.js'
             }
         }
         this.isSearchUserLoading = true;
-        API.getUsers(params).finally(() => {
+        await API.getUsers(params).finally(() => {
             this.isSearchUserLoading = false;
         }).then((args) => {
             var map = new Map();
