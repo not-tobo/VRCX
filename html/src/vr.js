@@ -28,7 +28,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
         'AppApi',
         'WebApi',
         'SharedVariable',
-        'SQLite'
+        'SQLite',
+        'Discord'
     );
 
     await configRepository.init();
@@ -720,7 +721,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             var videoStartTime = videoLength + Date.parse(videoChangeTime) / 1000;
             var videoProgress = Math.floor((videoStartTime - currentTime) * 100) / 100;
             if ((Date.parse(videoChangeTime) / 1000) < (Date.parse(this.worldJoinTime) / 1000)) {
-                videoProgress = 0;
+                videoProgress = -10;
             }
             if (videoProgress > 0) {
                 function sec2time(timeInSeconds) {
@@ -740,6 +741,10 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 newPlayingobj.videoURL = '';
                 newPlayingobj.videoName = '';
                 newPlayingobj.videoVolume = '';
+            }
+            if (videoProgress <= -10) {
+                Discord.SetActive(false);
+                Discord.SetText('', '');
             }
         }
         if (this.nowPlayingobj.videoURL !== newPlayingobj.videoURL)  {
@@ -771,6 +776,10 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     }
                     AppApi.ChangeVolume(mixerVolumeFloat);
                 }
+                Discord.SetText(newPlayingobj.videoName, '');
+                Discord.SetAssets("pypy", "PyPyDance", "ayaya", "AYAYA Clap");
+                Discord.SetTimestamps(Date.now(), Date.parse(videoChangeTime) + Number(videoLength) * 1000);
+                Discord.SetActive(configRepository.getBool('discordActive'));
             }
         }
         if (this.appType === '2') {

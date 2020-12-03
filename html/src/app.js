@@ -3402,7 +3402,7 @@ import gameLogService from './service/gamelog.js'
                         Discord.SetTimestamps(Date.now(), 0);
                     }
                     this.isGameNoVR = isGameNoVR;
-                    this.updateDiscord();
+                    //this.updateDiscord();
                     this.updateOpenVR();
                 });
             }
