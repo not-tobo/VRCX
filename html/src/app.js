@@ -7557,6 +7557,38 @@ import gameLogService from './service/gamelog.js'
         return true;
     }
 
+    $app.methods.lastLogin = function (lastLoginTime) {
+        var lastLoginSeconds = (Date.now() - Date.parse(lastLoginTime)) / 1000;
+        var seconds = Math.floor(Number(lastLoginSeconds));
+        var days = Math.floor(seconds / (24*60*60));
+        seconds -= Math.floor(days    * (24*60*60));
+        var hours    = Math.floor(seconds / (60*60));
+        seconds -= Math.floor(hours   * (60*60));
+        var minutes  = Math.floor(seconds / (60));
+        seconds -= Math.floor(minutes * (60));
+        var dDisplay = days > 0 ? days + (days == 1 ? ' day' : ' days') : '';
+        var hDisplay = hours > 0 ? hours + (hours == 1 ? ' hour' : ' hours') : '';
+        var mDisplay = minutes > 0 ? minutes + (minutes == 1 ? ' minute' : ' minutes') : '';
+        var sDisplay = seconds > 0 ? seconds + (seconds == 1 ? ' second' : ' seconds') : '';
+        var output = '';
+        if (lastLoginSeconds < 60) {
+            output = sDisplay;
+        }
+        else if (lastLoginSeconds >= 60 && lastLoginSeconds < 3600) {
+            output = mDisplay;
+        }
+        else if (lastLoginSeconds >= 3600 && lastLoginSeconds < 86400) {
+            output = hDisplay + ', ' + mDisplay;
+        }
+        else if (lastLoginSeconds >= 86400 && lastLoginSeconds !== Infinity) {
+            output = dDisplay + ', ' + hDisplay;
+        }
+        else if (lastLoginSeconds >= 172800 && lastLoginSeconds !== Infinity) {
+            output = dDisplay;
+        }
+        return output;
+    }
+
     $app = new Vue($app);
     window.$app = $app;
 })();

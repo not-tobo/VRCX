@@ -781,8 +781,9 @@ html
                                         span.extra(v-else style="color:#F56C6C") Deny
                                 .x-friend-item
                                     .detail
-                                        span.name Last Login
-                                        span.extra {{ userDialog.ref.last_login | formatDate('YYYY-MM-DD HH24:MI:SS') || '-' }}
+                                        span.name(v-if="userDialog.ref.state === 'online'") Online For
+                                        span.name(v-else) Last Login
+                                        span.extra(v-text="lastLogin(userDialog.ref.last_login)")
                                 .x-friend-item
                                     .detail
                                         span.name Last Platform
