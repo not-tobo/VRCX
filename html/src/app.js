@@ -4576,6 +4576,7 @@ import gameLogService from './service/gamelog.js'
 
             switch (gameLog.type) {
                 case 'location':
+                    this.lastLocation = gameLog.location;
                     tableData = {
                         created_at: gameLog.dt,
                         type: 'Location',
