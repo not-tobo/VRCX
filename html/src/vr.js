@@ -750,14 +750,22 @@ var bar = new ProgressBar.Circle(vroverlay, {
         if (this.nowPlayingobj.videoURL !== newPlayingobj.videoURL)  {
             this.nowPlayingobj = newPlayingobj;
             if (this.appType === '2') {
-                if ((configRepository.getBool('VRCX_videoNotification') == true) && (this.nowPlayingobj.videoURL != '')) {
-                    new Noty({
-                        type: 'alert',
-                        theme: theme,
-                        timeout: notificationTimeout,
-                        layout: notificationPosition,
-                        text: newPlayingobj.videoName
-                    }).show();
+                if (this.nowPlayingobj.videoURL != '') {
+                    if (configRepository.getBool('VRCX_videoNotification')) {
+                        new Noty({
+                            type: 'alert',
+                            theme: theme,
+                            timeout: notificationTimeout,
+                            layout: notificationPosition,
+                            text: newPlayingobj.videoName
+                        }).show();
+                    }
+                    if (configRepository.getBool('discordActive')) {
+                        Discord.SetText(newPlayingobj.videoName, '');
+                        Discord.SetAssets("pypy", "PyPyDance", "ayaya", "AYAYA Clap");
+                        Discord.SetTimestamps(Date.now(), Date.parse(videoChangeTime) + Number(videoLength) * 1000);
+                        Discord.SetActive(true);
+                    }
                 }
                 if (configRepository.getBool('VRCX_volumeNormalize') == true) {
                     if (newPlayingobj.videoVolume != "") {
@@ -776,10 +784,6 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     }
                     AppApi.ChangeVolume(mixerVolumeFloat);
                 }
-                Discord.SetText(newPlayingobj.videoName, '');
-                Discord.SetAssets("pypy", "PyPyDance", "ayaya", "AYAYA Clap");
-                Discord.SetTimestamps(Date.now(), Date.parse(videoChangeTime) + Number(videoLength) * 1000);
-                Discord.SetActive(configRepository.getBool('discordActive'));
             }
         }
         if (this.appType === '2') {

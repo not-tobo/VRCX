@@ -3399,7 +3399,7 @@ import gameLogService from './service/gamelog.js'
                 AppApi.CheckGameRunning().then(([isGameRunning, isGameNoVR]) => {
                     if (isGameRunning !== this.isGameRunning) {
                         this.isGameRunning = isGameRunning;
-                        Discord.SetTimestamps(Date.now(), 0);
+                        //Discord.SetTimestamps(Date.now(), 0);
                     }
                     this.isGameNoVR = isGameNoVR;
                     //this.updateDiscord();
