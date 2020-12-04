@@ -721,7 +721,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             var videoStartTime = videoLength + Date.parse(videoChangeTime) / 1000;
             var videoProgress = Math.floor((videoStartTime - currentTime) * 100) / 100;
             if ((Date.parse(videoChangeTime) / 1000) < (Date.parse(this.worldJoinTime) / 1000)) {
-                videoProgress = -10;
+                videoProgress = -60;
             }
             if (videoProgress > 0) {
                 function sec2time(timeInSeconds) {
@@ -742,7 +742,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 newPlayingobj.videoName = '';
                 newPlayingobj.videoVolume = '';
             }
-            if (videoProgress <= -10) {
+            if (videoProgress <= -60) {
                 Discord.SetActive(false);
                 Discord.SetText('', '');
             }
@@ -761,8 +761,10 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         }).show();
                     }
                     if (configRepository.getBool('discordActive')) {
-                        Discord.SetText(newPlayingobj.videoName, '');
-                        Discord.SetAssets("pypy", "PyPyDance", "ayaya", "AYAYA Clap");
+                        var requestedBy = '';
+                        if (newPlayingobj.playerPlayer !== '') { requestedBy = 'Requested by: ' + newPlayingobj.playerPlayer; }
+                        Discord.SetText('Video: ' + newPlayingobj.videoName, requestedBy);
+                        Discord.SetAssets('pypy', 'https://github.com/Natsumi-sama/VRCX', 'ayaya', 'Instance time: ' + sharedRepository.getString('current_user_instance_time'));
                         Discord.SetTimestamps(Date.now(), Date.parse(videoChangeTime) + Number(videoLength) * 1000);
                         Discord.SetActive(true);
                     }

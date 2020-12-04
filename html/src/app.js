@@ -1089,6 +1089,11 @@ import gameLogService from './service/gamelog.js'
                 ref
             });
         }
+
+        var U = API.cachedUsers.get(API.currentUser.id);
+        if ((typeof U != "undefined") && (U.hasOwnProperty('$location_at'))) {
+            sharedRepository.setString('current_user_instance_time', $app.lastLogin(U.$location_at));
+        }
         sharedRepository.setString('current_user_status', ref.status);
         return ref;
     };
@@ -7559,7 +7564,7 @@ import gameLogService from './service/gamelog.js'
     }
 
     $app.methods.lastLogin = function (lastLoginTime) {
-        var lastLoginSeconds = (Date.now() - Date.parse(lastLoginTime)) / 1000;
+        var lastLoginSeconds = (Date.now() - lastLoginTime) / 1000;
         var seconds = Math.floor(Number(lastLoginSeconds));
         var days = Math.floor(seconds / (24*60*60));
         seconds -= Math.floor(days    * (24*60*60));
