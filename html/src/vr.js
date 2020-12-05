@@ -658,10 +658,10 @@ var bar = new ProgressBar.Circle(vroverlay, {
     $app.methods.updateSharedFeed = async function () {
         // TODO: block mute hideAvatar unfriend
         this.isMinimalFeed = configRepository.getBool('VRCX_minimalFeed');
-        var notificationJoinLeaveFilter = configRepository.getString('VRCX_notificationJoinLeaveFilter');
-        var notificationOnlineOfflineFilter = configRepository.getString('VRCX_notificationOnlineOfflineFilter');
         var notificationPosition = configRepository.getString('VRCX_notificationPosition');
         var notificationTimeout = configRepository.getString('VRCX_notificationTimeout');
+        var notificationJoinLeaveFilter = configRepository.getString('VRCX_notificationJoinLeaveFilter');
+        var notificationOnlineOfflineFilter = configRepository.getString('VRCX_notificationOnlineOfflineFilter');
         var theme = 'relax';
         if (configRepository.getBool('isDarkMode') === true) {
             theme = 'sunset';

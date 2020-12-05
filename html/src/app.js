@@ -1041,6 +1041,7 @@ import gameLogService from './service/gamelog.js'
             if (ref.homeLocation !== ref.$homeLocation.tag) {
                 ref.$homeLocation = this.parseLocation(ref.homeLocation);
             }
+            ref.$isVRCPlus = ref.tags.includes('system_supporter');
             this.applyUserTrustLevel(ref);
             this.applyUserLanguage(ref);
         } else {
@@ -1048,6 +1049,7 @@ import gameLogService from './service/gamelog.js'
                 id: '',
                 username: '',
                 displayName: '',
+                userIcon: '',
                 bio: '',
                 bioLinks: [],
                 pastDisplayNames: [],
@@ -1065,12 +1067,12 @@ import gameLogService from './service/gamelog.js'
                 last_login: '',
                 last_platform: '',
                 allowAvatarCopying: false,
-                friendKey: '',
                 onlineFriends: [],
                 activeFriends: [],
                 offlineFriends: [],
                 // VRCX
                 $homeLocation: {},
+                $isVRCPlus: false,
                 $isModerator: false,
                 $isTroll: false,
                 $trustLevel: 'Visitor',
@@ -1080,6 +1082,7 @@ import gameLogService from './service/gamelog.js'
                 ...json
             };
             ref.$homeLocation = this.parseLocation(ref.homeLocation);
+            ref.$isVRCPlus = ref.tags.includes('system_supporter');
             this.applyUserTrustLevel(ref);
             this.applyUserLanguage(ref);
             this.currentUser = ref;
@@ -1134,7 +1137,7 @@ import gameLogService from './service/gamelog.js'
 
     API.applyUser = function (json) {
         var ref = this.cachedUsers.get(json.id);
-        // adjust some missing variables
+        // some missing variables on currentUser
         if (json.id === API.currentUser.id) {
             json.status = API.currentUser.status;
             json.statusDescription = API.currentUser.statusDescription;
@@ -1147,6 +1150,7 @@ import gameLogService from './service/gamelog.js'
                 id: '',
                 username: '',
                 displayName: '',
+                userIcon: '',
                 bio: '',
                 bioLinks: [],
                 currentAvatarImageUrl: '',
@@ -1160,13 +1164,13 @@ import gameLogService from './service/gamelog.js'
                 last_platform: '',
                 allowAvatarCopying: false,
                 isFriend: false,
-                friendKey: '',
                 location: '',
                 worldId: '',
                 instanceId: '',
                 // VRCX
                 $location: {},
                 $location_at: Date.now(),
+                $isVRCPlus: false,
                 $isModerator: false,
                 $isTroll: false,
                 $trustLevel: 'Visitor',
@@ -1176,6 +1180,7 @@ import gameLogService from './service/gamelog.js'
                 ...json
             };
             ref.$location = this.parseLocation(ref.location);
+            ref.$isVRCPlus = ref.tags.includes('system_supporter');
             this.applyUserTrustLevel(ref);
             this.applyUserLanguage(ref);
             this.cachedUsers.set(ref.id, ref);
@@ -1191,6 +1196,7 @@ import gameLogService from './service/gamelog.js'
             if (ref.location !== ref.$location.tag) {
                 ref.$location = this.parseLocation(ref.location);
             }
+            ref.$isVRCPlus = ref.tags.includes('system_supporter');
             this.applyUserTrustLevel(ref);
             this.applyUserLanguage(ref);
             for (var prop in ref) {
@@ -2622,7 +2628,17 @@ import gameLogService from './service/gamelog.js'
                 count: 0
             });
         }
-        // 16 = ['avatars1'] x 16
+        // 100 = ['avatars1'] x 25
+        // Favorite Avatars (0/25)
+        // VRC+ Group 1 (0/25)
+        // VRC+ Group 2 (0/25)
+        // VRC+ Group 3 (0/25)
+        var avatarGroupNames = [
+            'Favorite Avatars',
+            'VRC+ Group 1',
+            'VRC+ Group 2',
+            'VRC+ Group 3',
+        ];
         this.favoriteAvatarGroups = [];
         for (var i = 0; i < 4; ++i) {
             this.favoriteAvatarGroups.push({
@@ -2630,7 +2646,7 @@ import gameLogService from './service/gamelog.js'
                 key: `avatar:avatars${i + 1}`,
                 type: 'avatar',
                 name: `avatars${i + 1}`,
-                displayName: `Group ${i + 1}`,
+                displayName: avatarGroupNames[i],
                 capacity: 25,
                 count: 0
             });
@@ -2654,7 +2670,9 @@ import gameLogService from './service/gamelog.js'
                 if (group.assign === false &&
                     group.name === ref.name) {
                     group.assign = true;
-                    group.displayName = ref.displayName;
+                    if (ref.type !== 'avatar') {
+                        group.displayName = ref.displayName;
+                    }
                     ref.$groupRef = group;
                     assigns.add(ref.id);
                     break;
@@ -2681,7 +2699,9 @@ import gameLogService from './service/gamelog.js'
                     group.assign = true;
                     group.key = `${group.type}:${ref.name}`;
                     group.name = ref.name;
-                    group.displayName = ref.displayName;
+                    if (ref.type !== 'avatar') {
+                        group.displayName = ref.displayName;
+                    }
                     ref.$groupRef = group;
                     assigns.add(ref.id);
                     break;
@@ -3149,7 +3169,6 @@ import gameLogService from './service/gamelog.js'
                 try {
                     var json = JSON.parse(data);
                     json.content = JSON.parse(json.content);
-                    console.log('WebSocket', json);
                     this.$emit('PIPELINE', {
                         json
                     });
