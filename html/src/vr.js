@@ -583,6 +583,12 @@ var bar = new ProgressBar.Circle(vroverlay, {
             currentUserStatus: null,
             cpuUsage: 0,
             nowPlayingobj: {},
+            newPlayingobj: {
+                videoURL: '',
+                videoName: '',
+                videoVolume: '',
+                videoChangeTime: ''
+            },
             worldJoinTime: '',
             feeds: [],
             devices: [],
@@ -676,21 +682,18 @@ var bar = new ProgressBar.Circle(vroverlay, {
         this.feeds = feeds;
 
         var map = {};
-        var newPlayingobj = {};
-        newPlayingobj.videoURL = '';
-        newPlayingobj.videoName = '';
-        newPlayingobj.videoVolume = '';
         this.nowPlayingobj.videoProgressText = '';
         var locationChange = false;
-        var videoChangeTime = '';
+        var videoChange = false;
         _feeds.forEach((feed) => {
             if ((feed.type === "Location") && (locationChange === false)) {
                 locationChange = true;
                 this.worldJoinTime = feed.created_at;
             }
-            else if ((feed.type === "VideoChange") && (newPlayingobj.videoURL === '')) {
-                newPlayingobj = feed.data;
-                videoChangeTime = feed.created_at;
+            else if ((feed.type === "VideoChange") && (videoChange === false)) {
+                videoChange = true
+                this.newPlayingobj = feed.data;
+                this.newPlayingobj.videoChangeTime = feed.created_at;
             }
             if (feed.type === 'OnPlayerJoined' ||
                 feed.type === 'OnPlayerLeft') {
@@ -714,13 +717,13 @@ var bar = new ProgressBar.Circle(vroverlay, {
             }
         });
 
-        if (newPlayingobj.videoURL != '') {
+        if (this.newPlayingobj.videoURL != '') {
             var percentage = 0;
-            var videoLength = Number(newPlayingobj.videoLength) + 9; //9 magic number
+            var videoLength = Number(this.newPlayingobj.videoLength) + 9; //9 magic number
             var currentTime = Date.now() / 1000;
-            var videoStartTime = videoLength + Date.parse(videoChangeTime) / 1000;
+            var videoStartTime = videoLength + Date.parse(this.newPlayingobj.videoChangeTime) / 1000;
             var videoProgress = Math.floor((videoStartTime - currentTime) * 100) / 100;
-            if ((Date.parse(videoChangeTime) / 1000) < (Date.parse(this.worldJoinTime) / 1000)) {
+            if ((Date.parse(this.newPlayingobj.videoChangeTime) / 1000) < (Date.parse(this.worldJoinTime) / 1000)) {
                 videoProgress = -60;
             }
             if (videoProgress > 0) {
@@ -738,17 +741,18 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 percentage = Math.floor((((videoLength - videoProgress) * 100) / videoLength) * 100) / 100;
             }
             else {
-                newPlayingobj.videoURL = '';
-                newPlayingobj.videoName = '';
-                newPlayingobj.videoVolume = '';
+                this.newPlayingobj.videoURL = '';
+                this.newPlayingobj.videoName = '';
+                this.newPlayingobj.videoVolume = '';
             }
             if (videoProgress <= -60) {
+                this.newPlayingobj = {};
                 Discord.SetActive(false);
                 Discord.SetText('', '');
             }
         }
-        if (this.nowPlayingobj.videoURL !== newPlayingobj.videoURL)  {
-            this.nowPlayingobj = newPlayingobj;
+        if (this.nowPlayingobj.videoURL !== this.newPlayingobj.videoURL)  {
+            this.nowPlayingobj = this.newPlayingobj;
             if (this.appType === '2') {
                 if (this.nowPlayingobj.videoURL != '') {
                     if (configRepository.getBool('VRCX_videoNotification')) {
@@ -757,24 +761,24 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             theme: theme,
                             timeout: notificationTimeout,
                             layout: notificationPosition,
-                            text: newPlayingobj.videoName
+                            text: this.newPlayingobj.videoName
                         }).show();
                     }
                     if (configRepository.getBool('discordActive')) {
                         var requestedBy = '';
-                        if (newPlayingobj.playerPlayer !== '') { requestedBy = 'Requested by: ' + newPlayingobj.playerPlayer; }
-                        Discord.SetText('Video: ' + newPlayingobj.videoName, requestedBy);
+                        if (this.newPlayingobj.playerPlayer !== '') { requestedBy = 'Requested by: ' + this.newPlayingobj.playerPlayer; }
+                        Discord.SetText('Video: ' + this.newPlayingobj.videoName, requestedBy);
                         Discord.SetAssets('pypy', 'https://github.com/Natsumi-sama/VRCX', 'ayaya', 'Instance time: ' + sharedRepository.getString('current_user_instance_time'));
-                        Discord.SetTimestamps(Date.now(), Date.parse(videoChangeTime) + Number(videoLength) * 1000);
+                        Discord.SetTimestamps(Date.now(), Date.parse(this.newPlayingobj.videoChangeTime) + Number(videoLength) * 1000);
                         Discord.SetActive(true);
                     }
                 }
                 if (configRepository.getBool('VRCX_volumeNormalize') == true) {
-                    if (newPlayingobj.videoVolume != "") {
+                    if (this.newPlayingobj.videoVolume != "") {
                         var mindB = "-10.0";
                         var maxdB = "-24.0";
                         var minVolume = "30";
-                        var dBpercenatge = ((newPlayingobj.videoVolume - mindB) * 100) / (maxdB - mindB);
+                        var dBpercenatge = ((this.newPlayingobj.videoVolume - mindB) * 100) / (maxdB - mindB);
                         if (dBpercenatge > 100) { dBpercenatge = 100; }
                         else if (dBpercenatge < 0) { dBpercenatge = 0; }
                         var newPercenatge = ((minVolume / 43) * dBpercenatge) + Number(minVolume);
