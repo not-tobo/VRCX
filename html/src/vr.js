@@ -741,12 +741,9 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 percentage = Math.floor((((videoLength - videoProgress) * 100) / videoLength) * 100) / 100;
             }
             else {
-                this.newPlayingobj.videoURL = '';
-                this.newPlayingobj.videoName = '';
-                this.newPlayingobj.videoVolume = '';
+                this.newPlayingobj = {};
             }
             if (videoProgress <= -60) {
-                this.newPlayingobj = {};
                 Discord.SetActive(false);
                 Discord.SetText('', '');
             }
