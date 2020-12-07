@@ -741,7 +741,11 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 percentage = Math.floor((((videoLength - videoProgress) * 100) / videoLength) * 100) / 100;
             }
             else {
-                this.newPlayingobj = {};
+                this.newPlayingobj = {
+                    videoURL: '',
+                    videoName: '',
+                    videoVolume: ''
+                };
             }
             if (videoProgress <= -60) {
                 Discord.SetActive(false);
@@ -771,7 +775,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     }
                 }
                 if (configRepository.getBool('VRCX_volumeNormalize') == true) {
-                    if (this.newPlayingobj.videoVolume != "") {
+                    if (this.newPlayingobj.videoVolume != '') {
                         var mindB = "-10.0";
                         var maxdB = "-24.0";
                         var minVolume = "30";
