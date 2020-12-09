@@ -4662,6 +4662,10 @@ import gameLogService from './service/gamelog.js'
                                 break;
                             }
                         }
+                        if (videoobj.videoID == '') {
+                            var videoID = videoobj.videoURL.substring(23, 34);
+                            await youtubeAPI(videoID);
+                        }
                     }
                     else if ((videoobj.videoURL.substring(0, 29) === "https://www.youtube.com/watch") && (this.youtubeAPI === true)) {
                         var videoParams = videoobj.videoURL.substring(29);
