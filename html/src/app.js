@@ -5676,6 +5676,7 @@ import gameLogService from './service/gamelog.js'
             ]
         }
     };
+    $app.data.VRCPlusIconsTable = {};
     $app.data.visits = 0;
     $app.data.openVR = configRepository.getBool('openVR');
     $app.data.openVRAlways = configRepository.getBool('openVRAlways');
@@ -7617,6 +7618,83 @@ import gameLogService from './service/gamelog.js'
         }
         return output;
     }
+
+    $app.methods.displayVRCPlusIconsTable = function () {
+        var params = {
+            n: 100,
+            tag: 'icon'
+        };
+        API.refreshVRCPlusIconsTableData(params);
+    };
+
+    API.refreshVRCPlusIconsTableData = function (params) {
+        return this.call(`files`, {
+            method: 'GET',
+            params
+        }).then((json) => {
+            var args = {
+                json,
+                params
+            };
+            this.$emit('FILES', args);
+            return args;
+        });
+    };
+
+    API.$on('FILES', function (args) {
+        $app.VRCPlusIconsTable = args.json;
+    });
+
+    $app.methods.setVRCPlusIcon = function (userIcon) {
+        if (userIcon != '') {
+            userIcon = `https://api.vrchat.cloud/api/1/file/${userIcon}/1`;
+        }
+        API.setVRCPlusIcon({
+            userIcon: userIcon
+        }).then((args) => {
+            this.$message({
+                message: 'Icon changed',
+                type: 'success'
+            });
+            return args;
+        });
+    };
+
+    API.setVRCPlusIcon = function (params) {
+        return this.call(`users/${this.currentUser.id}`, {
+            method: 'PUT',
+            params
+        }).then((json) => {
+            var args = {
+                json,
+                params
+            };
+            this.$emit('USER:CURRENT:SAVE', args);
+            return args;
+        });
+    };
+
+    $app.methods.deleteVRCPlusIcon = function (userIcon) {
+        API.deleteVRCPlusIcon(userIcon).then((args) => {
+            this.$message({
+                message: 'Icon deleted',
+                type: 'success'
+            });
+            this.displayVRCPlusIconsTable();
+            return args;
+        });
+    };
+
+    API.deleteVRCPlusIcon = function (userIcon) {
+        return this.call(`file/${userIcon}`, {
+            method: 'DELETE'
+        }).then((json) => {
+            var args = {
+                json
+            };
+            return args;
+        });
+    };
 
     $app = new Vue($app);
     window.$app = $app;
