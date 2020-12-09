@@ -678,12 +678,12 @@ html
                                 el-button(type="text" icon="el-icon-close" size="mini" @click.stop="confirmDeleteFriend(friend.id)" style="margin-left:5px")
 
             //- dialog: user
-            el-dialog.x-dialog.x-user-dialog(ref="userDialog" :visible.sync="userDialog.visible" :show-close="false" width="600px")
+            el-dialog.x-dialog.x-user-dialog(ref="userDialog" :visible.sync="userDialog.visible" :show-close="false" width="720px")
                 div(v-loading="userDialog.loading")
                     div(style="display:flex")
                         el-popover(placement="right" width="500px" trigger="click")
                             img.x-link(slot="reference" v-lazy="userDialog.ref.currentAvatarThumbnailImageUrl" style="flex:none;width:160px;height:120px;border-radius:4px")
-                            img(v-lazy="userDialog.ref.currentAvatarImageUrl" style="width:500px;height:375px")
+                            img(v-lazy="userDialog.ref.currentAvatarImageUrl" style="width:500px;height:375px;margin-right:10px")
                         div(style="flex:1;display:flex;align-items:center;margin-left:15px")
                             div(style="flex:1")
                                 div
