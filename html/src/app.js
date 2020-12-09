@@ -7604,13 +7604,13 @@ import gameLogService from './service/gamelog.js'
         if (lastLoginSeconds < 60) {
             output = sDisplay;
         }
-        else if (lastLoginSeconds >= 60 && lastLoginSeconds < 3600) {
+        else if (lastLoginSeconds >= 60 && lastLoginSeconds < 3660) {
             output = mDisplay;
         }
-        else if (lastLoginSeconds >= 3660 && lastLoginSeconds < 86400) {
+        else if (lastLoginSeconds >= 3660 && lastLoginSeconds < 90000) {
             output = hDisplay + ', ' + mDisplay;
         }
-        else if (lastLoginSeconds >= 90000 && lastLoginSeconds !== Infinity) {
+        else if (lastLoginSeconds >= 90000 && lastLoginSeconds < 172800) {
             output = dDisplay + ', ' + hDisplay;
         }
         else if (lastLoginSeconds >= 172800 && lastLoginSeconds !== Infinity) {
