@@ -6,6 +6,8 @@ Requires `--enable-sdk-log-levels` VRChat launch parameter for logging of user r
 
 **PyPyDance Discord rich presence:**
 
+![image](https://user-images.githubusercontent.com/11171153/101809013-ec83aa00-3b7b-11eb-9167-007825807252.png)
+
 In order to use this you need to disable VRChat's built in [RPC](https://docs.vrchat.com/docs/configuration-file#rich-presence) this can be done wtih `{ "disableRichPresence": true }` inside of `%AppData%\..\LocalLow\VRChat\vrchat\config.json`
 
 **Extra features:**
