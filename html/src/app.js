@@ -5676,7 +5676,6 @@ import gameLogService from './service/gamelog.js'
             ]
         }
     };
-    $app.data.VRCPlusIconsTable = {};
     $app.data.visits = 0;
     $app.data.openVR = configRepository.getBool('openVR');
     $app.data.openVRAlways = configRepository.getBool('openVRAlways');
@@ -7618,6 +7617,10 @@ import gameLogService from './service/gamelog.js'
         }
         return output;
     }
+
+    API.$on('LOGIN', function () {
+        $app.data.VRCPlusIconsTable = [];
+    });
 
     $app.methods.displayVRCPlusIconsTable = function () {
         var params = {
