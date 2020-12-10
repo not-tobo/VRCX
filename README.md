@@ -4,7 +4,7 @@
 
 Requires `--enable-sdk-log-levels` VRChat launch parameter for logging of user requesting video.
 
-**PyPyDnace Discord rich presence:**
+**PyPyDance Discord rich presence:**
 
 In order to use this you need to disable VRChat's built in [RPC](https://docs.vrchat.com/docs/configuration-file#rich-presence) this can be done wtih `{ "disableRichPresence": true }` inside of `%AppData%\..\LocalLow\VRChat\vrchat\config.json`
 
