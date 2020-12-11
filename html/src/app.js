@@ -7620,7 +7620,7 @@ import gameLogService from './service/gamelog.js'
     }
 
     API.$on('LOGIN', function () {
-        $app.data.VRCPlusIconsTable = {};
+        $app.VRCPlusIconsTable = {};
     });
 
     $app.methods.displayVRCPlusIconsTable = function () {
