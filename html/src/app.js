@@ -342,8 +342,7 @@ import gameLogService from './service/gamelog.js'
             ...options
         };
         var { params } = init;
-        var isGetRequest = init.method === 'GET';
-        if (isGetRequest === true) {
+        if (init.method === 'GET') {
             // transform body to url
             if (params === Object(params)) {
                 var url = new URL(init.url);
@@ -358,7 +357,11 @@ import gameLogService from './service/gamelog.js'
             if (req !== undefined) {
                 return req;
             }
-        } else {
+        } else if (init.VRCPlusIcon) {
+            delete init.VRCPlusIcon;
+            console.log(init);
+        }
+        else {
             init.headers = {
                 'Content-Type': 'application/json;charset=utf-8',
                 ...init.headers
@@ -406,7 +409,7 @@ import gameLogService from './service/gamelog.js'
             this.$throw(status, data);
             return data;
         });
-        if (isGetRequest === true) {
+        if (init.method === 'GET') {
             req.finally(() => {
                 this.pendingGetRequests.delete(init.url);
             });
@@ -7695,6 +7698,47 @@ import gameLogService from './service/gamelog.js'
         }).then((json) => {
             var args = {
                 json
+            };
+            return args;
+        });
+    };
+
+    // requres decoding base64 body on C# side
+    $app.methods.onFileChangeVRCPlusIcon = function (e) {
+        var files = e.target.files || e.dataTransfer.files;
+        if (!files.length) {
+            return;
+        }
+        var r = new FileReader();
+        r.onload = function() {
+            var bodyStart = '---------------------------26696829785232761561272838397\nContent-Disposition: form-data; name="file"; filename="blob"\nContent-Type: image/png\n\n';
+            var bodyEnd = '\n---------------------------26696829785232761561272838397--\n';
+            var body = bodyStart + r.result + bodyEnd
+            var base64Body = btoa(body);
+            API.uploadVRCPlusIcon(base64Body
+            ).then((args) => {
+                this.$message({
+                    message: 'Icon uploaded',
+                    type: 'success'
+                });
+                return args;
+            });
+        };
+        r.readAsBinaryString(files[0]);
+    };
+
+    API.uploadVRCPlusIcon = function (params) {
+        return this.call('icon', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'multipart/form-data; boundary=-------------------------26696829785232761561272838397'
+            },
+            VRCPlusIcon: true,
+            body: params
+        }).then((json) => {
+            var args = {
+                json,
+                params
             };
             return args;
         });
