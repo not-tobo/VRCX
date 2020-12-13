@@ -1171,6 +1171,8 @@ import gameLogService from './service/gamelog.js'
                 // VRCX
                 $location: {},
                 $location_at: Date.now(),
+                $online_for: Date.now(),
+                $offline_for: '',
                 $isVRCPlus: false,
                 $isModerator: false,
                 $isTroll: false,
@@ -4071,7 +4073,24 @@ import gameLogService from './service/gamelog.js'
                 this.friendsGroup3_.push(ctx);
                 this.friendsGroupD_.unshift(ctx);
             }
+            if (ctx.ref !== undefined) {
+                console.log(ctx.name + ' ' + ctx.state + ' ref: ' + ctx.ref.state);
+                if ((ctx.ref.$offline_for == '') &&
+                    ((ctx.state == 'offline') && ctx.ref.state == '') ||
+                    (((ctx.state == 'offline') || (ctx.state == 'active')) &&
+                    ((ctx.ref.state != 'offline') && (ctx.ref.state != 'active') && (ctx.ref.state != '')))) {
+                    ctx.ref.$online_for = '';
+                    ctx.ref.$offline_for = Date.now();
+                    console.log('^update offline^');
+                }
+                if ((ctx.ref.$online_for == '') && (ctx.state == 'online')) {
+                    ctx.ref.$online_for = Date.now();
+                    ctx.ref.$offline_for = '';
+                    console.log('^update online^');
+                }
+            }
         }
+
     };
 
     // ascending
@@ -7586,38 +7605,6 @@ import gameLogService from './service/gamelog.js'
             return false;
         }
         return true;
-    }
-
-    $app.methods.lastLogin = function (lastLoginTime) {
-        var lastLoginSeconds = (Date.now() - lastLoginTime) / 1000;
-        var seconds = Math.floor(Number(lastLoginSeconds));
-        var days = Math.floor(seconds / (24*60*60));
-        seconds -= Math.floor(days    * (24*60*60));
-        var hours    = Math.floor(seconds / (60*60));
-        seconds -= Math.floor(hours   * (60*60));
-        var minutes  = Math.floor(seconds / (60));
-        seconds -= Math.floor(minutes * (60));
-        var dDisplay = days > 0 ? days + (days == 1 ? ' day' : ' days') : '';
-        var hDisplay = hours > 0 ? hours + (hours == 1 ? ' hour' : ' hours') : '';
-        var mDisplay = minutes > 0 ? minutes + (minutes == 1 ? ' minute' : ' minutes') : '';
-        var sDisplay = seconds > 0 ? seconds + (seconds == 1 ? ' second' : ' seconds') : '';
-        var output = '';
-        if (lastLoginSeconds < 60) {
-            output = sDisplay;
-        }
-        else if (lastLoginSeconds >= 60 && lastLoginSeconds < 3660) {
-            output = mDisplay;
-        }
-        else if (lastLoginSeconds >= 3660 && lastLoginSeconds < 90000) {
-            output = hDisplay + ', ' + mDisplay;
-        }
-        else if (lastLoginSeconds >= 90000 && lastLoginSeconds < 172800) {
-            output = dDisplay + ', ' + hDisplay;
-        }
-        else if (lastLoginSeconds >= 172800 && lastLoginSeconds !== Infinity) {
-            output = dDisplay;
-        }
-        return output;
     }
 
     API.$on('LOGIN', function () {
