@@ -3316,7 +3316,7 @@ import gameLogService from './service/gamelog.js'
             nextRefresh: 0,
             isGameRunning: false,
             isGameNoVR: false,
-            appVersion: 'VRCX 2020.12.13',
+            appVersion: 'VRCX.PyPyDance.Companion.v1.4 (2020-12-10 14:44:58)',
             latestAppVersion: '',
             ossDialog: false,
             exportFriendsListDialog: false,
@@ -3372,7 +3372,7 @@ import gameLogService from './service/gamelog.js'
 
     $app.methods.checkAppVersion = async function () {
         var response = await webApiService.execute({
-            url: 'https://api.github.com/repos/pypy-vrc/VRCX/releases/latest',
+            url: 'https://api.github.com/repos/natsumi-sama/VRCX/releases/latest',
             method: 'GET',
             headers: {
                 'User-Agent': 'VRCX'
@@ -3389,7 +3389,7 @@ import gameLogService from './service/gamelog.js'
                     text: `Update available!!<br>${this.latestAppVersion}`,
                     timeout: 60000,
                     callbacks: {
-                        onClick: () => AppApi.OpenLink('https://github.com/pypy-vrc/VRCX/releases')
+                        onClick: () => AppApi.OpenLink('https://github.com/natsumi-sama/VRCX/releases')
                     }
                 }).show();
                 this.notifyMenu('more');
