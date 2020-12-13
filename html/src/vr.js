@@ -769,7 +769,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         var requestedBy = '';
                         if (this.newPlayingobj.playerPlayer !== '') { requestedBy = 'Requested by: ' + this.newPlayingobj.playerPlayer; }
                         Discord.SetText('Video: ' + this.newPlayingobj.videoName, requestedBy);
-                        Discord.SetAssets('pypy', 'https://github.com/Natsumi-sama/VRCX', 'ayaya', 'Instance time: ' + sharedRepository.getString('current_user_instance_time'));
+                        Discord.SetAssets('pypy', 'https://github.com/Natsumi-sama/VRCX', 'ayaya', 'Clap');
                         Discord.SetTimestamps(Date.now(), Date.parse(this.newPlayingobj.videoChangeTime) + Number(videoLength) * 1000);
                         Discord.SetActive(true);
                     }

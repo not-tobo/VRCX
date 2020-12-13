@@ -1094,10 +1094,6 @@ import gameLogService from './service/gamelog.js'
             });
         }
 
-        var U = API.cachedUsers.get(API.currentUser.id);
-        if ((typeof U != "undefined") && (U.hasOwnProperty('$location_at'))) {
-            sharedRepository.setString('current_user_instance_time', $app.lastLogin(U.$location_at));
-        }
         sharedRepository.setString('current_user_status', ref.status);
         return ref;
     };
