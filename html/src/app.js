@@ -4081,12 +4081,12 @@ import gameLogService from './service/gamelog.js'
                 if ((ctx.ref.$offline_for == '') &&
                     ((ctx.state == 'offline') && ctx.ref.state == '') ||
                     (((ctx.state == 'offline') || (ctx.state == 'active')) &&
-                    ((ctx.ref.state != 'offline') && (ctx.ref.state != 'active') && (ctx.ref.state != '')))) {
+                    ((ctx.ref.state == 'online')))) {
                     ctx.ref.$online_for = '';
                     ctx.ref.$offline_for = Date.now();
                     console.log('^update offline^');
                 }
-                if ((ctx.ref.$online_for == '') && (ctx.state == 'online')) {
+                if (ctx.state == 'online') {
                     ctx.ref.$location_at = Date.now();
                     ctx.ref.$online_for = Date.now();
                     ctx.ref.$offline_for = '';
@@ -4094,7 +4094,6 @@ import gameLogService from './service/gamelog.js'
                 }
             }
         }
-
     };
 
     // ascending
