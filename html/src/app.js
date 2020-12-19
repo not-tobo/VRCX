@@ -7671,10 +7671,6 @@ import gameLogService from './service/gamelog.js'
 
     $app.methods.deleteVRCPlusIcon = function (userIcon) {
         API.deleteVRCPlusIcon(userIcon).then((args) => {
-            this.$message({
-                message: 'Icon deleted',
-                type: 'success'
-            });
             this.displayVRCPlusIconsTable();
             return args;
         });
