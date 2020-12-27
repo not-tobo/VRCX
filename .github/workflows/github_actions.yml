@@ -3,10 +3,10 @@ name: VRCX
 on:
   push:
     branches:
-    - master
+    - PyPyDanceCompanion
   pull_request:
     branches:
-    - master
+    - PyPyDanceCompanion
 
 jobs:
   build_dotnet:
@@ -22,7 +22,7 @@ jobs:
       uses: microsoft/setup-msbuild@v1.0.2
     - name: Build with MSBuild
       run: msbuild VRCX.sln -p:Configuration=Release -p:Platform=x64
-     
+
   build_node:
     runs-on: ubuntu-latest
     defaults:

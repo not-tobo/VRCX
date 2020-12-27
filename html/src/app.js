@@ -3332,7 +3332,7 @@ import gameLogService from './service/gamelog.js'
             nextRefresh: 0,
             isGameRunning: false,
             isGameNoVR: false,
-            appVersion: 'VRCX.PyPyDance.Companion.v1.4 (2020-12-10 14:44:58)',
+            appVersion: 'VRCX.PyPyDance.Companion 2020.12.27',
             latestAppVersion: '',
             ossDialog: false,
             exportFriendsListDialog: false,
