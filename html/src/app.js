@@ -1148,6 +1148,16 @@ import gameLogService from './service/gamelog.js'
             json.state = API.currentUser.state;
             json.last_login = API.currentUser.last_login;
             json.location = ($app.isGameRunning === true) ? $app.lastLocation : '';
+
+            if ((API.currentUser.$offline_for == '') && (API.currentUser.state == 'active')) {
+                API.currentUser.$online_for = '';
+                API.currentUser.$offline_for = Date.now();
+            }
+            else if ((API.currentUser.$offline_for != '') && (API.currentUser.state == 'online')) {
+                API.currentUser.$location_at = Date.now();
+                API.currentUser.$online_for = Date.now();
+                API.currentUser.$offline_for = '';
+            }
         }
         if (ref === undefined) {
             ref = {
