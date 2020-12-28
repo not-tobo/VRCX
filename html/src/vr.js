@@ -14,6 +14,8 @@ import configRepository from './repository/config.js';
 import webApiService from './service/webapi.js';
 import ProgressBar from 'progressbar.js';
 
+speechSynthesis.getVoices();
+
 var bar = new ProgressBar.Circle(vroverlay, {
   strokeWidth: 50,
   easing: 'easeInOut',
@@ -943,7 +945,13 @@ var bar = new ProgressBar.Circle(vroverlay, {
 
     $app.methods.speak = function (text) {
         if (configRepository.getBool('VRCX_notificationTTS')) {
-            var tts = new SpeechSynthesisUtterance(text);
+            var tts = new SpeechSynthesisUtterance();
+            var voices = speechSynthesis.getVoices();
+            tts.voice = voices[0];
+            if (configRepository.getBool('VRCX_notificationTTSGender')) {
+                tts.voice = voices[1];
+            }
+            tts.text = text;
             speechSynthesis.speak(tts);
         }
     };
