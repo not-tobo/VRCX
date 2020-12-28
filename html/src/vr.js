@@ -947,9 +947,10 @@ var bar = new ProgressBar.Circle(vroverlay, {
         if (configRepository.getBool('VRCX_notificationTTS')) {
             var tts = new SpeechSynthesisUtterance();
             var voices = speechSynthesis.getVoices();
+            var voiceIndex = configRepository.getString('VRCX_notificationTTSVoice');
             tts.voice = voices[0];
-            if (configRepository.getBool('VRCX_notificationTTSGender')) {
-                tts.voice = voices[1];
+            if (voiceIndex) {
+                tts.voice = voices[voiceIndex];
             }
             tts.text = text;
             speechSynthesis.speak(tts);

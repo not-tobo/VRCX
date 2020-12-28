@@ -22,6 +22,8 @@ import configRepository from './repository/config.js';
 import webApiService from './service/webapi.js';
 import gameLogService from './service/gamelog.js'
 
+speechSynthesis.getVoices();
+
 (async function () {
     await CefSharp.BindObjectAsync(
         'AppApi',
@@ -5796,7 +5798,7 @@ import gameLogService from './service/gamelog.js'
     $app.data.overlayNotifications = configRepository.getBool('VRCX_overlayNotifications');
     $app.data.minimalFeed = configRepository.getBool('VRCX_minimalFeed');
     $app.data.notificationTTS = configRepository.getBool('VRCX_notificationTTS');
-    $app.data.notificationTTSGender = configRepository.getBool('VRCX_notificationTTSGender');
+    $app.data.notificationTTSVoice = ((configRepository.getString('VRCX_notificationTTSVoice')) ? configRepository.getString('VRCX_notificationTTSVoice') : '0');
     $app.data.notificationTimeout = configRepository.getString('VRCX_notificationTimeout');
     var saveOpenVROption = function () {
         configRepository.setBool('openVR', this.openVR);
@@ -5806,8 +5808,13 @@ import gameLogService from './service/gamelog.js'
         configRepository.setBool('VRCX_hideDevicesFromFeed', this.hideDevicesFromFeed);
         configRepository.setBool('VRCX_overlayNotifications', this.overlayNotifications);
         configRepository.setBool('VRCX_minimalFeed', this.minimalFeed);
+    };
+    $app.data.TTSvoices = speechSynthesis.getVoices();
+    var saveNotificationTTS = function () {
         configRepository.setBool('VRCX_notificationTTS', this.notificationTTS);
-        configRepository.setBool('VRCX_notificationTTSGender', this.notificationTTSGender);
+        if (this.notificationTTS) {
+            this.speak('Notification text-to-speech enabled');
+        }
     };
     $app.watch.openVR = saveOpenVROption;
     $app.watch.openVRAlways = saveOpenVROption;
@@ -5816,8 +5823,7 @@ import gameLogService from './service/gamelog.js'
     $app.watch.hideDevicesFromFeed = saveOpenVROption;
     $app.watch.overlayNotifications = saveOpenVROption;
     $app.watch.minimalFeed = saveOpenVROption;
-    $app.watch.notificationTTS = saveOpenVROption;
-    $app.watch.notificationTTSGender = saveOpenVROption;
+    $app.watch.notificationTTS = saveNotificationTTS;
     $app.data.isDarkMode = configRepository.getBool('isDarkMode');
     $appDarkStyle.disabled = $app.data.isDarkMode === false;
     $app.watch.isDarkMode = function () {
@@ -5940,6 +5946,25 @@ import gameLogService from './service/gamelog.js'
         } else {
             AppApi.StopVR();
         }
+    };
+
+    $app.methods.changeTTSVoice = function (index) {
+        this.notificationTTSVoice = index;
+        configRepository.setString('VRCX_notificationTTSVoice', this.notificationTTSVoice);
+        var voices = speechSynthesis.getVoices();
+        var voiceName = voices[this.notificationTTSVoice].name;
+        this.speak(voiceName);
+    };
+    
+    $app.methods.speak = function (text) {
+        var tts = new SpeechSynthesisUtterance();
+        var voices = speechSynthesis.getVoices();
+        tts.voice = voices[0];
+        if (this.notificationTTSVoice) {
+            tts.voice = voices[this.notificationTTSVoice];
+        }
+        tts.text = text;
+        speechSynthesis.speak(tts);
     };
 
     $app.methods.refreshConfigTreeData = function () {

@@ -581,8 +581,11 @@ html
                         span(style="display:inline-block;min-width:150px") Notification TTS
                         el-switch(v-model="notificationTTS" :disabled="!overlayNotifications || !openVR")
                     div(style="font-size:12px;margin-top:5px")
-                        span(style="display:inline-block;min-width:109px") TTS Gender
-                        el-switch(v-model="notificationTTSGender" :disabled="!overlayNotifications || !openVR || !notificationTTS" inactive-text="Male" active-text="Female")
+                        span(style="display:inline-block;min-width:150px") TTS Voice
+                        el-dropdown(@command="(voice) => changeTTSVoice(voice)" trigger="click" size="small")
+                            el-button(v-text="TTSvoices[notificationTTSVoice].name" size="mini" :disabled="!overlayNotifications || !openVR || !notificationTTS")
+                            el-dropdown-menu(#default="dropdown")
+                                el-dropdown-item(v-if="voice" v-for="(voice, index) in TTSvoices" :key="index" v-text="voice.name" :command="index")          
                     div(style="font-size:12px;margin-top:5px")
                         el-button(size="small" icon="el-icon-time" @click="promptNotificationTimeout()" :disabled="!overlayNotifications || !openVR") Notification Timeout
                         el-button(size="small" icon="el-icon-rank" @click="showNotificationPositionDialog()" :disabled="!overlayNotifications || !openVR") Notification Position
