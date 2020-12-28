@@ -3428,6 +3428,7 @@ import gameLogService from './service/gamelog.js'
                 AppApi.CheckGameRunning().then(([isGameRunning, isGameNoVR]) => {
                     if (isGameRunning !== this.isGameRunning) {
                         this.isGameRunning = isGameRunning;
+                        sharedRepository.setBool('isGameRunning', isGameRunning);
                         //Discord.SetTimestamps(Date.now(), 0);
                     }
                     this.isGameNoVR = isGameNoVR;
@@ -5794,6 +5795,7 @@ import gameLogService from './service/gamelog.js'
     $app.data.hideDevicesFromFeed = configRepository.getBool('VRCX_hideDevicesFromFeed');
     $app.data.overlayNotifications = configRepository.getBool('VRCX_overlayNotifications');
     $app.data.minimalFeed = configRepository.getBool('VRCX_minimalFeed');
+    $app.data.notificationTTS = configRepository.getBool('VRCX_notificationTTS');
     $app.data.notificationTimeout = configRepository.getString('VRCX_notificationTimeout');
     var saveOpenVROption = function () {
         configRepository.setBool('openVR', this.openVR);
@@ -5803,6 +5805,7 @@ import gameLogService from './service/gamelog.js'
         configRepository.setBool('VRCX_hideDevicesFromFeed', this.hideDevicesFromFeed);
         configRepository.setBool('VRCX_overlayNotifications', this.overlayNotifications);
         configRepository.setBool('VRCX_minimalFeed', this.minimalFeed);
+        configRepository.setBool('VRCX_notificationTTS', this.notificationTTS);
     };
     $app.watch.openVR = saveOpenVROption;
     $app.watch.openVRAlways = saveOpenVROption;
@@ -5811,6 +5814,7 @@ import gameLogService from './service/gamelog.js'
     $app.watch.hideDevicesFromFeed = saveOpenVROption;
     $app.watch.overlayNotifications = saveOpenVROption;
     $app.watch.minimalFeed = saveOpenVROption;
+    $app.watch.notificationTTS = saveOpenVROption;
     $app.data.isDarkMode = configRepository.getBool('isDarkMode');
     $appDarkStyle.disabled = $app.data.isDarkMode === false;
     $app.watch.isDarkMode = function () {

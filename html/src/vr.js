@@ -764,6 +764,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             layout: notificationPosition,
                             text: this.newPlayingobj.videoName
                         }).show();
+                        this.speak(`now playing ${this.newPlayingobj.videoName}`);
                     }
                     if (configRepository.getBool('discordActive')) {
                         var requestedBy = '';
@@ -805,7 +806,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             document.getElementById("progress").style.width = percentage + "%";
         }
 
-        if ((this.appType === '2') && (configRepository.getBool('VRCX_overlayNotifications') === true)) {
+        if ((this.appType === '2') && (configRepository.getBool('VRCX_overlayNotifications') === true) && sharedRepository.getBool('isGameRunning')) {
 
             // disable notification on busy
             if (this.currentUserStatus === 'busy') {
@@ -856,6 +857,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                 layout: notificationPosition,
                                 text: `<strong>${noty.data}</strong> has joined`
                             }).show();
+                            this.speak(`${noty.data} has joined`);
                             break;
                         case 'OnPlayerLeft':
                             new Noty({
@@ -865,6 +867,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                 layout: notificationPosition,
                                 text: `<strong>${noty.data}</strong> has left`
                             }).show();
+                            this.speak(`${noty.data} has left`);
                             break;
                         case 'Online':
                             new Noty({
@@ -874,6 +877,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                 layout: notificationPosition,
                                 text: `<strong>${noty.displayName}</strong> has logged in`
                             }).show();
+                            this.speak(`${noty.displayName} has logged in`);
                             break;
                         case 'Offline':
                             new Noty({
@@ -883,6 +887,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                 layout: notificationPosition,
                                 text: `<strong>${noty.displayName}</strong> has logged out`
                             }).show();
+                            this.speak(`${noty.displayName} has logged out`);
                             break;
                         case 'invite':
                             new Noty({
@@ -892,6 +897,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                 layout: notificationPosition,
                                 text: `<strong>${noty.senderUsername}</strong> has invited you to ${noty.details.worldName}`
                             }).show();
+                            this.speak(`${noty.senderUsername} has invited you to ${noty.details.worldName}`);
                             break;
                         case 'requestInvite':
                             new Noty({
@@ -901,6 +907,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                 layout: notificationPosition,
                                 text: `<strong>${noty.senderUsername}</strong> has requested an invite`
                             }).show();
+                            this.speak(`${noty.senderUsername} has requested an invite`);
                             break;
                         case 'friendRequest':
                             new Noty({
@@ -910,6 +917,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                 layout: notificationPosition,
                                 text: `<strong>${noty.senderUsername}</strong> has sent you a friend request`
                             }).show();
+                            this.speak(`${noty.senderUsername} has sent you a friend request`);
                             break;
                     }
                 }
@@ -931,6 +939,13 @@ var bar = new ProgressBar.Circle(vroverlay, {
             }
         }
         return style;
+    };
+
+    $app.methods.speak = function (text) {
+        if (configRepository.getBool('VRCX_notificationTTS')) {
+            var tts = new SpeechSynthesisUtterance(text);
+            speechSynthesis.speak(tts);
+        }
     };
 
     $app = new Vue($app);
