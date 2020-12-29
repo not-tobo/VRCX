@@ -766,6 +766,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             layout: notificationPosition,
                             text: this.newPlayingobj.videoName
                         }).show();
+                    }
+                    if (configRepository.getBool('VRCX_notificationTTS')) {
                         this.speak(`now playing ${this.newPlayingobj.videoName}`);
                     }
                     if (configRepository.getBool('discordActive')) {
