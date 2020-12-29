@@ -5861,6 +5861,10 @@ speechSynthesis.getVoices();
         $app.data.notificationPosition = 'topCenter';
         configRepository.setString('VRCX_notificationPosition', $app.data.notificationPosition);
     }
+    if (!configRepository.getString('VRCX_notificationTTSVoice')) {
+        $app.data.notificationTTSVoice = '0';
+        configRepository.setString('VRCX_notificationTTSVoice', $app.data.notificationTTSVoice);
+    }
     $app.data.notificationJoinLeaveFilter = configRepository.getString('VRCX_notificationJoinLeaveFilter');
     $app.methods.changeNotificationJoinLeaveFilter = function () {
         configRepository.setString('VRCX_notificationJoinLeaveFilter', this.notificationJoinLeaveFilter);
@@ -5952,17 +5956,14 @@ speechSynthesis.getVoices();
         this.notificationTTSVoice = index;
         configRepository.setString('VRCX_notificationTTSVoice', this.notificationTTSVoice);
         var voices = speechSynthesis.getVoices();
-        var voiceName = voices[this.notificationTTSVoice].name;
+        var voiceName = voices[index].name;
         this.speak(voiceName);
     };
-    
+
     $app.methods.speak = function (text) {
         var tts = new SpeechSynthesisUtterance();
         var voices = speechSynthesis.getVoices();
-        tts.voice = voices[0];
-        if (this.notificationTTSVoice) {
-            tts.voice = voices[this.notificationTTSVoice];
-        }
+        tts.voice = voices[this.notificationTTSVoice];
         tts.text = text;
         speechSynthesis.speak(tts);
     };

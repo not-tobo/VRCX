@@ -808,7 +808,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             document.getElementById("progress").style.width = percentage + "%";
         }
 
-        if ((this.appType === '2') && (configRepository.getBool('VRCX_overlayNotifications') === true) && sharedRepository.getBool('isGameRunning')) {
+        if ((this.appType === '2') && sharedRepository.getBool('isGameRunning')) {
 
             // disable notification on busy
             if (this.currentUserStatus === 'busy') {
@@ -967,10 +967,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
         var tts = new SpeechSynthesisUtterance();
         var voices = speechSynthesis.getVoices();
         var voiceIndex = configRepository.getString('VRCX_notificationTTSVoice');
-        tts.voice = voices[0];
-        if (voiceIndex) {
-            tts.voice = voices[voiceIndex];
-        }
+        tts.voice = voices[voiceIndex];
         tts.text = text;
         speechSynthesis.speak(tts);
     };
