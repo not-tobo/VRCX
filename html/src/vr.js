@@ -850,77 +850,97 @@ var bar = new ProgressBar.Circle(vroverlay, {
             var bias = new Date(Date.now() - 60000).toJSON();
             notys.forEach((noty) => {
                 if (noty.created_at > bias) {
-                    switch (noty.type) {
-                        case 'OnPlayerJoined':
-                            new Noty({
-                                type: 'alert',
-                                theme: theme,
-                                timeout: notificationTimeout,
-                                layout: notificationPosition,
-                                text: `<strong>${noty.data}</strong> has joined`
-                            }).show();
-                            this.speak(`${noty.data} has joined`);
-                            break;
-                        case 'OnPlayerLeft':
-                            new Noty({
-                                type: 'alert',
-                                theme: theme,
-                                timeout: notificationTimeout,
-                                layout: notificationPosition,
-                                text: `<strong>${noty.data}</strong> has left`
-                            }).show();
-                            this.speak(`${noty.data} has left`);
-                            break;
-                        case 'Online':
-                            new Noty({
-                                type: 'alert',
-                                theme: theme,
-                                timeout: notificationTimeout,
-                                layout: notificationPosition,
-                                text: `<strong>${noty.displayName}</strong> has logged in`
-                            }).show();
-                            this.speak(`${noty.displayName} has logged in`);
-                            break;
-                        case 'Offline':
-                            new Noty({
-                                type: 'alert',
-                                theme: theme,
-                                timeout: notificationTimeout,
-                                layout: notificationPosition,
-                                text: `<strong>${noty.displayName}</strong> has logged out`
-                            }).show();
-                            this.speak(`${noty.displayName} has logged out`);
-                            break;
-                        case 'invite':
-                            new Noty({
-                                type: 'alert',
-                                theme: theme,
-                                timeout: notificationTimeout,
-                                layout: notificationPosition,
-                                text: `<strong>${noty.senderUsername}</strong> has invited you to ${noty.details.worldName}`
-                            }).show();
-                            this.speak(`${noty.senderUsername} has invited you to ${noty.details.worldName}`);
-                            break;
-                        case 'requestInvite':
-                            new Noty({
-                                type: 'alert',
-                                theme: theme,
-                                timeout: notificationTimeout,
-                                layout: notificationPosition,
-                                text: `<strong>${noty.senderUsername}</strong> has requested an invite`
-                            }).show();
-                            this.speak(`${noty.senderUsername} has requested an invite`);
-                            break;
-                        case 'friendRequest':
-                            new Noty({
-                                type: 'alert',
-                                theme: theme,
-                                timeout: notificationTimeout,
-                                layout: notificationPosition,
-                                text: `<strong>${noty.senderUsername}</strong> has sent you a friend request`
-                            }).show();
-                            this.speak(`${noty.senderUsername} has sent you a friend request`);
-                            break;
+                    if (configRepository.getBool('VRCX_overlayNotifications')) {
+                        switch (noty.type) {
+                            case 'OnPlayerJoined':
+                                new Noty({
+                                    type: 'alert',
+                                    theme: theme,
+                                    timeout: notificationTimeout,
+                                    layout: notificationPosition,
+                                    text: `<strong>${noty.data}</strong> has joined`
+                                }).show();
+                                break;
+                            case 'OnPlayerLeft':
+                                new Noty({
+                                    type: 'alert',
+                                    theme: theme,
+                                    timeout: notificationTimeout,
+                                    layout: notificationPosition,
+                                    text: `<strong>${noty.data}</strong> has left`
+                                }).show();
+                                break;
+                            case 'Online':
+                                new Noty({
+                                    type: 'alert',
+                                    theme: theme,
+                                    timeout: notificationTimeout,
+                                    layout: notificationPosition,
+                                    text: `<strong>${noty.displayName}</strong> has logged in`
+                                }).show();
+                                break;
+                            case 'Offline':
+                                new Noty({
+                                    type: 'alert',
+                                    theme: theme,
+                                    timeout: notificationTimeout,
+                                    layout: notificationPosition,
+                                    text: `<strong>${noty.displayName}</strong> has logged out`
+                                }).show();
+                                break;
+                            case 'invite':
+                                new Noty({
+                                    type: 'alert',
+                                    theme: theme,
+                                    timeout: notificationTimeout,
+                                    layout: notificationPosition,
+                                    text: `<strong>${noty.senderUsername}</strong> has invited you to ${noty.details.worldName}`
+                                }).show();
+                                break;
+                            case 'requestInvite':
+                                new Noty({
+                                    type: 'alert',
+                                    theme: theme,
+                                    timeout: notificationTimeout,
+                                    layout: notificationPosition,
+                                    text: `<strong>${noty.senderUsername}</strong> has requested an invite`
+                                }).show();
+                                break;
+                            case 'friendRequest':
+                                new Noty({
+                                    type: 'alert',
+                                    theme: theme,
+                                    timeout: notificationTimeout,
+                                    layout: notificationPosition,
+                                    text: `<strong>${noty.senderUsername}</strong> has sent you a friend request`
+                                }).show();
+                                break;
+                        }
+                    }
+                    if (configRepository.getBool('VRCX_notificationTTS')) {
+                        switch (noty.type) {
+                            case 'OnPlayerJoined':
+                                this.speak(`${noty.data} has joined`);
+                                break;
+                            case 'OnPlayerLeft':
+                                this.speak(`${noty.data} has left`);
+                                break;
+                            case 'Online':
+                                this.speak(`${noty.displayName} has logged in`);
+                                break;
+                            case 'Offline':
+                                this.speak(`${noty.displayName} has logged out`);
+                                break;
+                            case 'invite':
+                                this.speak(`${noty.senderUsername} has invited you to ${noty.details.worldName}`);
+                                break;
+                            case 'requestInvite':
+                                this.speak(`${noty.senderUsername} has requested an invite`);
+                                break;
+                            case 'friendRequest':
+                                this.speak(`${noty.senderUsername} has sent you a friend request`);
+                                break;
+                        }
                     }
                 }
             });
@@ -944,17 +964,15 @@ var bar = new ProgressBar.Circle(vroverlay, {
     };
 
     $app.methods.speak = function (text) {
-        if (configRepository.getBool('VRCX_notificationTTS')) {
-            var tts = new SpeechSynthesisUtterance();
-            var voices = speechSynthesis.getVoices();
-            var voiceIndex = configRepository.getString('VRCX_notificationTTSVoice');
-            tts.voice = voices[0];
-            if (voiceIndex) {
-                tts.voice = voices[voiceIndex];
-            }
-            tts.text = text;
-            speechSynthesis.speak(tts);
+        var tts = new SpeechSynthesisUtterance();
+        var voices = speechSynthesis.getVoices();
+        var voiceIndex = configRepository.getString('VRCX_notificationTTSVoice');
+        tts.voice = voices[0];
+        if (voiceIndex) {
+            tts.voice = voices[voiceIndex];
         }
+        tts.text = text;
+        speechSynthesis.speak(tts);
     };
 
     $app = new Vue($app);
