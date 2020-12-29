@@ -592,7 +592,7 @@ html
                     div(style="font-size:12px;margin-top:5px")
                         span Join/Leave Notifications
                         br
-                        el-radio-group(v-model="notificationJoinLeaveFilter" size="mini" @change="changeNotificationJoinLeaveFilter" :disabled="!overlayNotifications || !openVR")
+                        el-radio-group(v-model="notificationJoinLeaveFilter" size="mini" @change="changeNotificationJoinLeaveFilter" :disabled="!overlayNotifications && !notificationTTS || !openVR")
                             el-radio(label="VIP" v-model="notificationJoinLeaveFilter") VIP
                             el-radio(label="Friends" v-model="notificationJoinLeaveFilter") Friends
                             el-radio(label="Everyone" v-model="notificationJoinLeaveFilter") Everyone
@@ -600,7 +600,7 @@ html
                     div(style="font-size:12px;margin-top:5px")
                         span Online/Offline Notifications
                         br
-                        el-radio-group(v-model="notificationOnlineOfflineFilter" size="mini" @change="changeNotificationOnlineOfflineFilter" :disabled="!overlayNotifications || !openVR")
+                        el-radio-group(v-model="notificationOnlineOfflineFilter" size="mini" @change="changeNotificationOnlineOfflineFilter" :disabled="!overlayNotifications && !notificationTTS || !openVR")
                             el-radio(label="VIP" v-model="notificationOnlineOfflineFilter") VIP
                             el-radio(label="Friends" v-model="notificationOnlineOfflineFilter") Friends
                             el-radio(label="Off" v-model="notificationOnlineOfflineFilter") Off

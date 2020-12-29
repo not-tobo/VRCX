@@ -5798,7 +5798,7 @@ speechSynthesis.getVoices();
     $app.data.overlayNotifications = configRepository.getBool('VRCX_overlayNotifications');
     $app.data.minimalFeed = configRepository.getBool('VRCX_minimalFeed');
     $app.data.notificationTTS = configRepository.getBool('VRCX_notificationTTS');
-    $app.data.notificationTTSVoice = ((configRepository.getString('VRCX_notificationTTSVoice')) ? configRepository.getString('VRCX_notificationTTSVoice') : '0');
+    $app.data.notificationTTSVoice = configRepository.getString('VRCX_notificationTTSVoice');
     $app.data.notificationTimeout = configRepository.getString('VRCX_notificationTimeout');
     var saveOpenVROption = function () {
         configRepository.setBool('openVR', this.openVR);
