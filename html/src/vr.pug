@@ -181,8 +181,8 @@ html
                                 br
                                 span {{ device[2] }}%
             .x-containerbottom
-                span(style="float:right") {{ nowPlayingobj.videoProgressText }}
-                span {{ nowPlayingobj.videoName }}
+                span(style="float:right;padding-left:15px") {{ nowPlayingobj.videoProgressText }}
+                span {{ nowPlayingobj.videoName ? nowPlayingobj.videoName : ' ‎' }}
                 #progress
                 span(style="float:right") {{ currentTime | formatDate('YYYY-MM-DD HH:MI:SS AMPM') }}
                 span CPU {{ cpuUsage }}%
