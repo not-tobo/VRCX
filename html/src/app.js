@@ -1153,16 +1153,6 @@ speechSynthesis.getVoices();
             json.state = API.currentUser.state;
             json.last_login = API.currentUser.last_login;
             json.location = ($app.isGameRunning === true) ? $app.lastLocation : '';
-            if (ref) {
-                if ((ref.$offline_for == '') && (ref.state == 'active')) {
-                    ref.$online_for = '';
-                    ref.$offline_for = Date.now();
-                }
-                else if ((ref.$offline_for != '') && (ref.state == 'online')) {
-                    ref.$online_for = Date.now();
-                    ref.$offline_for = '';
-                }
-            }
         }
         if (ref === undefined) {
             ref = {
