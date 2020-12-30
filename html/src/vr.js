@@ -635,6 +635,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
         try {
             this.currentTime = new Date().toJSON();
             this.currentUserStatus = sharedRepository.getString('current_user_status');
+            this.isGameRunning = sharedRepository.getBool('is_game_running');
             if (configRepository.getBool('VRCX_hideDevicesFromFeed') === false) {
                 AppApi.GetVRDevices().then((devices) => {
                     devices.forEach((device) => {
@@ -728,7 +729,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             if ((Date.parse(this.newPlayingobj.videoChangeTime) / 1000) < (Date.parse(this.worldJoinTime) / 1000)) {
                 videoProgress = -60;
             }
-            if (videoProgress > 0) {
+            if ((videoProgress > 0) && (this.isGameRunning)) {
                 function sec2time(timeInSeconds) {
                     var pad = function(num, size) { return ('000' + num).slice(size * -1); },
                     time = parseFloat(timeInSeconds).toFixed(3),
@@ -810,7 +811,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             document.getElementById("progress").style.width = percentage + "%";
         }
 
-        if ((this.appType === '2') && sharedRepository.getBool('isGameRunning')) {
+        if ((this.appType === '2') && this.isGameRunning) {
 
             // disable notification on busy
             if (this.currentUserStatus === 'busy') {
