@@ -5931,7 +5931,7 @@ speechSynthesis.getVoices();
     $app.watch.volumeNormalize = saveVRCXPyPyOption;
     $app.watch.youtubeAPI = saveVRCXPyPyOption;
 
-    var saveIsGameRunning = function () {
+    var isGameRunningStateChange = function () {
         $app.lastLocation = '';
         if (this.isGameRunning) {
             API.currentUser.$online_for = Date.now();
@@ -5942,7 +5942,7 @@ speechSynthesis.getVoices();
             API.currentUser.$offline_for = Date.now();
         }
     }
-    $app.watch.isGameRunning = saveIsGameRunning;
+    $app.watch.isGameRunning = isGameRunningStateChange;
 
     API.$on('LOGIN', function () {
         $app.currentUserTreeData = [];
