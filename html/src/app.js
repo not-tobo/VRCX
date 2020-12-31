@@ -3500,13 +3500,15 @@ speechSynthesis.getVoices();
         // Check if user is joining
         for (i = 0; i < arr.length; i++) {
             var ctx = arr[i];
+            if (ctx.type === 'Location') {
+                break;
+            }
             if ((ctx.type === 'GPS') && (ctx.location[0] === this.lastLocation)) {
                 var joining = true;
                 for (var k = i - 1; k >= 0; k--) {
                     var feedItem = arr[k];
-                    if ((feedItem.type === 'Location') ||
-                        (((feedItem.type === 'GPS') || (feedItem.type === 'Online') || (feedItem.type === 'Offline')) &&
-                        (feedItem.displayName === ctx.displayName))) {
+                    if (((feedItem.type === 'GPS') || (feedItem.type === 'Online') || (feedItem.type === 'Offline')) &&
+                        (feedItem.displayName === ctx.displayName)) {
                         break;
                     }
                     if ((feedItem.type === 'OnPlayerJoined') && (feedItem.data === ctx.displayName)) {
@@ -3515,15 +3517,19 @@ speechSynthesis.getVoices();
                     }
                 }
                 if (joining) {
-                    var toAdd = {};
-                    toAdd.created_at = ctx.created_at;
-                    toAdd.type = 'OnPlayerJoining';
+                    var bias = new Date(Date.now() - 60000).toJSON();
+                    if (ctx.created_at > bias) {
+                        arr.splice(i, 1);
+                        var toAdd = {};
+                        toAdd.created_at = ctx.created_at;
+                        toAdd.type = 'OnPlayerJoining';
                     toAdd.data = ctx.displayName;
                     arr.push({
                         ...toAdd,
                         isFriend: this.friends.has(ctx.userId),
                         isFavorite: API.cachedFavoritesByObjectId.has(ctx.userId)
                     });
+                    }
                 }
             }
         }
