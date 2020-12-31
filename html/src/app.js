@@ -3479,9 +3479,7 @@ speechSynthesis.getVoices();
             }
             var ctx = data[--i];
             // GPS, Online, Offline, Status, Avatar
-            if ((ctx.type !== 'Avatar') &&
-                !((ctx.type === 'GPS') && (ctx.location[0] === 'private') && (this.hidePrivateFromFeed === true)) &&
-                !(((ctx.type === 'Online') || (ctx.type === 'Offline')) && (this.hideLoginsFromFeed === true))) {
+            if (ctx.type !== 'Avatar') {
                 arr.push({
                     ...ctx,
                     isFriend: this.friends.has(ctx.userId),
@@ -3490,6 +3488,54 @@ speechSynthesis.getVoices();
                 ++j;
             }
         }
+        arr.sort(function (a, b) {
+            if (a.created_at < b.created_at) {
+                return 1;
+            }
+            if (a.created_at > b.created_at) {
+                return -1;
+            }
+            return 0;
+        });
+        // Check if user is joining
+        for (i = 0; i < arr.length; i++) {
+            var ctx = arr[i];
+            if ((ctx.type === 'GPS') && (ctx.location[0] === this.lastLocation)) {
+                var joining = true;
+                for (var k = i - 1; k >= 0; k--) {
+                    var feedItem = arr[k];
+                    if ((feedItem.type === 'Location') ||
+                        (((feedItem.type === 'GPS') || (feedItem.type === 'Online') || (feedItem.type === 'Offline')) &&
+                        (feedItem.displayName === ctx.displayName))) {
+                        break;
+                    }
+                    if ((feedItem.type === 'OnPlayerJoined') && (feedItem.data === ctx.displayName)) {
+                        joining = false;
+                        break;
+                    }
+                }
+                if (joining) {
+                    var toAdd = {};
+                    toAdd.created_at = ctx.created_at;
+                    toAdd.type = 'OnPlayerJoining';
+                    toAdd.data = ctx.displayName;
+                    arr.push({
+                        ...toAdd,
+                        isFriend: this.friends.has(ctx.userId),
+                        isFavorite: API.cachedFavoritesByObjectId.has(ctx.userId)
+                    });
+                }
+            }
+        }
+        // Filters
+        for (i = 0; i < arr.length; i++) {
+            var ctx = arr[i];
+            if (((ctx.type === 'GPS') && (ctx.location[0] === 'private') && (this.hidePrivateFromFeed)) ||
+                (((ctx.type === 'Online') || (ctx.type === 'Offline')) && (this.hideLoginsFromFeed))) {
+                arr.splice(i, 1);
+            }
+        }
+        // invite, requestInvite, friendRequest
         var { data } = this.notificationTable;
         for (i = 0; i < data.length; i++) {
             var ctx = data[i];

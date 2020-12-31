@@ -699,7 +699,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 this.newPlayingobj.videoChangeTime = feed.created_at;
             }
             if (feed.type === 'OnPlayerJoined' ||
-                feed.type === 'OnPlayerLeft') {
+                feed.type === 'OnPlayerLeft' ||
+                feed.type === 'OnPlayerJoining') {
                 if (!map[feed.data] ||
                     map[feed.data] < feed.created_at) {
                     map[feed.data] = feed.created_at;
@@ -833,7 +834,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     ((notificationJoinLeaveFilter === "Friends") && (feed.isFriend)) ||
                     ((notificationJoinLeaveFilter === "VIP") && (feed.isFavorite))) {
                     if (feed.type === 'OnPlayerJoined' ||
-                    feed.type === 'OnPlayerLeft') {
+                        feed.type === 'OnPlayerLeft' ||
+                        feed.type === 'OnPlayerJoining') {
                         if (!map[feed.data] ||
                             map[feed.data] < feed.created_at) {
                             map[feed.data] = feed.created_at;
@@ -871,6 +873,15 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                     timeout: notificationTimeout,
                                     layout: notificationPosition,
                                     text: `<strong>${noty.data}</strong> has left`
+                                }).show();
+                                break;
+                            case 'OnPlayerJoining':
+                                new Noty({
+                                    type: 'alert',
+                                    theme: theme,
+                                    timeout: notificationTimeout,
+                                    layout: notificationPosition,
+                                    text: `<strong>${noty.data}</strong> is joining`
                                 }).show();
                                 break;
                             case 'Online':
@@ -927,6 +938,9 @@ var bar = new ProgressBar.Circle(vroverlay, {
                                 break;
                             case 'OnPlayerLeft':
                                 this.speak(`${noty.data} has left`);
+                                break;
+                            case 'OnPlayerJoinig':
+                                this.speak(`${noty.data} is joining`);
                                 break;
                             case 'Online':
                                 this.speak(`${noty.displayName} has logged in`);
