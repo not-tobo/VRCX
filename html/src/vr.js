@@ -823,14 +823,15 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 if (((notificationOnlineOfflineFilter === "Friends") && (feed.isFriend)) ||
                     ((notificationOnlineOfflineFilter === "VIP") && (feed.isFavorite))) {
                     if (feed.type === 'Online' ||
-                    feed.type === 'Offline') {
+                        feed.type === 'Offline') {
                         if (!map[feed.displayName] ||
                             map[feed.displayName] < feed.created_at) {
                             map[feed.displayName] = feed.created_at;
                             notys.push(feed);
                         }
                     }
-                } else if ((notificationJoinLeaveFilter === "Everyone") ||
+                }
+                if ((notificationJoinLeaveFilter === "Everyone") ||
                     ((notificationJoinLeaveFilter === "Friends") && (feed.isFriend)) ||
                     ((notificationJoinLeaveFilter === "VIP") && (feed.isFavorite))) {
                     if (feed.type === 'OnPlayerJoined' ||
@@ -842,7 +843,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             notys.push(feed);
                         }
                     }
-                } else if (feed.type === 'invite' ||
+                }
+                if (feed.type === 'invite' ||
                     feed.type === 'requestInvite' ||
                     feed.type === 'friendRequest') {
                     if (!map[feed.senderUsername] ||
@@ -939,7 +941,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             case 'OnPlayerLeft':
                                 this.speak(`${noty.data} has left`);
                                 break;
-                            case 'OnPlayerJoinig':
+                            case 'OnPlayerJoining':
                                 this.speak(`${noty.data} is joining`);
                                 break;
                             case 'Online':
