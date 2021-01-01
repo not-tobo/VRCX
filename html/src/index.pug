@@ -436,7 +436,7 @@ html
                             el-button(size="small" @click="promptAvatarDialog()") Avatar
                 div.options-container
                     span.header My Profile
-                    .x-friend-list
+                    .x-friend-list(style="margin-top:10px")
                         .x-friend-item(@click="showUserDialog(API.currentUser.id)")
                             .avatar
                                 img(v-if="displayVRCPlusIconsAsAvatar && API.currentUser.userIcon" v-lazy="API.currentUser.userIcon")
@@ -471,7 +471,7 @@ html
                             el-button(type="default" @click="setVRCPlusIcon('')" size="mini" icon="el-icon-close" circle style="margin:0" :disabled="!API.currentUser.userIcon")
                         //- input(type="file" @change="onFileChangeVRCPlusIcon")
                         br
-                        .x-friend-item(v-for="icon in VRCPlusIconsTable" :key="icon.id" style="display:inline-block;cursor:default")
+                        .x-friend-item(v-for="icon in VRCPlusIconsTable" :key="icon.id" style="display:inline-block;margin-top:10px;cursor:default")
                             .vrcplus-icon(style="" @click="setVRCPlusIcon(icon.id)" :class="{ 'current-vrcplus-icon': compareCurrentVRCPlusIcon(icon.id) }")
                                 img.avatar(v-if="icon.versions[1].file.url" v-lazy="icon.versions[1].file.url")
                             el-tooltip(placement="top")
@@ -480,7 +480,7 @@ html
                                 el-button(type="default" @click="deleteVRCPlusIcon(icon.id)" size="mini" icon="el-icon-delete" circle style="float:right;")
                     div.options-container
                         span.header Past Display Names
-                        data-tables(v-bind="pastDisplayNameTable")
+                        data-tables(v-bind="pastDisplayNameTable" style="margin-top:10px")
                             el-table-column(label="Date" prop="updated_at" sortable="custom")
                                 template(v-once #default="scope")
                                     span {{ scope.row.updated_at | formatDate('YYYY-MM-DD HH24:MI:SS') }}
@@ -495,7 +495,7 @@ html
                             template(#content)
                                 span Clear results
                             el-button(type="default" @click="configTreeData = []" size="mini" icon="el-icon-delete" circle style="margin-left:0")
-                        el-tree(:data="configTreeData" style="margin-top:5px;font-size:12px")
+                        el-tree(:data="configTreeData" style="margin-top:10px;font-size:12px")
                             template(#default="scope")
                                 span
                                     span(v-text="scope.data.key" style="font-weight:bold;margin-right:5px")
@@ -510,7 +510,7 @@ html
                             template(#content)
                                 span Clear results
                             el-button(type="default" @click="currentUserTreeData = []" size="mini" icon="el-icon-delete" circle style="margin-left:0")
-                        el-tree(:data="currentUserTreeData" style="margin-top:5px;font-size:12px")
+                        el-tree(:data="currentUserTreeData" style="margin-top:10px;font-size:12px")
                             template(#default="scope")
                                 span
                                     span(v-text="scope.data.key" style="font-weight:bold;margin-right:5px")
