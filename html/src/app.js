@@ -3498,21 +3498,21 @@ speechSynthesis.getVoices();
             return 0;
         });
         // Check if user is joining
-        var bias = new Date(Date.now() + 1200000).toJSON();
+        var bias = new Date(Date.now() - 120000).toJSON();
         for (i = 0; i < arr.length; i++) {
             var ctx = arr[i];
-            if ((ctx.created_at > bias) || (ctx.type === 'Location')) {
+            if ((ctx.created_at < bias) || (ctx.type === 'Location')) {
                 break;
             }
             if ((ctx.type === 'GPS') && (ctx.location[0] === this.lastLocation)) {
                 var joining = true;
-                for (k = 0; k < arr.length; k++) {
+                for (var k = 0; k < arr.length; k++) {
                     var feedItem = arr[k];
                     if ((feedItem.type === 'OnPlayerJoined') && (feedItem.data === ctx.displayName)) {
                         joining = false;
                         break;
                     }
-                    if ((feedItem.created_at > bias) || (feedItem.type === 'Location') ||
+                    if ((feedItem.created_at < bias) || (feedItem.type === 'Location') ||
                         ((feedItem.type === 'GPS') && (feedItem.location !== ctx.location[0]) &&
                         (feedItem.displayName === ctx.displayName))) {
                         break;
