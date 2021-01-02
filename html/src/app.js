@@ -3498,30 +3498,30 @@ speechSynthesis.getVoices();
             return 0;
         });
         // Check if user is joining
+        var bias = new Date(Date.now() + 1200000).toJSON();
         for (i = 0; i < arr.length; i++) {
             var ctx = arr[i];
-            if (ctx.type === 'Location') {
+            if ((ctx.created_at > bias) || (ctx.type === 'Location')) {
                 break;
             }
             if ((ctx.type === 'GPS') && (ctx.location[0] === this.lastLocation)) {
                 var joining = true;
-                for (var k = i - 1; k >= 0; k--) {
+                for (k = 0; k < arr.length; k++) {
                     var feedItem = arr[k];
-                    if (((feedItem.type === 'GPS') || (feedItem.type === 'Online') || (feedItem.type === 'Offline')) &&
-                        (feedItem.displayName === ctx.displayName)) {
-                        break;
-                    }
                     if ((feedItem.type === 'OnPlayerJoined') && (feedItem.data === ctx.displayName)) {
                         joining = false;
                         break;
                     }
+                    if ((feedItem.created_at > bias) || (feedItem.type === 'Location') ||
+                        ((feedItem.type === 'GPS') && (feedItem.location !== ctx.location[0]) &&
+                        (feedItem.displayName === ctx.displayName))) {
+                        break;
+                    }
                 }
                 if (joining) {
-                    var bias = new Date(Date.now() - 60000).toJSON();
-                    if (ctx.created_at > bias) {
-                        arr.splice(i, 1);
-                        var toAdd = {};
-                        toAdd.created_at = ctx.created_at;
+                    arr.splice(i, 1);
+                    var toAdd = {};
+                    toAdd.created_at = ctx.created_at;
                         toAdd.type = 'OnPlayerJoining';
                     toAdd.data = ctx.displayName;
                     arr.push({
@@ -3529,7 +3529,6 @@ speechSynthesis.getVoices();
                         isFriend: this.friends.has(ctx.userId),
                         isFavorite: API.cachedFavoritesByObjectId.has(ctx.userId)
                     });
-                    }
                 }
             }
         }
@@ -3556,7 +3555,7 @@ speechSynthesis.getVoices();
         // TrustLevel, Friend, FriendRequest, Unfriend, DisplayName
         var { data } = this.friendLogTable;
         var j = this.friendLogTable.data.length;
-        for (i = j - 1; i >= j - 6; i--) {
+        for (i = j - 1; i >= j - 11; i--) {
             var ctx = data[i];
             if (ctx.type !== 'FriendRequest') {
                 arr.push({
