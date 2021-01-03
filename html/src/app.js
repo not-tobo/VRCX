@@ -5868,6 +5868,7 @@ speechSynthesis.getVoices();
     $app.data.TTSvoices = speechSynthesis.getVoices();
     var saveNotificationTTS = function () {
         configRepository.setBool('VRCX_notificationTTS', this.notificationTTS);
+        speechSynthesis.cancel();
         if (this.notificationTTS) {
             this.speak('Notification text-to-speech enabled');
         }
@@ -6026,6 +6027,7 @@ speechSynthesis.getVoices();
         configRepository.setString('VRCX_notificationTTSVoice', this.notificationTTSVoice);
         var voices = speechSynthesis.getVoices();
         var voiceName = voices[index].name;
+        speechSynthesis.cancel();
         this.speak(voiceName);
     };
 
