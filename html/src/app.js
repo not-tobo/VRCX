@@ -4651,6 +4651,10 @@ speechSynthesis.getVoices();
     var saveDiscordOption = function () {
         configRepository.setBool('discordActive', this.discordActive);
         configRepository.setBool('discordInstance', this.discordInstance);
+        if (!this.discordActive) {
+            Discord.SetText('', '');
+            Discord.SetActive(false);
+        }
     };
     $app.watch.discordActive = saveDiscordOption;
     $app.watch.discordInstance = saveDiscordOption;
