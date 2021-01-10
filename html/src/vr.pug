@@ -13,11 +13,11 @@ html
         link(rel="stylesheet" href="vr.css")
     body
         #vroverlay
-        .x-app#x-app(style="display:none" :class="{ 'x-app-type': appType === '1' }")
+        .x-app#x-app(v-if="appType === '1'" class="x-app-type")
             .x-container(style="flex:1")
                 .x-friend-list(ref="list" style="color:#aaa")
-                    template(v-if="isMinimalFeed === true")
-                        template(v-for="feed in feeds")
+                    template(v-if="isMinimalFeed")
+                        template(v-for="feed in wristFeed")
                             .x-friend-item(v-if="feed.type === 'GPS'" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
                                 .detail
                                     span.extra
@@ -108,7 +108,7 @@ html
                                         | test: #[span(v-text="feed.type")]
                                         | #[span(v-text="feed.senderUsername")]
                     template(v-else)
-                        template(v-for="feed in feeds")
+                        template(v-for="feed in wristFeed")
                             .x-friend-item(v-if="feed.type === 'GPS'" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
                                 .detail
                                     span.extra
