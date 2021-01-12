@@ -3443,7 +3443,7 @@ speechSynthesis.getVoices();
         var { data } = this.gameLogTable;
         var i = data.length;
         var j = 0;
-        while (j < 25) {
+        while (j < 30) {
             if (i <= 0) {
                 break;
             }
@@ -3473,7 +3473,7 @@ speechSynthesis.getVoices();
         var { data } = this.feedTable;
         var i = data.length;
         var j = 0;
-        while (j < 25) {
+        while (j < 30) {
             if (i <= 0) {
                 break;
             }
@@ -3522,8 +3522,8 @@ speechSynthesis.getVoices();
             }
             return 0;
         });
-        if (arr.length > 25) {
-            arr.length = 25;
+        if (arr.length > 30) {
+            arr.length = 30;
         }
         sharedRepository.setArray('feeds', arr);
     };

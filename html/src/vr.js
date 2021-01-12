@@ -594,7 +594,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             worldJoinTime: '',
             isGameRunning: false,
             lastLocation: '',
-            lastFeedEntry: [],
+            lastFeed: [],
             feedFilters: [],
             wristFeed: [],
             notyMap: [],
@@ -632,14 +632,13 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 throw err;
             }).then((args) => {
                 this.initConfigVars();
-                this.initNotyMap();
+                if (this.appType === '1') {
+                    this.updateCpuUsageLoop();
+                }
+                if (this.appType === '2') {
+                    this.initNotyMap();
+                }
                 this.updateLoop();
-                this.updateCpuUsageLoop();
-                this.$nextTick(function () {
-                    if (this.appType === '1') {
-                        this.$el.style.display = '';
-                    }
-                });
                 return args;
             });
         }
@@ -698,7 +697,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             this.currentUserStatus = sharedRepository.getString('current_user_status');
             this.isGameRunning = sharedRepository.getBool('is_game_running');
             this.lastLocation = sharedRepository.getString('last_location');
-            if (!this.hideDevicesToggle) {
+            if ((!this.hideDevicesToggle) && (this.appType === '1')) {
                 AppApi.GetVRDevices().then((devices) => {
                     devices.forEach((device) => {
                         device[2] = parseInt(device[2], 10);
@@ -731,11 +730,11 @@ var bar = new ProgressBar.Circle(vroverlay, {
             return;
         }
         this.updateSharedFeedVideo(feeds);
-        if ((this.lastFeedEntry !== undefined) &&
-            (feeds[0].created_at === this.lastFeedEntry.created_at)) {
+        if ((this.lastFeed !== undefined) &&
+            (JSON.stringify(feeds) === this.lastFeed)) {
             return;
         }
-        this.lastFeedEntry = feeds[0];
+        this.lastFeed = JSON.stringify(feeds);
 
         // OnPlayerJoining
         var bias = new Date(Date.now() - 120000).toJSON();
