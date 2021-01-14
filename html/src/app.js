@@ -8,10 +8,10 @@ import Noty from 'noty';
 import Vue from 'vue';
 import VueLazyload from 'vue-lazyload';
 import { DataTables } from 'vue-data-tables';
+import ToggleSwitch from 'vuejs-toggle-switch'
 import ElementUI from 'element-ui';
 import locale from 'element-ui/lib/locale/lang/en';
 import copy from 'copy-to-clipboard';
-import ToggleSwitch from 'vuejs-toggle-switch'
 import PyPyVideos from './PyPyVideos.json';
 var PyPyVideosTable = JSON.parse(atob(PyPyVideos.json));
 
@@ -4163,20 +4163,17 @@ speechSynthesis.getVoices();
                 this.friendsGroupD_.unshift(ctx);
             }
             if (ctx.ref !== undefined) {
-                console.log(ctx.name + ' ' + ctx.state + ' ref: ' + ctx.ref.state);
                 if ((ctx.ref.$offline_for == '') &&
                     ((ctx.state == 'offline') && ctx.ref.state == '') ||
                     (((ctx.state == 'offline') || (ctx.state == 'active')) &&
                     ((ctx.ref.state == 'online')))) {
                     ctx.ref.$online_for = '';
                     ctx.ref.$offline_for = Date.now();
-                    console.log('^update offline^');
                 }
                 if (ctx.state == 'online') {
                     ctx.ref.$location_at = Date.now();
                     ctx.ref.$online_for = Date.now();
                     ctx.ref.$offline_for = '';
-                    console.log('^update online^');
                 }
             }
         }
@@ -5894,7 +5891,6 @@ speechSynthesis.getVoices();
         sharedFeedFilters.noty.Unfriend = 'On';
         sharedFeedFilters.noty.DisplayName = 'VIP';
         sharedFeedFilters.noty.TrustLevel = 'VIP';
-
         sharedFeedFilters.wrist.Location = 'On';
         sharedFeedFilters.wrist.OnPlayerJoined = 'Everyone';
         sharedFeedFilters.wrist.OnPlayerLeft = 'Everyone';
@@ -5916,7 +5912,6 @@ speechSynthesis.getVoices();
 
         configRepository.setString('sharedFeedFilters', JSON.stringify(sharedFeedFilters));
     }
-
     $app.data.sharedFeedFilters = JSON.parse(configRepository.getString('sharedFeedFilters'));
 
     $app.data.toggleSwitchOptionsEveryone = {

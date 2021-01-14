@@ -31,7 +31,7 @@ Comes with [nircmd](https://www.nirsoft.net/utils/nircmd.html) for automatically
 
 # VRCX
 
-VRCX is an assistant application for provide information about manage friendship. this application uses unofficial VRChat API (VRCSDK).
+VRCX is an assistant application for VRChat that provides information about and managing friendship. This application uses the unofficial VRChat API (VRCSDK).
 
 VRCX isn't endorsed by VRChat and doesn't reflect the views or opinions of VRChat or anyone officially involved in producing or managing VRChat. VRChat is trademark of VRChat Inc. VRChat © VRChat Inc.
 
