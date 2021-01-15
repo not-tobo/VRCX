@@ -1152,6 +1152,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
     };
 
     $app.methods.updateSharedFeedVideo = async function (feeds) {
+        feeds.splice(10);
         this.nowPlayingobj.videoProgressText = '';
         var locationChange = false;
         var videoChange = false;
@@ -1223,7 +1224,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             text: this.newPlayingobj.videoName
                         }).show();
                     }
-                    if (configRepository.getBool('VRCX_notificationTTS')) {
+                    if (this.notificationTTSToggle) {
                         var ttsURL = '';
                         if (this.newPlayingobj.videoID == 'YouTube') { ttsURL = 'URL' }
                         var ttsRequestedBy = '';
@@ -1234,7 +1235,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         var requestedBy = '';
                         if (this.newPlayingobj.playerPlayer !== '') { requestedBy = 'Requested by: ' + this.newPlayingobj.playerPlayer; }
                         Discord.SetText('Video: ' + this.newPlayingobj.videoName, requestedBy);
-                        Discord.SetAssets('pypy', 'https://github.com/Natsumi-sama/VRCX', 'ayaya', 'Clap');
+                        Discord.SetAssets('pypy', 'https://github.com/Natsumi-sama/VRCX', 'ayaya', 'AYAYA');
                         Discord.SetTimestamps(Date.now(), Date.parse(this.newPlayingobj.videoChangeTime) + Number(videoLength) * 1000);
                         Discord.SetActive(true);
                     }
