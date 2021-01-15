@@ -1152,7 +1152,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
     };
 
     $app.methods.updateSharedFeedVideo = async function (feeds) {
-        feeds.splice(10);
+        //feeds.splice(10);
         this.nowPlayingobj.videoProgressText = '';
         var locationChange = false;
         var videoChange = false;
