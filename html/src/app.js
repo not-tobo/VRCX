@@ -3443,7 +3443,7 @@ speechSynthesis.getVoices();
         var { data } = this.gameLogTable;
         var i = data.length;
         var j = 0;
-        while (j < 30) {
+        while (j < 100) {
             if (i <= 0) {
                 break;
             }
@@ -3473,7 +3473,7 @@ speechSynthesis.getVoices();
         var { data } = this.feedTable;
         var i = data.length;
         var j = 0;
-        while (j < 30) {
+        while (j < 100) {
             if (i <= 0) {
                 break;
             }
@@ -3522,9 +3522,6 @@ speechSynthesis.getVoices();
             }
             return 0;
         });
-        if (arr.length > 30) {
-            arr.length = 30;
-        }
         sharedRepository.setArray('feeds', arr);
     };
 
@@ -5792,6 +5789,7 @@ speechSynthesis.getVoices();
     $app.data.openVRAlways = configRepository.getBool('openVRAlways');
     $app.data.overlaybutton = configRepository.getBool('VRCX_overlaybutton');
     $app.data.hidePrivateFromFeed = configRepository.getBool('VRCX_hidePrivateFromFeed');
+    $app.data.hideOnPlayerJoined = configRepository.getBool('VRCX_hideOnPlayerJoined');
     $app.data.hideDevicesFromFeed = configRepository.getBool('VRCX_hideDevicesFromFeed');
     $app.data.overlayNotifications = configRepository.getBool('VRCX_overlayNotifications');
     $app.data.desktopToast = configRepository.getBool('VRCX_desktopToast');
@@ -5805,6 +5803,7 @@ speechSynthesis.getVoices();
         configRepository.setBool('openVRAlways', this.openVRAlways);
         configRepository.setBool('VRCX_overlaybutton', this.overlaybutton);
         configRepository.setBool('VRCX_hidePrivateFromFeed', this.hidePrivateFromFeed);
+        configRepository.setBool('VRCX_hideOnPlayerJoined', this.hideOnPlayerJoined);
         configRepository.setBool('VRCX_hideDevicesFromFeed', this.hideDevicesFromFeed);
         configRepository.setBool('VRCX_overlayNotifications', this.overlayNotifications);
         configRepository.setBool('VRCX_desktopToast', this.desktopToast);
@@ -5825,6 +5824,7 @@ speechSynthesis.getVoices();
     $app.watch.openVRAlways = saveOpenVROption;
     $app.watch.overlaybutton = saveOpenVROption;
     $app.watch.hidePrivateFromFeed = saveOpenVROption;
+    $app.watch.hideOnPlayerJoined = saveOpenVROption;
     $app.watch.hideDevicesFromFeed = saveOpenVROption;
     $app.watch.overlayNotifications = saveOpenVROption;
     $app.watch.desktopToast = saveOpenVROption;
