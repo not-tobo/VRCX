@@ -698,7 +698,6 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 videoVolume: '',
                 videoChangeTime: ''
             },
-            worldJoinTime: '',
             isGameRunning: false,
             isGameNoVR: false,
             lastLocation: '',
@@ -1152,31 +1151,26 @@ var bar = new ProgressBar.Circle(vroverlay, {
     };
 
     $app.methods.updateSharedFeedVideo = async function (feeds) {
-        //feeds.splice(10);
         this.nowPlayingobj.videoProgressText = '';
-        var locationChange = false;
-        var videoChange = false;
-        feeds.forEach((feed) => {
-            if ((feed.type === "Location") && (locationChange === false)) {
-                locationChange = true;
-                this.worldJoinTime = feed.created_at;
-            }
-            else if ((feed.type === "VideoChange") && (videoChange === false)) {
-                videoChange = true
+        for (var i = 0; i < feeds.length; i++) {
+            var feed = feeds[i];
+            if (feed.type === "VideoChange") {
                 this.newPlayingobj = feed.data;
                 this.newPlayingobj.videoChangeTime = feed.created_at;
+                break;
             }
-        });
+        }
         if (this.newPlayingobj.videoURL != '') {
             var percentage = 0;
             var videoLength = Number(this.newPlayingobj.videoLength) + 9; //9 magic number
             var currentTime = Date.now() / 1000;
             var videoStartTime = videoLength + Date.parse(this.newPlayingobj.videoChangeTime) / 1000;
             var videoProgress = Math.floor((videoStartTime - currentTime) * 100) / 100;
-            if ((Date.parse(this.newPlayingobj.videoChangeTime) / 1000) < (Date.parse(this.worldJoinTime) / 1000)) {
+            var L = API.parseLocation(this.lastLocation);
+            if ((!this.isGameRunning) || (L.worldId != 'wrld_f20326da-f1ac-45fc-a062-609723b097b1')) {
                 videoProgress = -60;
             }
-            if ((videoProgress > 0) && (this.isGameRunning)) {
+            if (videoProgress > 0) {
                 function sec2time(timeInSeconds) {
                     var pad = function(num, size) { return ('000' + num).slice(size * -1); },
                     time = parseFloat(timeInSeconds).toFixed(3),
