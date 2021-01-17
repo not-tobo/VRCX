@@ -2237,6 +2237,11 @@ speechSynthesis.getVoices();
             this.isPlayerModerationsLoading = false;
         }).then(() => {
             this.deleteExpiredPlayerModerations();
+            if (($app.playerModerationTable.data.length > $app.playerModerationTable.lastRunLength) &&
+                ($app.playerModerationTable.lastRunLength > 0)) {
+                $app.notifyMenu('moderation');
+            }
+            $app.playerModerationTable.lastRunLength = $app.playerModerationTable.data.length;
         });
     };
 
@@ -5652,13 +5657,6 @@ speechSynthesis.getVoices();
         if (ref.$isDeleted === false) {
             $app.playerModerationTable.data.push(ref);
         }
-        if (this.playerModerationTable) {
-            if ((this.playerModerationTable.data.length > this.playerModerationTable.lastRunLength) &&
-                (this.playerModerationTable.data.length > 0)) {
-                $app.notifyMenu('moderation');
-            }
-            this.playerModerationTable.lastRunLength = this.playerModerationTable.data.length;
-        }
     });
 
     API.$on('PLAYER-MODERATION:@DELETE', function (args) {
@@ -5928,6 +5926,11 @@ speechSynthesis.getVoices();
         sharedFeedFilters.noty.Unfriend = 'On';
         sharedFeedFilters.noty.DisplayName = 'VIP';
         sharedFeedFilters.noty.TrustLevel = 'VIP';
+        sharedFeedFilters.noty.showAvatar = 'On';
+        sharedFeedFilters.noty.hideAvatar = 'On';
+        sharedFeedFilters.noty.block = 'On';
+        sharedFeedFilters.noty.mute = 'On';
+        sharedFeedFilters.noty.unmute = 'On';
         sharedFeedFilters.wrist.Location = 'On';
         sharedFeedFilters.wrist.OnPlayerJoined = 'Everyone';
         sharedFeedFilters.wrist.OnPlayerLeft = 'Everyone';
@@ -5943,12 +5946,6 @@ speechSynthesis.getVoices();
         sharedFeedFilters.wrist.Unfriend = 'On';
         sharedFeedFilters.wrist.DisplayName = 'Friends';
         sharedFeedFilters.wrist.TrustLevel = 'Friends';
-
-        sharedFeedFilters.noty.showAvatar = 'On';
-        sharedFeedFilters.noty.hideAvatar = 'On';
-        sharedFeedFilters.noty.block = 'On';
-        sharedFeedFilters.noty.mute = 'On';
-        sharedFeedFilters.noty.unmute = 'On';
         sharedFeedFilters.wrist.showAvatar = 'On';
         sharedFeedFilters.wrist.hideAvatar = 'On';
         sharedFeedFilters.wrist.block = 'On';
