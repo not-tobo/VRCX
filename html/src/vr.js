@@ -787,12 +787,16 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     ((filter[feed.type] === 'Friends') && (feed.isFriend)) ||
                     ((filter[feed.type] === 'VIP') && (feed.isFavorite)))) {
                     var displayName = '';
-                    if (feed.data) {
-                        displayName = feed.data;
-                    } else if (feed.displayName) {
+                    if (feed.displayName) {
                         displayName = feed.displayName;
                     } else if (feed.senderUsername) {
                         displayName = feed.senderUsername;
+                    } else if (feed.sourceDisplayName) {
+                        displayName = feed.sourceDisplayName;
+                    } else if (feed.data) {
+                        displayName = feed.data;
+                    } else {
+                        console.error('missing displayName');
                     }
                     if ((displayName) && (!this.notyMap[displayName]) ||
                         (this.notyMap[displayName] < feed.created_at)) {
@@ -915,7 +919,6 @@ var bar = new ProgressBar.Circle(vroverlay, {
         }
 
         feeds.splice(25);
-
         if (this.appType === '1') {
             this.updateSharedFeedWrist(feeds);
         }
@@ -963,6 +966,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 displayName = feed.displayName;
             } else if (feed.senderUsername) {
                 displayName = feed.senderUsername;
+            } else if (feed.sourceDisplayName) {
+                displayName = feed.sourceDisplayName;
             } else if (feed.data) {
                 displayName = feed.data;
             } else {
@@ -1031,6 +1036,21 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     case 'DisplayName':
                         text = `<strong>${noty.previousDisplayName}</strong> changed their name to ${noty.displayName}`;
                         break;
+                    case 'showAvatar':
+                        text = `<strong>${noty.sourceDisplayName}</strong> has shown your avatar`;
+                        break;
+                    case 'hideAvatar':
+                        text = `<strong>${noty.sourceDisplayName}</strong> has hidden your avatar`;
+                        break;
+                    case 'block':
+                        text = `<strong>${noty.sourceDisplayName}</strong> has blocked you`;
+                        break;
+                    case 'mute':
+                        text = `<strong>${noty.sourceDisplayName}</strong> has muted you`;
+                        break;
+                    case 'unmute':
+                        text = `<strong>${noty.sourceDisplayName}</strong> has unmuted you`;
+                        break;
                 }
                 if (text) {
                     new Noty({
@@ -1085,6 +1105,21 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         break;
                     case 'DisplayName':
                         this.speak(`${noty.previousDisplayName} changed their name to ${noty.displayName}`);
+                        break;
+                    case 'showAvatar':
+                        this.speak(`${noty.sourceDisplayName} has shown your avatar`);
+                        break;
+                    case 'hideAvatar':
+                        this.speak(`${noty.sourceDisplayName} has hidden your avatar`);
+                        break;
+                    case 'block':
+                        this.speak(`${noty.sourceDisplayName} has blocked you`);
+                        break;
+                    case 'mute':
+                        this.speak(`${noty.sourceDisplayName} has muted you`);
+                        break;
+                    case 'unmute':
+                        this.speak(`${noty.sourceDisplayName} has unmuted you`);
                         break;
                 }
             }

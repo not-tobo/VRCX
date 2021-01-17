@@ -2131,6 +2131,7 @@ speechSynthesis.getVoices();
     API.$on('LOGIN', function () {
         this.cachedPlayerModerations.clear();
         this.isPlayerModerationsLoading = false;
+        this.refreshPlayerModerations();
     });
 
     API.$on('PLAYER-MODERATION', function (args) {
@@ -3418,6 +3419,11 @@ speechSynthesis.getVoices();
                     API.getCurrentUser().catch((err1) => {
                         throw err1;
                     });
+                    if (this.isGameRunning) {
+                        API.refreshPlayerModerations().catch((err1) => {
+                            throw err1;
+                        });
+                    }
                 }
                 this.checkActiveFriends();
                 AppApi.CheckGameRunning().then(([isGameRunning, isGameNoVR]) => {
@@ -3514,6 +3520,25 @@ speechSynthesis.getVoices();
                     ...ctx,
                     isFriend: this.friends.has(ctx.userId),
                     isFavorite: API.cachedFavoritesByObjectId.has(ctx.userId)
+                });
+                ++j;
+            }
+        }
+        var { data } = this.playerModerationTable;
+        var i = data.length;
+        var j = 0;
+        while (j < 10) {
+            if (i <= 0) {
+                break;
+            }
+            var ctx = data[--i];
+            // showAvatar, hideAvatar, block, mute, unmute
+            if (ctx.sourceUserId !== API.currentUser.id) {
+                arr.push({
+                    ...ctx,
+                    created_at: ctx.created,
+                    isFriend: this.friends.has(ctx.sourceUserId),
+                    isFavorite: API.cachedFavoritesByObjectId.has(ctx.sourceUserId)
                 });
                 ++j;
             }
@@ -5570,6 +5595,7 @@ speechSynthesis.getVoices();
 
     $app.data.playerModerationTable = {
         data: [],
+        lastRunLength: 0,
         filters: [
             {
                 prop: 'type',
@@ -5625,7 +5651,13 @@ speechSynthesis.getVoices();
         }
         if (ref.$isDeleted === false) {
             $app.playerModerationTable.data.push(ref);
-            $app.notifyMenu('moderation');
+        }
+        if (this.playerModerationTable) {
+            if ((this.playerModerationTable.data.length > this.playerModerationTable.lastRunLength) &&
+                (this.playerModerationTable.data.length > 0)) {
+                $app.notifyMenu('moderation');
+            }
+            this.playerModerationTable.lastRunLength = this.playerModerationTable.data.length;
         }
     });
 
@@ -5911,6 +5943,17 @@ speechSynthesis.getVoices();
         sharedFeedFilters.wrist.Unfriend = 'On';
         sharedFeedFilters.wrist.DisplayName = 'Friends';
         sharedFeedFilters.wrist.TrustLevel = 'Friends';
+
+        sharedFeedFilters.noty.showAvatar = 'On';
+        sharedFeedFilters.noty.hideAvatar = 'On';
+        sharedFeedFilters.noty.block = 'On';
+        sharedFeedFilters.noty.mute = 'On';
+        sharedFeedFilters.noty.unmute = 'On';
+        sharedFeedFilters.wrist.showAvatar = 'On';
+        sharedFeedFilters.wrist.hideAvatar = 'On';
+        sharedFeedFilters.wrist.block = 'On';
+        sharedFeedFilters.wrist.mute = 'On';
+        sharedFeedFilters.wrist.unmute = 'On';
 
         sharedFeedFilters.noty.VideoChange = 'On';
         sharedFeedFilters.wrist.VideoChange = 'On';
