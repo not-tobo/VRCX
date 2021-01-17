@@ -866,7 +866,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         break;
                     }
                     if ((feedItem.created_at < bias) || (feedItem.type === 'Location') ||
-                        ((feedItem.type === 'GPS') && (feedItem.location !== ctx.location[0]) &&
+                        ((feedItem.type === 'GPS') && (feedItem.created_at !== ctx.created_at) &&
                         (feedItem.displayName === ctx.displayName))) {
                         break;
                     }
