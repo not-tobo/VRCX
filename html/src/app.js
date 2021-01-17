@@ -2237,7 +2237,7 @@ speechSynthesis.getVoices();
             this.isPlayerModerationsLoading = false;
         }).then(() => {
             this.deleteExpiredPlayerModerations();
-            if (($app.playerModerationTable.data.length > $app.playerModerationTable.lastRunLength) &&
+            if (($app.playerModerationTable.data.length !== $app.playerModerationTable.lastRunLength) &&
                 ($app.playerModerationTable.lastRunLength > 0)) {
                 $app.notifyMenu('moderation');
             }
@@ -4675,12 +4675,10 @@ speechSynthesis.getVoices();
             if (API.isLoggedIn === true) {
                 await this.updateGameLog();
                 this.sweepGameLog();
-
-                if (this.gameLogTable.data.length > this.gameLogTable.lastRunLength) {
+                if (this.gameLogTable.data.length !== this.gameLogTable.lastRunLength) {
                     this.notifyMenu('gameLog');
                 }
                 this.gameLogTable.lastRunLength = this.gameLogTable.data.length;
-
                 this.updateSharedFeed();
             }
         } catch (err) {
