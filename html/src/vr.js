@@ -787,7 +787,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
 
     $app.methods.updateLoop = async function () {
         try {
-            this.updateVRConfig();
+            this.updateVRConfigVars();
             if (!this.config) {
                 return;
             }
