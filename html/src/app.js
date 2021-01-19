@@ -4650,7 +4650,7 @@ speechSynthesis.getVoices();
 
     $app.data.gameLogTable = {
         data: [],
-        lastRunLength: 0,
+        lastEntryDate: '',
         filters: [
             {
                 prop: 'type',
@@ -4694,10 +4694,13 @@ speechSynthesis.getVoices();
             if (API.isLoggedIn === true) {
                 await this.updateGameLog();
                 this.sweepGameLog();
-                if (this.gameLogTable.data.length !== this.gameLogTable.lastRunLength) {
-                    this.notifyMenu('gameLog');
+                var length = this.gameLogTable.data.length;
+                if (length > 0) {
+                    if (this.gameLogTable.data[length - 1].created_at !== this.gameLogTable.lastEntryDate) {
+                        this.notifyMenu('gameLog');
+                    }
+                    this.gameLogTable.lastEntryDate = this.gameLogTable.data[length - 1].created_at;
                 }
-                this.gameLogTable.lastRunLength = this.gameLogTable.data.length;
                 this.updateSharedFeed();
             }
         } catch (err) {
