@@ -1235,7 +1235,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             text: this.newPlayingobj.videoName
                         }).show();
                     }
-                    if (this.notificationTTS) {
+                    if (this.config.notificationTTS) {
                         var ttsURL = '';
                         if (this.newPlayingobj.videoID == 'YouTube') { ttsURL = 'URL' }
                         var ttsRequestedBy = '';
