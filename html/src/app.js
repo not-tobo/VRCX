@@ -5864,7 +5864,7 @@ speechSynthesis.getVoices();
         configRepository.setBool('VRCX_desktopToast', this.desktopToast);
         configRepository.setBool('VRCX_minimalFeed', this.minimalFeed);
         configRepository.setBool('displayVRCPlusIconsAsAvatar', this.displayVRCPlusIconsAsAvatar);
-        AppApi.RefreshVR();
+        this.updateVRConfigVars();
     };
     $app.data.TTSvoices = speechSynthesis.getVoices();
     var saveNotificationTTS = function () {
@@ -5873,7 +5873,7 @@ speechSynthesis.getVoices();
         if (this.notificationTTS) {
             this.speak('Notification text-to-speech enabled');
         }
-        AppApi.RefreshVR();
+        this.updateVRConfigVars();
     };
     $app.watch.openVR = saveOpenVROption;
     $app.watch.openVRAlways = saveOpenVROption;
@@ -5891,7 +5891,7 @@ speechSynthesis.getVoices();
     $app.watch.isDarkMode = function () {
         configRepository.setBool('isDarkMode', this.isDarkMode);
         $appDarkStyle.disabled = this.isDarkMode === false;
-        AppApi.RefreshVR();
+        this.updateVRConfigVars();
     };
     $app.data.isStartAtWindowsStartup = configRepository.getBool('VRCX_StartAtWindowsStartup');
     $app.data.isStartAsMinimizedState = (VRCXStorage.Get('VRCX_StartAsMinimizedState') === 'true');
@@ -6044,7 +6044,7 @@ speechSynthesis.getVoices();
         this.notyFeedFiltersDialog.visible = false;
         this.wristFeedFiltersDialog.visible = false;
         configRepository.setString('sharedFeedFilters', JSON.stringify(this.sharedFeedFilters));
-        AppApi.RefreshVR();
+        this.updateVRConfigVars();
     }
 
     $app.methods.cancelSharedFeedFilters = function () {
@@ -6056,7 +6056,7 @@ speechSynthesis.getVoices();
     $app.data.notificationPosition = configRepository.getString('VRCX_notificationPosition');
     $app.methods.changeNotificationPosition = function () {
         configRepository.setString('VRCX_notificationPosition', this.notificationPosition);
-        AppApi.RefreshVR();
+        this.updateVRConfigVars();
     };
 
     $app.data.progressPie = configRepository.getBool('VRCX_progressPie');
@@ -6068,7 +6068,7 @@ speechSynthesis.getVoices();
         configRepository.setBool('VRCX_videoNotification', this.videoNotification);
         configRepository.setBool('VRCX_volumeNormalize', this.volumeNormalize);
         configRepository.setBool('VRCX_youtubeAPI', this.youtubeAPI);
-        AppApi.RefreshVR();
+        this.updateVRConfigVars();
     };
     $app.watch.progressPie = saveVRCXPyPyOption;
     $app.watch.videoNotification = saveVRCXPyPyOption;
@@ -6100,6 +6100,34 @@ speechSynthesis.getVoices();
         sharedRepository.setString('last_location', $app.lastLocation);
     }
     $app.watch.lastLocation = lastLocationStateChange;
+
+    $app.methods.updateVRConfigVars = function () {
+        if (configRepository.getBool('isDarkMode')) {
+            var notificationTheme = 'sunset';
+        } else {
+            var notificationTheme = 'relax';
+        }
+        var VRConfigVars = {
+            notificationTTS: this.notificationTTS,
+            notificationTTSVoice: this.notificationTTSVoice,
+            overlayNotifications: this.overlayNotifications,
+            desktopToast: this.desktopToast,
+            hidePrivateFromFeed: this.hidePrivateFromFeed,
+            hideOnPlayerJoined: this.hideOnPlayerJoined,
+            hideDevicesFromFeed: this.hideDevicesFromFeed,
+            minimalFeed: this.minimalFeed,
+            displayVRCPlusIconsAsAvatar: this.displayVRCPlusIconsAsAvatar,
+            sharedFeedFilters: this.sharedFeedFilters,
+            notificationPosition: this.notificationPosition,
+            notificationTimeout: this.notificationTimeout,
+            notificationTheme: notificationTheme
+        }
+        sharedRepository.setObject('VRConfigVars', VRConfigVars);
+    }
+
+    API.$on('LOGIN', function () {
+        $app.updateVRConfigVars();
+    });
 
     API.$on('LOGIN', function () {
         $app.currentUserTreeData = [];
@@ -6167,7 +6195,7 @@ speechSynthesis.getVoices();
         var voiceName = voices[index].name;
         speechSynthesis.cancel();
         this.speak(voiceName);
-        AppApi.RefreshVR();
+        this.updateVRConfigVars();
     };
 
     $app.methods.speak = function (text) {
