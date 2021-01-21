@@ -4749,6 +4749,10 @@ speechSynthesis.getVoices();
 
         async function youtubeAPI(videoID) {
             var youtubeAPIKey = '';
+            if (!youtubeAPIKey) {
+                console.log('youtubeAPIKey is missing, add it to use this function');
+                return;
+            }
             var response = await webApiService.execute({
                 url: "https://www.googleapis.com/youtube/v3/videos?id=" + videoID + "&part=snippet,contentDetails&key=" + youtubeAPIKey,
                 method: 'GET'
@@ -4834,13 +4838,13 @@ speechSynthesis.getVoices();
                             await youtubeAPI(videoID);
                         }
                     }
-                    else if ((videoobj.videoURL.substring(0, 29) === "https://www.youtube.com/watch") && (this.youtubeAPI === true)) {
+                    else if ((videoobj.videoURL.substring(0, 29) === "https://www.youtube.com/watch") && (this.youtubeAPI)) {
                         var videoParams = videoobj.videoURL.substring(29);
                         var urlParams = new URLSearchParams(videoParams);
                         var videoID = urlParams.get('v');
                         await youtubeAPI(videoID);
                     }
-                    else if ((videoobj.videoURL.substring(0, 17) === "https://youtu.be/") && (this.youtubeAPI === true)) {
+                    else if ((videoobj.videoURL.substring(0, 17) === "https://youtu.be/") && (this.youtubeAPI)) {
                         var videoID = videoobj.videoURL.substring(17, 28);
                         await youtubeAPI(videoID);
                     }
