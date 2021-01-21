@@ -108,16 +108,20 @@ namespace VRCX
                 // sort by creation time
                 Array.Sort(fileInfos, (a, b) => a.CreationTimeUtc.CompareTo(b.CreationTimeUtc));
 
-                var bias = DateTime.UtcNow.AddMinutes(-3d);
+                var utcNow = DateTime.UtcNow;
+                var minLimitDateTime = utcNow.AddDays(-7d);
+                var minRefreshDateTime = utcNow.AddMinutes(-3d);
 
                 foreach (var fileInfo in fileInfos)
                 {
-                    if (DateTime.Compare(DateTime.Today.AddDays(-7), fileInfo.LastWriteTimeUtc) >= 0)
+                    var lastWriteTimeUtc = fileInfo.LastWriteTimeUtc;
+
+                    if (lastWriteTimeUtc < minLimitDateTime)
                     {
                         continue;
                     }
 
-                    if (bias.CompareTo(fileInfo.LastWriteTimeUtc) <= 0)
+                    if (lastWriteTimeUtc >= minRefreshDateTime)
                     {
                         fileInfo.Refresh();
                         if (fileInfo.Exists == false)
@@ -156,17 +160,17 @@ namespace VRCX
         {
             try
             {
-                using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var stream = new FileStream(fileInfo.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 65536, FileOptions.SequentialScan))
                 {
-                    fileStream.Position = logContext.Position;
-                    using (var streamReader = new StreamReader(fileStream, Encoding.UTF8))
+                    stream.Position = logContext.Position;
+                    using (var streamReader = new StreamReader(stream, Encoding.UTF8))
                     {
                         while (true)
                         {
                             var line = streamReader.ReadLine();
                             if (line == null)
                             {
-                                logContext.Position = fileStream.Position;
+                                logContext.Position = stream.Position;
                                 break;
                             }
 
@@ -176,8 +180,6 @@ namespace VRCX
                                 ParseLogOnPlayerLeft(fileInfo, line) == true ||
                                 ParseLogNotification(fileInfo, line) == true ||
                                 ParseLogLocation(fileInfo, line) == true ||
-                                ParseLogHMDModel(fileInfo, line) == true ||
-                                ParseLogAuth(fileInfo, line) == true ||
                                 ParseLogVideoChange(fileInfo, line) == true ||
                                 ParseLogVideoBeep(fileInfo, line) == true)
                             {
@@ -221,62 +223,6 @@ namespace VRCX
             }
 
             return $"{dt:yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'}";
-        }
-
-        private bool ParseLogHMDModel(FileInfo fileInfo, string line)
-        {
-            // 2020.10.31 23:36:23 Log        -  STEAMVR HMD Model: VIVE_Pro MV
-
-            if (line.Length <= 53 ||
-                line[34] != 'S' ||
-                string.Compare(line, 34, "STEAMVR HMD Model: ", 0, 19, StringComparison.Ordinal) != 0)
-            {
-                return false;
-            }
-
-            var hmdModel = line.Substring(53);
-
-            AppendLog(new[]
-            {
-                fileInfo.Name,
-                ConvertLogTimeToISO8601(line),
-                "hmd-model",
-                hmdModel
-            });
-
-            return true;
-        }
-
-        private bool ParseLogAuth(FileInfo fileInfo, string line)
-        {
-            // 2020.10.31 23:36:26 Log        -  [VRCFlowNetworkManager] Sending token from provider vrchat as user zetyx
-
-            if (line.Length <= 86 ||
-                line[35] != 'V' ||
-                string.Compare(line, 34, "[VRCFlowNetworkManager] Sending token from provider ", 0, 41, StringComparison.Ordinal) != 0)
-            {
-                return false;
-            }
-
-            var pos = line.IndexOf(" as user ", 86);
-            if (pos < 0)
-            {
-                return false;
-            }
-
-            var loginProvider = line.Substring(86, pos - 86);
-            var loginUser = line.Substring(pos + 9);
-
-            AppendLog(new[]
-            {
-                fileInfo.Name,
-                ConvertLogTimeToISO8601(line),
-                "auth",
-                loginProvider,
-                loginUser
-            });
-
-            return true;
         }
 
         private bool ParseLogLocation(FileInfo fileInfo, string line)

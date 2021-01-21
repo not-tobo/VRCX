@@ -26,6 +26,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
 });
 
 (async function () {
+    var $app = null;
+
     await CefSharp.BindObjectAsync(
         'AppApi',
         'WebApi',
@@ -124,7 +126,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
     API.$emit = function (name, ...args) {
         // console.log(name, ...args);
         var handlers = this.eventHandlers.get(name);
-        if (handlers === undefined) {
+        if (typeof handlers === 'undefined') {
             return;
         }
         try {
@@ -138,7 +140,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
 
     API.$on = function (name, handler) {
         var handlers = this.eventHandlers.get(name);
-        if (handlers === undefined) {
+        if (typeof handlers === 'undefined') {
             handlers = [];
             this.eventHandlers.set(name, handlers);
         }
@@ -147,7 +149,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
 
     API.$off = function (name, handler) {
         var handlers = this.eventHandlers.get(name);
-        if (handlers === undefined) {
+        if (typeof handlers === 'undefined') {
             return;
         }
         var { length } = handlers;
@@ -185,7 +187,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             }
             // merge requests
             var req = this.pendingGetRequests.get(init.url);
-            if (req !== undefined) {
+            if (typeof req !== 'undefined') {
                 return req;
             }
         } else {
@@ -208,7 +210,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
             if (response.status === 200) {
                 this.$throw(0, 'Invalid JSON response');
             }
-            this.$throw(res.status);
+            this.$throw(response.status);
+            return {};
         }).then(({ data, status }) => {
             if (data === Object(data)) {
                 if (status === 200) {
@@ -324,13 +327,13 @@ var bar = new ProgressBar.Circle(vroverlay, {
         var text = [];
         if (code > 0) {
             var status = this.statusCodes[code];
-            if (status === undefined) {
+            if (typeof status === 'undefined') {
                 text.push(`${code}`);
             } else {
                 text.push(`${code} ${status}`);
             }
         }
-        if (error !== undefined) {
+        if (typeof error !== 'undefined') {
             text.push(JSON.stringify(error));
         }
         text = text.map((s) => escapeTag(s)).join('<br>');
@@ -470,7 +473,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     this.text = 'Private';
                 } else if (L.worldId) {
                     var ref = API.cachedWorlds.get(L.worldId);
-                    if (ref === undefined) {
+                    if (typeof ref === 'undefined') {
                         API.getWorld({
                             worldId: L.worldId
                         }).then((args) => {
@@ -511,7 +514,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
 
     API.applyWorld = function (json) {
         var ref = this.cachedWorlds.get(json.id);
-        if (ref === undefined) {
+        if (typeof ref === 'undefined') {
             ref = {
                 id: '',
                 name: '',
@@ -585,7 +588,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
 
     API.applyUser = function (json) {
         var ref = this.cachedUsers.get(json.id);
-        if (ref === undefined) {
+        if (typeof ref === 'undefined') {
             ref = {
                 id: '',
                 username: '',
@@ -625,14 +628,12 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     props[prop] = true;
                 }
             }
-            var has = false;
             for (var prop in props) {
                 var asis = $ref[prop];
                 var tobe = ref[prop];
                 if (asis === tobe) {
                     delete props[prop];
                 } else {
-                    has = true;
                     props[prop] = [
                         tobe,
                         asis
@@ -669,7 +670,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
     API.getCachedUser = function (params) {
         return new Promise((resolve, reject) => {
             var ref = this.cachedUsers.get(params.userId);
-            if (ref === undefined) {
+            if (typeof ref === 'undefined') {
                 this.getUser(params).catch(reject).then(resolve);
             } else {
                 resolve({
@@ -691,6 +692,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             currentTime: new Date().toJSON(),
             currentUserStatus: null,
             cpuUsage: 0,
+            config: {},
             nowPlayingobj: {},
             newPlayingobj: {
                 videoURL: '',
@@ -698,14 +700,13 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 videoVolume: '',
                 videoChangeTime: ''
             },
-            config: {},
             isGameRunning: false,
             isGameNoVR: false,
             lastLocation: '',
             lastFeedEntry: [],
             wristFeed: [],
             notyMap: [],
-            devices: [],
+            devices: []
         },
         computed: {},
         methods: {},
@@ -757,13 +758,12 @@ var bar = new ProgressBar.Circle(vroverlay, {
         }
         var sharedFeedFilters = JSON.parse(configRepository.getString('sharedFeedFilters'));
         var filter = sharedFeedFilters.noty;
-        var filtered = [];
         feeds.forEach((feed) => {
             if (filter[feed.type]) {
                 if ((filter[feed.type] !== 'Off') &&
                     ((filter[feed.type] === 'Everyone') || (filter[feed.type] === 'On') ||
-                    ((filter[feed.type] === 'Friends') && (feed.isFriend)) ||
-                    ((filter[feed.type] === 'VIP') && (feed.isFavorite)))) {
+                        ((filter[feed.type] === 'Friends') && (feed.isFriend)) ||
+                        ((filter[feed.type] === 'VIP') && (feed.isFavorite)))) {
                     var displayName = '';
                     if (feed.displayName) {
                         displayName = feed.displayName;
@@ -823,13 +823,13 @@ var bar = new ProgressBar.Circle(vroverlay, {
         setTimeout(() => this.updateCpuUsageLoop(), 1000);
     };
 
-    $app.methods.updateSharedFeeds = async function () {
+    $app.methods.updateSharedFeeds = function () {
         var feeds = sharedRepository.getArray('feeds');
         if (feeds === null) {
             return;
         }
         this.updateSharedFeedVideo(feeds);
-        if ((this.lastFeedEntry !== undefined) &&
+        if (('lastFeedEntry' in this) &&
             (feeds[0].created_at === this.lastFeedEntry.created_at)) {
             return;
         }
@@ -837,7 +837,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
 
         // OnPlayerJoining
         var bias = new Date(Date.now() - 120000).toJSON();
-        for (i = 0; i < feeds.length; i++) {
+        for (var i = 0; i < feeds.length; i++) {
             var ctx = feeds[i];
             if ((ctx.created_at < bias) || (ctx.type === 'Location')) {
                 break;
@@ -853,7 +853,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     }
                     if ((feedItem.created_at < bias) || (feedItem.type === 'Location') ||
                         ((feedItem.type === 'GPS') && (feedItem.created_at !== ctx.created_at) &&
-                        (feedItem.displayName === ctx.displayName))) {
+                            (feedItem.displayName === ctx.displayName))) {
                         break;
                     }
                 }
@@ -870,7 +870,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             }
         }
 
-        //on Location change remove OnPlayerJoined
+        // on Location change remove OnPlayerJoined
         if (this.config.hideOnPlayerJoined) {
             for (i = 0; i < feeds.length; i++) {
                 var ctx = feeds[i];
@@ -909,15 +909,15 @@ var bar = new ProgressBar.Circle(vroverlay, {
         }
     };
 
-    $app.methods.updateSharedFeedWrist = async function (feeds) {
+    $app.methods.updateSharedFeedWrist = function (feeds) {
         var filter = this.config.sharedFeedFilters.wrist;
         var filtered = [];
         feeds.forEach((feed) => {
             if (filter[feed.type]) {
                 if ((filter[feed.type] !== 'Off') &&
                     ((filter[feed.type] === 'Everyone') || (filter[feed.type] === 'On') ||
-                    ((filter[feed.type] === 'Friends') && (feed.isFriend)) ||
-                    ((filter[feed.type] === 'VIP') && (feed.isFavorite)))) {
+                        ((filter[feed.type] === 'Friends') && (feed.isFriend)) ||
+                        ((filter[feed.type] === 'VIP') && (feed.isFavorite)))) {
                     filtered.push(feed);
                 }
             } else {
@@ -935,8 +935,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
             if (filter[feed.type]) {
                 if ((filter[feed.type] !== 'Off') &&
                     ((filter[feed.type] === 'Everyone') || (filter[feed.type] === 'On') ||
-                    ((filter[feed.type] === 'Friends') && (feed.isFriend)) ||
-                    ((filter[feed.type] === 'VIP') && (feed.isFavorite)))) {
+                        ((filter[feed.type] === 'Friends') && (feed.isFriend)) ||
+                        ((filter[feed.type] === 'VIP') && (feed.isFavorite)))) {
                     filtered.push(feed);
                 }
             }
@@ -986,7 +986,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         text = `<strong>${noty.data}</strong> is joining`;
                         break;
                     case 'GPS':
-                        text = '<strong>' + noty.displayName + '</strong> is in ' + await this.displayLocation(noty.location[0]);
+                        text = `<strong>${noty.displayName}</strong> is in ${await this.displayLocation(noty.location[0])}`;
                         break;
                     case 'Online':
                         text = `<strong>${noty.displayName}</strong> has logged in`;
@@ -1033,6 +1033,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     case 'unmute':
                         text = `<strong>${noty.sourceDisplayName}</strong> has unmuted you`;
                         break;
+                    default:
+                        break;
                 }
                 if (text) {
                     new Noty({
@@ -1040,7 +1042,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         theme: this.config.notificationTheme,
                         timeout: this.config.notificationTimeout,
                         layout: this.config.notificationPosition,
-                        text: text
+                        text
                     }).show();
                 }
             }
@@ -1056,7 +1058,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         this.speak(`${noty.data} is joining`);
                         break;
                     case 'GPS':
-                        this.speak(noty.displayName + ' is in ' + await this.displayLocation(noty.location[0]));
+                        this.speak(`${noty.displayName} is in ${await this.displayLocation(noty.location[0])}`);
                         break;
                     case 'Online':
                         this.speak(`${noty.displayName} has logged in`);
@@ -1103,20 +1105,22 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     case 'unmute':
                         this.speak(`${noty.sourceDisplayName} has unmuted you`);
                         break;
+                    default:
+                        break;
                 }
             }
             if ((this.config.desktopToast) && (this.isGameNoVR)) {
                 var imageURL = '';
                 if (noty.userId) {
-                    await API.getCachedUser({
-                            userId: noty.userId
-                        }).catch((err) => {
-                            throw err;
-                        }).then((args) => {
-                            imageURL = args.json.currentAvatarThumbnailImageUrl;
-                            if ((this.config.displayVRCPlusIconsAsAvatar) && (args.json.userIcon)) {
-                                imageURL = args.json.userIcon;
-                            }
+                    imageURL = await API.getCachedUser({
+                        userId: noty.userId
+                    }).catch((err) => {
+                        throw err;
+                    }).then((args) => {
+                        if ((this.config.displayVRCPlusIconsAsAvatar) && (args.json.userIcon)) {
+                            return args.json.userIcon;
+                        }
+                        return args.json.currentAvatarThumbnailImageUrl;
                     });
                 }
                 switch (noty.type) {
@@ -1130,7 +1134,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         AppApi.DesktopNotification(noty.data, 'is joining', imageURL);
                         break;
                     case 'GPS':
-                        AppApi.DesktopNotification(noty.displayName, 'is in ' + await this.displayLocation(noty.location[0]), imageURL);
+                        AppApi.DesktopNotification(noty.displayName, `is in ${await this.displayLocation(noty.location[0])}`, imageURL);
                         break;
                     case 'Online':
                         AppApi.DesktopNotification(noty.displayName, 'has logged in', imageURL);
@@ -1161,6 +1165,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         break;
                     case 'DisplayName':
                         AppApi.DesktopNotification(noty.previousDisplayName, `changed their name to ${noty.displayName}`, imageURL);
+                        break;
+                    default:
                         break;
                 }
             }
@@ -1285,14 +1291,21 @@ var bar = new ProgressBar.Circle(vroverlay, {
 
     $app.methods.userStatusClass = function (user) {
         var style = {};
-        if (user) {
+        if (typeof user !== 'undefined') {
             if (user.location === 'offline') {
+                // Offline
                 style.offline = true;
             } else if (user.status === 'active') {
+                // Online
                 style.active = true;
             } else if (user.status === 'join me') {
+                // Join Me
                 style.joinme = true;
+            } else if (user.status === 'ask me') {
+                // Ask Me
+                style.askme = true;
             } else if (user.status === 'busy') {
+                // Do Not Disturb
                 style.busy = true;
             }
         }
@@ -1308,7 +1321,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             text = 'Private';
         } else if (L.worldId) {
             var ref = API.cachedWorlds.get(L.worldId);
-            if (ref === undefined) {
+            if (typeof ref === 'undefined') {
                 await API.getWorld({
                     worldId: L.worldId
                 }).then((args) => {
@@ -1340,4 +1353,4 @@ var bar = new ProgressBar.Circle(vroverlay, {
 
     $app = new Vue($app);
     window.$app = $app;
-})();
+}());

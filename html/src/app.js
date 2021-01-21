@@ -8,7 +8,8 @@ import Noty from 'noty';
 import Vue from 'vue';
 import VueLazyload from 'vue-lazyload';
 import { DataTables } from 'vue-data-tables';
-import ToggleSwitch from 'vuejs-toggle-switch'
+// eslint-disable-next-line no-unused-vars
+import ToggleSwitch from 'vuejs-toggle-switch';
 import ElementUI from 'element-ui';
 import locale from 'element-ui/lib/locale/lang/en';
 import copy from 'copy-to-clipboard';
@@ -21,11 +22,13 @@ var playerRequest = '';
 import sharedRepository from './repository/shared.js';
 import configRepository from './repository/config.js';
 import webApiService from './service/webapi.js';
-import gameLogService from './service/gamelog.js'
+import gameLogService from './service/gamelog.js';
 
 speechSynthesis.getVoices();
 
 (async function () {
+    var $app = null;
+
     await CefSharp.BindObjectAsync(
         'AppApi',
         'WebApi',
@@ -59,8 +62,8 @@ speechSynthesis.getVoices();
             'VRCX_CloseToTray',
             'launchAsDesktop'
         ];
-        for (var key of legacyConfigKeys) {
-            configRepository.setBool(key, VRCXStorage.Get(key) === 'true');
+        for (var _key of legacyConfigKeys) {
+            configRepository.setBool(_key, VRCXStorage.Get(_key) === 'true');
         }
         configRepository.setBool('migrate_config_20201101', true);
     }
@@ -297,7 +300,7 @@ speechSynthesis.getVoices();
     API.$emit = function (name, ...args) {
         // console.log(name, ...args);
         var handlers = this.eventHandlers.get(name);
-        if (handlers === undefined) {
+        if (typeof handlers === 'undefined') {
             return;
         }
         try {
@@ -311,7 +314,7 @@ speechSynthesis.getVoices();
 
     API.$on = function (name, handler) {
         var handlers = this.eventHandlers.get(name);
-        if (handlers === undefined) {
+        if (typeof handlers === 'undefined') {
             handlers = [];
             this.eventHandlers.set(name, handlers);
         }
@@ -320,7 +323,7 @@ speechSynthesis.getVoices();
 
     API.$off = function (name, handler) {
         var handlers = this.eventHandlers.get(name);
-        if (handlers === undefined) {
+        if (typeof handlers === 'undefined') {
             return;
         }
         var { length } = handlers;
@@ -357,14 +360,13 @@ speechSynthesis.getVoices();
             }
             // merge requests
             var req = this.pendingGetRequests.get(init.url);
-            if (req !== undefined) {
+            if (typeof req !== 'undefined') {
                 return req;
             }
         } else if (init.VRCPlusIcon) {
             delete init.VRCPlusIcon;
             console.log(init);
-        }
-        else {
+        } else {
             init.headers = {
                 'Content-Type': 'application/json;charset=utf-8',
                 ...init.headers
@@ -385,6 +387,7 @@ speechSynthesis.getVoices();
                 this.$throw(0, 'Invalid JSON response');
             }
             this.$throw(response.status);
+            return {};
         }).then(({ data, status }) => {
             if (status === 200) {
                 if (data.success === Object(data.success)) {
@@ -396,7 +399,7 @@ speechSynthesis.getVoices();
                 return data;
             }
             if ((status === 401) && (data.error.message === '"Missing Credentials"') && ($app.isAutoLogin)) {
-                if (endpoint.substring(0, 10) == 'auth/user?') {
+                if (endpoint.substring(0, 10) === 'auth/user?') {
                     this.$emit('AUTOLOGIN');
                 }
                 throw new Error('401: Missing Credentials');
@@ -505,16 +508,16 @@ speechSynthesis.getVoices();
         var text = [];
         if (code > 0) {
             var status = this.statusCodes[code];
-            if (status === undefined) {
+            if (typeof status === 'undefined') {
                 text.push(`${code}`);
             } else {
                 text.push(`${code} ${status}`);
             }
         }
-        if (error !== undefined) {
+        if (typeof error !== 'undefined') {
             text.push(JSON.stringify(error));
         }
-        if (extra !== undefined) {
+        if (typeof extra !== 'undefined') {
             text.push(JSON.stringify(extra));
         }
         text = text.map((s) => escapeTag(s)).join('<br>');
@@ -528,7 +531,7 @@ speechSynthesis.getVoices();
     };
 
     API.$bulk = function (options, args) {
-        if (options.handle !== undefined) {
+        if ('handle' in options) {
             options.handle.call(this, args, options);
         }
         if (args.json.length > 0 &&
@@ -540,7 +543,7 @@ speechSynthesis.getVoices();
                         ? args.json.length
                         : options.params.n === args.json.length)) {
             this.bulk(options);
-        } else if (options.done !== undefined) {
+        } else if ('done' in options) {
             options.done.call(this, true, options);
         }
         return args;
@@ -548,7 +551,7 @@ speechSynthesis.getVoices();
 
     API.bulk = function (options) {
         this[options.fn](options.params).catch((err) => {
-            if (options.done !== undefined) {
+            if ('done' in options) {
                 options.done.call(this, false, options);
             }
             throw err;
@@ -769,7 +772,7 @@ speechSynthesis.getVoices();
                     this.text = 'Private';
                 } else if (L.worldId) {
                     var ref = API.cachedWorlds.get(L.worldId);
-                    if (ref === undefined) {
+                    if (typeof ref === 'undefined') {
                         API.getWorld({
                             worldId: L.worldId
                         }).then((args) => {
@@ -857,7 +860,9 @@ speechSynthesis.getVoices();
             last_platform: json.last_platform,
             allowAvatarCopying: json.allowAvatarCopying,
             isFriend: false,
-            location: ($app.isGameRunning === true) ? $app.lastLocation : ''
+            location: ($app.isGameRunning === true)
+                ? $app.lastLocation
+                : ''
         });
     });
 
@@ -1038,7 +1043,7 @@ speechSynthesis.getVoices();
             }
             var key = tag.substr(9);
             var value = subsetOfLanguages[key];
-            if (value === undefined) {
+            if (typeof value === 'undefined') {
                 continue;
             }
             ref.$languages.push({
@@ -1153,11 +1158,13 @@ speechSynthesis.getVoices();
             json.statusDescription = API.currentUser.statusDescription;
             json.state = API.currentUser.state;
             json.last_login = API.currentUser.last_login;
-            json.location = ($app.isGameRunning === true) ? $app.lastLocation : '';
+            json.location = ($app.isGameRunning === true)
+                ? $app.lastLocation
+                : '';
             json.$online_for = API.currentUser.$online_for;
             json.$offline_for = API.currentUser.$offline_for;
         }
-        if (ref === undefined) {
+        if (typeof ref === 'undefined') {
             ref = {
                 id: '',
                 username: '',
@@ -1276,7 +1283,7 @@ speechSynthesis.getVoices();
     API.getCachedUser = function (params) {
         return new Promise((resolve, reject) => {
             var ref = this.cachedUsers.get(params.userId);
-            if (ref === undefined) {
+            if (typeof ref === 'undefined') {
                 this.getUser(params).catch(reject).then(resolve);
             } else {
                 resolve({
@@ -1391,7 +1398,7 @@ speechSynthesis.getVoices();
 
     API.applyWorld = function (json) {
         var ref = this.cachedWorlds.get(json.id);
-        if (ref === undefined) {
+        if (typeof ref === 'undefined') {
             ref = {
                 id: '',
                 name: '',
@@ -1462,7 +1469,7 @@ speechSynthesis.getVoices();
     API.getCachedWorld = function (params) {
         return new Promise((resolve, reject) => {
             var ref = this.cachedWorlds.get(params.worldId);
-            if (ref === undefined) {
+            if (typeof ref === 'undefined') {
                 this.getWorld(params).catch(reject).then(resolve);
             } else {
                 resolve({
@@ -1491,7 +1498,7 @@ speechSynthesis.getVoices();
     */
     API.getWorlds = function (params, option) {
         var endpoint = 'worlds';
-        if (option !== undefined) {
+        if (typeof option !== 'undefined') {
             endpoint = `worlds/${option}`;
         }
         return this.call(endpoint, {
@@ -1724,7 +1731,7 @@ speechSynthesis.getVoices();
 
     API.applyAvatar = function (json) {
         var ref = this.cachedAvatars.get(json.id);
-        if (ref === undefined) {
+        if (typeof ref === 'undefined') {
             ref = {
                 id: '',
                 name: '',
@@ -1778,7 +1785,7 @@ speechSynthesis.getVoices();
     API.getCachedAvatar = function (params) {
         return new Promise((resolve, reject) => {
             var ref = this.cachedAvatars.get(params.avatarId);
-            if (ref === undefined) {
+            if (typeof ref === 'undefined') {
                 this.getAvatar(params).catch(reject).then(resolve);
             } else {
                 resolve({
@@ -1884,7 +1891,7 @@ speechSynthesis.getVoices();
 
     API.$on('NOTIFICATION:ACCEPT', function (args) {
         var ref = this.cachedNotifications.get(args.params.notificationId);
-        if (ref === undefined ||
+        if (typeof ref === 'undefined' ||
             ref.$isDeleted) {
             return;
         }
@@ -1905,7 +1912,7 @@ speechSynthesis.getVoices();
 
     API.$on('NOTIFICATION:HIDE', function (args) {
         var ref = this.cachedNotifications.get(args.params.notificationId);
-        if (ref === undefined &&
+        if (typeof ref === 'undefined' &&
             ref.$isDeleted) {
             return;
         }
@@ -1921,7 +1928,7 @@ speechSynthesis.getVoices();
 
     API.applyNotification = function (json) {
         var ref = this.cachedNotifications.get(json.id);
-        if (ref === undefined) {
+        if (typeof ref === 'undefined') {
             ref = {
                 id: '',
                 senderUserId: '',
@@ -2180,7 +2187,7 @@ speechSynthesis.getVoices();
 
     API.applyPlayerModeration = function (json) {
         var ref = this.cachedPlayerModerations.get(json.id);
-        if (ref === undefined) {
+        if (typeof ref === 'undefined') {
             ref = {
                 id: '',
                 type: '',
@@ -2374,7 +2381,7 @@ speechSynthesis.getVoices();
 
     API.$on('FAVORITE:DELETE', function (args) {
         var ref = this.cachedFavoritesByObjectId.get(args.params.objectId);
-        if (ref === undefined) {
+        if (typeof ref === 'undefined') {
             return;
         }
         // 애초에 $isDeleted인데 여기로 올 수 가 있나..?
@@ -2486,7 +2493,7 @@ speechSynthesis.getVoices();
 
     API.applyFavorite = function (json) {
         var ref = this.cachedFavorites.get(json.id);
-        if (ref === undefined) {
+        if (typeof ref === 'undefined') {
             ref = {
                 id: '',
                 type: '',
@@ -2510,7 +2517,7 @@ speechSynthesis.getVoices();
         if (ref.$isDeleted === false &&
             ref.$groupRef === null) {
             var group = this.cachedFavoriteGroupsByTypeName.get(ref.$groupKey);
-            if (group !== undefined) {
+            if (typeof group !== 'undefined') {
                 ref.$groupRef = group;
                 ++group.count;
             }
@@ -2552,7 +2559,7 @@ speechSynthesis.getVoices();
                 continue;
             }
             var type = types[ref.type];
-            if (type === undefined) {
+            if (typeof type === 'undefined') {
                 continue;
             }
             if ((ref.type === 'avatar') && (!tags.includes(ref.tags[0]))) {
@@ -2564,26 +2571,25 @@ speechSynthesis.getVoices();
             var [N, fn] = types[type];
             if (N > 0) {
                 if (type === 'avatar') {
-                    tags.forEach((tag) => {
+                    for (var tag of tags) {
                         this.bulk({
                             fn,
                             N,
                             params: {
                                 n: 100,
                                 offset: 0,
-                                tag: tag
+                                tag
                             }
                         });
-                    });
-                }
-                else {
+                    }
+                } else {
                     this.bulk({
                         fn,
                         N,
-                    params: {
-                        n: 100,
-                        offset: 0
-                    }
+                        params: {
+                            n: 100,
+                            offset: 0
+                        }
                     });
                 }
             }
@@ -2616,7 +2622,7 @@ speechSynthesis.getVoices();
 
     API.applyFavoriteGroup = function (json) {
         var ref = this.cachedFavoriteGroups.get(json.id);
-        if (ref === undefined) {
+        if (typeof ref === 'undefined') {
             ref = {
                 id: '',
                 ownerId: '',
@@ -2677,7 +2683,7 @@ speechSynthesis.getVoices();
             'Favorite Avatars',
             'VRC+ Group 1',
             'VRC+ Group 2',
-            'VRC+ Group 3',
+            'VRC+ Group 3'
         ];
         this.favoriteAvatarGroups = [];
         for (var i = 0; i < 4; ++i) {
@@ -2703,7 +2709,7 @@ speechSynthesis.getVoices();
                 continue;
             }
             var groups = types[ref.type];
-            if (groups === undefined) {
+            if (typeof groups === 'undefined') {
                 continue;
             }
             for (var group of groups) {
@@ -2731,7 +2737,7 @@ speechSynthesis.getVoices();
                 continue;
             }
             var groups = types[ref.type];
-            if (groups === undefined) {
+            if (typeof groups === 'undefined') {
                 continue;
             }
             for (var group of groups) {
@@ -2761,7 +2767,7 @@ speechSynthesis.getVoices();
                 continue;
             }
             var group = this.cachedFavoriteGroupsByTypeName.get(ref.$groupKey);
-            if (group === undefined) {
+            if (typeof group === 'undefined') {
                 continue;
             }
             ref.$groupRef = group;
@@ -3363,7 +3369,7 @@ speechSynthesis.getVoices();
         methods: {},
         watch: {},
         el: '#x-app',
-        async mounted() {
+        mounted() {
             this.checkAppVersion();
             API.$on('SHOW_WORLD_DIALOG', (tag) => this.showWorldDialog(tag));
             API.$on('SHOW_LAUNCH_DIALOG', (tag) => this.showLaunchDialog(tag));
@@ -3401,7 +3407,7 @@ speechSynthesis.getVoices();
     $app.methods.languageClass = function (language) {
         var style = {};
         var mapping = languageMappings[language];
-        if (mapping !== undefined) {
+        if (typeof mapping !== 'undefined') {
             style[mapping] = true;
         }
         return style;
@@ -3671,8 +3677,8 @@ speechSynthesis.getVoices();
         };
         for (var userId of friends) {
             var ref = this.friends.get(userId);
-            var name = (ref !== undefined && ref.name) || '';
-            var memo = (ref !== undefined && ref.memo) || '';
+            var name = (typeof ref !== 'undefined' && ref.name) || '';
+            var memo = (typeof ref !== 'undefined' && ref.memo) || '';
             lines.push(`${_(userId)},${_(name)},${_(memo)}`);
         }
         this.exportFriendsListContent = lines.join('\n');
@@ -3716,10 +3722,8 @@ speechSynthesis.getVoices();
             var credentialsToSave = { user: currentUser, loginParmas: this.saveCredentials };
             savedCredentialsArray[currentUser.username] = credentialsToSave;
             delete this.saveCredentials;
-        } else {
-            if (savedCredentialsArray[currentUser.username] !== undefined) {
-                savedCredentialsArray[currentUser.username].user = currentUser;
-            }
+        } else if (typeof savedCredentialsArray[currentUser.username] !== 'undefined') {
+            savedCredentialsArray[currentUser.username].user = currentUser;
         }
         this.loginForm.savedCredentials = savedCredentialsArray;
         var jsonCredentialsArray = JSON.stringify(savedCredentialsArray);
@@ -3733,7 +3737,7 @@ speechSynthesis.getVoices();
         return API.getConfig().catch((err) => {
             this.loginForm.loading = false;
             throw err;
-        }).then((args) => {
+        }).then(() => {
             API.login({
                 username: loginParmas.username,
                 password: loginParmas.password
@@ -3759,15 +3763,15 @@ speechSynthesis.getVoices();
     };
 
     API.$on('AUTOLOGIN', function () {
-        var user = $app.loginForm.savedCredentials[$app.loginForm.lastUserLoggedIn]
-        if (user !== undefined) {
+        var user = $app.loginForm.savedCredentials[$app.loginForm.lastUserLoggedIn];
+        if (typeof user !== 'undefined') {
             $app.relogin({
-                    username: user.loginParmas.username,
-                    password: user.loginParmas.password
-                }).then((args) => {
-                    new Noty({
-                        type: 'success',
-                        text: 'Automatically logged in.'
+                username: user.loginParmas.username,
+                password: user.loginParmas.password
+            }).then(() => {
+                new Noty({
+                    type: 'success',
+                    text: 'Automatically logged in.'
                 }).show();
             });
         }
@@ -3778,7 +3782,9 @@ speechSynthesis.getVoices();
         username: '',
         password: '',
         saveCredentials: false,
-        savedCredentials: ((configRepository.getString('lastUserLoggedIn') !== null) ? JSON.parse(configRepository.getString('savedCredentials')) : {}),
+        savedCredentials: ((configRepository.getString('lastUserLoggedIn') !== null)
+            ? JSON.parse(configRepository.getString('savedCredentials'))
+            : {}),
         lastUserLoggedIn: configRepository.getString('lastUserLoggedIn'),
         rules: {
             username: [
@@ -3925,7 +3931,7 @@ speechSynthesis.getVoices();
                 continue;
             }
             var user = API.cachedUsers.get(userId);
-            if (user !== undefined &&
+            if (typeof user !== 'undefined' &&
                 user.status !== 'offline') {
                 continue;
             }
@@ -4035,9 +4041,9 @@ speechSynthesis.getVoices();
             no: ++this.friendsNo,
             memo: this.loadMemo(id)
         };
-        if (ref === undefined) {
+        if (typeof ref === 'undefined') {
             ref = this.friendLog[id];
-            if (ref !== undefined &&
+            if (typeof ref !== 'undefined' &&
                 ref.displayName) {
                 ctx.name = ref.displayName;
             }
@@ -4068,7 +4074,7 @@ speechSynthesis.getVoices();
 
     $app.methods.deleteFriend = function (id) {
         var ctx = this.friends.get(id);
-        if (ctx === undefined) {
+        if (typeof ctx === 'undefined') {
             return;
         }
         this.friends.delete(id);
@@ -4091,12 +4097,12 @@ speechSynthesis.getVoices();
 
     $app.methods.updateFriend = function (id, state, origin) {
         var ctx = this.friends.get(id);
-        if (ctx === undefined) {
+        if (typeof ctx === 'undefined') {
             return;
         }
         var ref = API.cachedUsers.get(id);
         var isVIP = API.cachedFavoritesByObjectId.has(id);
-        if (state === undefined ||
+        if (typeof state === 'undefined' ||
             ctx.state === state) {
             // this is should be: undefined -> user
             if (ctx.ref !== ref) {
@@ -4138,7 +4144,7 @@ speechSynthesis.getVoices();
                     }
                 }
             }
-            if (ref !== undefined &&
+            if (typeof ref !== 'undefined' &&
                 ctx.name !== ref.displayName) {
                 ctx.name = ref.displayName;
                 if (ctx.state === 'online') {
@@ -4156,7 +4162,7 @@ speechSynthesis.getVoices();
             // FIXME: 도배 가능성 있음
             if (origin &&
                 ctx.state !== 'online' &&
-                ref !== undefined &&
+                typeof ref !== 'undefined' &&
                 ref.location !== '' &&
                 ref.location !== 'offline') {
                 API.getUser({
@@ -4187,7 +4193,7 @@ speechSynthesis.getVoices();
             if (ctx.isVIP !== isVIP) {
                 ctx.isVIP = isVIP;
             }
-            if (ref !== undefined) {
+            if (typeof ref !== 'undefined') {
                 if (ctx.ref !== ref) {
                     ctx.ref = ref;
                 }
@@ -4214,15 +4220,15 @@ speechSynthesis.getVoices();
                 this.friendsGroup3_.push(ctx);
                 this.friendsGroupD_.unshift(ctx);
             }
-            if (ctx.ref !== undefined) {
-                if ((ctx.ref.$offline_for == '') &&
-                    ((ctx.state == 'offline') && ctx.ref.state == '') ||
-                    (((ctx.state == 'offline') || (ctx.state == 'active')) &&
-                    ((ctx.ref.state == 'online')))) {
+            if ('ref' in ctx) {
+                if ((ctx.ref.$offline_for === '') &&
+                    ((ctx.state === 'offline') && ctx.ref.state === '') ||
+                    (((ctx.state === 'offline') || (ctx.state === 'active')) &&
+                        ((ctx.ref.state === 'online')))) {
                     ctx.ref.$online_for = '';
                     ctx.ref.$offline_for = Date.now();
                 }
-                if (ctx.state == 'online') {
+                if (ctx.state === 'online') {
                     ctx.ref.$location_at = Date.now();
                     ctx.ref.$online_for = Date.now();
                     ctx.ref.$offline_for = '';
@@ -4320,7 +4326,7 @@ speechSynthesis.getVoices();
 
     $app.methods.userStatusClass = function (user) {
         var style = {};
-        if (user !== undefined) {
+        if (typeof user !== 'undefined') {
             if (user.location === 'offline') {
                 // Offline
                 style.offline = true;
@@ -4366,7 +4372,7 @@ speechSynthesis.getVoices();
         if (query) {
             var QUERY = query.toUpperCase();
             for (var ctx of this.friends.values()) {
-                if (ctx.ref === undefined) {
+                if (('ref' in ctx) === false) {
                     continue;
                 }
                 var NAME = ctx.name.toUpperCase();
@@ -4847,13 +4853,16 @@ speechSynthesis.getVoices();
                         data: videoobj
                     };
                     break;
+
+                default:
+                    break;
             }
 
             if (tableData !== null) {
                 this.gameLogTable.data.push(tableData);
             }
         }
-    }
+    };
 
     $app.methods.sweepGameLog = function () {
         var { data } = this.gameLogTable;
@@ -4874,8 +4883,10 @@ speechSynthesis.getVoices();
 
     $app.methods.updateDiscord = function () {
         var ref = API.cachedUsers.get(API.currentUser.id);
-        if (ref !== undefined) {
-            var myLocation = (this.isGameRunning === true) ? this.lastLocation : '';
+        if (typeof ref !== 'undefined') {
+            var myLocation = (this.isGameRunning === true)
+                ? this.lastLocation
+                : '';
             if (ref.location !== myLocation) {
                 API.applyUser({
                     id: ref.id,
@@ -5004,7 +5015,7 @@ speechSynthesis.getVoices();
             var map = new Map();
             for (var json of args.json) {
                 var ref = API.cachedUsers.get(json.id);
-                if (ref !== undefined) {
+                if (typeof ref !== 'undefined') {
                     map.set(ref.id, ref);
                 }
             }
@@ -5089,7 +5100,7 @@ speechSynthesis.getVoices();
             var map = new Map();
             for (var json of args.json) {
                 var ref = API.cachedWorlds.get(json.id);
-                if (ref !== undefined) {
+                if (typeof ref !== 'undefined') {
                     map.set(ref.id, ref);
                 }
             }
@@ -5140,7 +5151,7 @@ speechSynthesis.getVoices();
             var map = new Map();
             for (var json of args.json) {
                 var ref = API.cachedAvatars.get(json.id);
-                if (ref !== undefined) {
+                if (typeof ref !== 'undefined') {
                     map.set(ref.id, ref);
                 }
             }
@@ -5192,9 +5203,9 @@ speechSynthesis.getVoices();
     $app.methods.applyFavorite = function (type, objectId) {
         var favorite = API.cachedFavoritesByObjectId.get(objectId);
         var ctx = this.favoriteObjects.get(objectId);
-        if (favorite !== undefined) {
+        if (typeof favorite !== 'undefined') {
             var isTypeChanged = false;
-            if (ctx === undefined) {
+            if (typeof ctx === 'undefined') {
                 ctx = {
                     id: objectId,
                     type,
@@ -5205,9 +5216,9 @@ speechSynthesis.getVoices();
                 this.favoriteObjects.set(objectId, ctx);
                 if (type === 'friend') {
                     var ref = API.cachedUsers.get(objectId);
-                    if (ref === undefined) {
+                    if (typeof ref === 'undefined') {
                         ref = this.friendLog[objectId];
-                        if (ref !== undefined &&
+                        if (typeof ref !== 'undefined' &&
                             ref.displayName) {
                             ctx.name = ref.displayName;
                         }
@@ -5217,13 +5228,13 @@ speechSynthesis.getVoices();
                     }
                 } else if (type === 'world') {
                     var ref = API.cachedWorlds.get(objectId);
-                    if (ref !== undefined) {
+                    if (typeof ref !== 'undefined') {
                         ctx.ref = ref;
                         ctx.name = ref.name;
                     }
                 } else if (type === 'avatar') {
                     var ref = API.cachedAvatars.get(objectId);
-                    if (ref !== undefined) {
+                    if (typeof ref !== 'undefined') {
                         ctx.ref = ref;
                         ctx.name = ref.name;
                     }
@@ -5243,7 +5254,7 @@ speechSynthesis.getVoices();
                 }
                 if (type === 'friend') {
                     var ref = API.cachedUsers.get(objectId);
-                    if (ref !== undefined) {
+                    if (typeof ref !== 'undefined') {
                         if (ctx.ref !== ref) {
                             ctx.ref = ref;
                         }
@@ -5254,7 +5265,7 @@ speechSynthesis.getVoices();
                     }
                 } else if (type === 'world') {
                     var ref = API.cachedWorlds.get(objectId);
-                    if (ref !== undefined) {
+                    if (typeof ref !== 'undefined') {
                         if (ctx.ref !== ref) {
                             ctx.ref = ref;
                         }
@@ -5265,7 +5276,7 @@ speechSynthesis.getVoices();
                     }
                 } else if (type === 'avatar') {
                     var ref = API.cachedAvatars.get(objectId);
-                    if (ref !== undefined) {
+                    if (typeof ref !== 'undefined') {
                         if (ctx.ref !== ref) {
                             ctx.ref = ref;
                         }
@@ -5288,7 +5299,7 @@ speechSynthesis.getVoices();
                     this.sortFavoriteAvatars = true;
                 }
             }
-        } else if (ctx !== undefined) {
+        } else if (typeof ctx !== 'undefined') {
             this.favoriteObjects.delete(objectId);
             if (type === 'friend') {
                 removeFromArray(this.favoriteFriends_, ctx);
@@ -5440,7 +5451,7 @@ speechSynthesis.getVoices();
 
     API.$on('FRIEND:REQUEST', function (args) {
         var ref = this.cachedUsers.get(args.params.userId);
-        if (ref === undefined) {
+        if (typeof ref === 'undefined') {
             return;
         }
         $app.friendLogTable.data.push({
@@ -5454,7 +5465,7 @@ speechSynthesis.getVoices();
 
     API.$on('FRIEND:REQUEST:CANCEL', function (args) {
         var ref = this.cachedUsers.get(args.params.userId);
-        if (ref === undefined) {
+        if (typeof ref === 'undefined') {
             return;
         }
         $app.friendLogTable.data.push({
@@ -5492,7 +5503,7 @@ speechSynthesis.getVoices();
                     id
                 };
                 var user = API.cachedUsers.get(id);
-                if (user !== undefined) {
+                if (typeof user !== 'undefined') {
                     ctx.displayName = user.displayName;
                     ctx.trustLevel = user.$trustLevel;
                 }
@@ -5505,7 +5516,7 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.addFriendship = function (id) {
-        if (this.friendLog[id] !== undefined) {
+        if (typeof this.friendLog[id] !== 'undefined') {
             return;
         }
         var ctx = {
@@ -5515,7 +5526,7 @@ speechSynthesis.getVoices();
         };
         Vue.set(this.friendLog, id, ctx);
         var ref = API.cachedUsers.get(id);
-        if (ref !== undefined) {
+        if (typeof ref !== 'undefined') {
             ctx.displayName = ref.displayName;
             ctx.trustLevel = ref.$trustLevel;
             this.friendLogTable.data.push({
@@ -5531,7 +5542,7 @@ speechSynthesis.getVoices();
 
     $app.methods.deleteFriendship = function (id) {
         var ctx = this.friendLog[id];
-        if (ctx === undefined) {
+        if (typeof ctx === 'undefined') {
             return;
         }
         Vue.delete(this.friendLog, id);
@@ -5560,7 +5571,7 @@ speechSynthesis.getVoices();
 
     $app.methods.updateFriendship = function (ref) {
         var ctx = this.friendLog[ref.id];
-        if (ctx === undefined) {
+        if (typeof ctx === 'undefined') {
             return;
         }
         if (ctx.displayName !== ref.displayName) {
@@ -5897,7 +5908,7 @@ speechSynthesis.getVoices();
     $app.data.isStartAtWindowsStartup = configRepository.getBool('VRCX_StartAtWindowsStartup');
     $app.data.isStartAsMinimizedState = (VRCXStorage.Get('VRCX_StartAsMinimizedState') === 'true');
     $app.data.isCloseToTray = configRepository.getBool('VRCX_CloseToTray');
-    $app.data.isAutoLogin= configRepository.getBool('VRCX_AutoLogin');
+    $app.data.isAutoLogin = configRepository.getBool('VRCX_AutoLogin');
     var saveVRCXWindowOption = function () {
         configRepository.setBool('VRCX_StartAtWindowsStartup', this.isStartAtWindowsStartup);
         VRCXStorage.Set('VRCX_StartAsMinimizedState', this.isStartAsMinimizedState.toString());
@@ -5910,7 +5921,7 @@ speechSynthesis.getVoices();
     $app.watch.isCloseToTray = saveVRCXWindowOption;
     $app.watch.isAutoLogin = saveVRCXWindowOption;
 
-    //setting defaults
+    // setting defaults
     if (configRepository.getBool('displayVRCPlusIconsAsAvatar') === null) {
         $app.data.displayVRCPlusIconsAsAvatar = true;
         configRepository.setBool('displayVRCPlusIconsAsAvatar', $app.data.displayVRCPlusIconsAsAvatar);
@@ -5982,12 +5993,12 @@ speechSynthesis.getVoices();
 
     $app.data.toggleSwitchOptionsEveryone = {
         layout: {
-            backgroundColor: "white",
-            selectedBackgroundColor: "#409eff",
-            selectedColor: "white",
-            color: "#409eff",
-            borderColor: "#409eff",
-            fontWeight: "bold",
+            backgroundColor: 'white',
+            selectedBackgroundColor: '#409eff',
+            selectedColor: 'white',
+            color: '#409eff',
+            borderColor: '#409eff',
+            fontWeight: 'bold',
             fontFamily: '"Noto Sans JP", "Noto Sans KR", "Meiryo UI", "Malgun Gothic", "Segoe UI", "sans-serif"'
         },
         size: {
@@ -5997,17 +6008,17 @@ speechSynthesis.getVoices();
             fontSize: 0.75
         },
         items: {
-            labels: [{ name: "Off" }, { name: "VIP" }, { name: "Friends" }, { name: "Everyone" }]
+            labels: [{ name: 'Off' }, { name: 'VIP' }, { name: 'Friends' }, { name: 'Everyone' }]
         }
     };
     $app.data.toggleSwitchOptionsFriends = {
         layout: {
-            backgroundColor: "white",
-            selectedBackgroundColor: "#409eff",
-            selectedColor: "white",
-            color: "#409eff",
-            borderColor: "#409eff",
-            fontWeight: "bold",
+            backgroundColor: 'white',
+            selectedBackgroundColor: '#409eff',
+            selectedColor: 'white',
+            color: '#409eff',
+            borderColor: '#409eff',
+            fontWeight: 'bold',
             fontFamily: '"Noto Sans JP", "Noto Sans KR", "Meiryo UI", "Malgun Gothic", "Segoe UI", "sans-serif"'
         },
         size: {
@@ -6017,17 +6028,17 @@ speechSynthesis.getVoices();
             fontSize: 0.75
         },
         items: {
-            labels: [{ name: "Off" }, { name: "VIP" }, { name: "Friends" }]
+            labels: [{ name: 'Off' }, { name: 'VIP' }, { name: 'Friends' }]
         }
     };
     $app.data.toggleSwitchOptionsOn = {
         layout: {
-            backgroundColor: "white",
-            selectedBackgroundColor: "#409eff",
-            selectedColor: "white",
-            color: "#409eff",
-            borderColor: "#409eff",
-            fontWeight: "bold",
+            backgroundColor: 'white',
+            selectedBackgroundColor: '#409eff',
+            selectedColor: 'white',
+            color: '#409eff',
+            borderColor: '#409eff',
+            fontWeight: 'bold',
             fontFamily: '"Noto Sans JP", "Noto Sans KR", "Meiryo UI", "Malgun Gothic", "Segoe UI", "sans-serif"'
         },
         size: {
@@ -6037,7 +6048,7 @@ speechSynthesis.getVoices();
             fontSize: 0.75
         },
         items: {
-            labels: [{ name: "Off" }, { name: "On" }]
+            labels: [{ name: 'Off' }, { name: 'On' }]
         }
     };
 
@@ -6046,13 +6057,13 @@ speechSynthesis.getVoices();
         this.wristFeedFiltersDialog.visible = false;
         configRepository.setString('sharedFeedFilters', JSON.stringify(this.sharedFeedFilters));
         this.updateVRConfigVars();
-    }
+    };
 
     $app.methods.cancelSharedFeedFilters = function () {
         this.notyFeedFiltersDialog.visible = false;
         this.wristFeedFiltersDialog.visible = false;
         this.sharedFeedFilters = JSON.parse(configRepository.getString('sharedFeedFilters'));
-    }
+    };
 
     $app.data.notificationPosition = configRepository.getString('VRCX_notificationPosition');
     $app.methods.changeNotificationPosition = function () {
@@ -6083,23 +6094,22 @@ speechSynthesis.getVoices();
         if (this.isGameRunning) {
             API.currentUser.$online_for = Date.now();
             API.currentUser.$offline_for = '';
-        }
-        else {
+        } else {
             API.currentUser.$online_for = '';
             API.currentUser.$offline_for = Date.now();
         }
-    }
+    };
     $app.watch.isGameRunning = isGameRunningStateChange;
 
     sharedRepository.setBool('is_Game_No_VR', false);
     var isGameNoVRStateChange = function () {
         sharedRepository.setBool('is_Game_No_VR', this.isGameNoVR);
-    }
+    };
     $app.watch.isGameNoVR = isGameNoVRStateChange;
 
     var lastLocationStateChange = function () {
         sharedRepository.setString('last_location', $app.lastLocation);
-    }
+    };
     $app.watch.lastLocation = lastLocationStateChange;
 
     $app.methods.updateVRConfigVars = function () {
@@ -6121,10 +6131,10 @@ speechSynthesis.getVoices();
             sharedFeedFilters: this.sharedFeedFilters,
             notificationPosition: this.notificationPosition,
             notificationTimeout: this.notificationTimeout,
-            notificationTheme: notificationTheme
-        }
+            notificationTheme
+        };
         sharedRepository.setObject('VRConfigVars', VRConfigVars);
-    }
+    };
 
     API.$on('LOGIN', function () {
         $app.updateVRConfigVars();
@@ -6421,7 +6431,7 @@ speechSynthesis.getVoices();
         // 얘는 @DELETE가 오고나서 ACCEPT가 옴
         // 따라서 $isDeleted라면 ref가 undefined가 됨
         if (D.visible === false ||
-            ref === undefined ||
+            typeof ref === 'undefined' ||
             ref.type !== 'friendRequest' ||
             ref.senderUserId !== D.id) {
             return;
@@ -6578,7 +6588,7 @@ speechSynthesis.getVoices();
         D.$location = L;
         if (L.userId) {
             var ref = API.cachedUsers.get(L.userId);
-            if (ref === undefined) {
+            if (typeof ref === 'undefined') {
                 API.getUser({
                     userId: L.userId
                 }).then((args) => {
@@ -6592,7 +6602,7 @@ speechSynthesis.getVoices();
         var users = [];
         if (L.isOffline === false) {
             for (var { ref } of this.friends.values()) {
-                if (ref !== undefined &&
+                if (typeof ref !== 'undefined' &&
                     ref.location === L.tag) {
                     users.push(ref);
                 }
@@ -6601,7 +6611,9 @@ speechSynthesis.getVoices();
         if (this.isGameRunning &&
             this.lastLocation === L.tag) {
             var ref = API.cachedUsers.get(API.currentUser.id);
-            users.push((ref === undefined) ? API.currentUser : ref);
+            users.push((typeof ref === 'undefined')
+                ? API.currentUser
+                : ref);
         }
         users.sort(compareByDisplayName);
         D.users = users;
@@ -6619,7 +6631,7 @@ speechSynthesis.getVoices();
                 }
             };
             var ref = API.cachedWorlds.get(L.worldId);
-            if (ref === undefined) {
+            if (typeof ref === 'undefined') {
                 API.getWorld({
                     worldId: L.worldId
                 }).then((args) => {
@@ -6686,7 +6698,7 @@ speechSynthesis.getVoices();
             handle: (args) => {
                 for (var json of args.json) {
                     var $ref = API.cachedWorlds.get(json.id);
-                    if ($ref !== undefined) {
+                    if (typeof $ref !== 'undefined') {
                         map.set($ref.id, $ref);
                     }
                 }
@@ -6733,7 +6745,7 @@ speechSynthesis.getVoices();
             handle: (args) => {
                 for (var json of args.json) {
                     var $ref = API.cachedAvatars.get(json.id);
-                    if ($ref !== undefined) {
+                    if (typeof $ref !== 'undefined') {
                         map.set($ref.id, $ref);
                     }
                 }
@@ -6900,9 +6912,9 @@ speechSynthesis.getVoices();
                         worldId: this.lastLocation,
                         worldName: args.ref.name
                     }
-                }).then((args) => {
+                }).then((_args) => {
                     this.$message('Invite sent');
-                    return args;
+                    return _args;
                 });
             });
         } else if (command === 'Show Avatar Details') {
@@ -7095,7 +7107,7 @@ speechSynthesis.getVoices();
         }
         var { instanceId } = D.$location;
         if (instanceId &&
-            instances[instanceId] === undefined) {
+            typeof instances[instanceId] === 'undefined') {
             instances[instanceId] = {
                 id: instanceId,
                 occupants: 0,
@@ -7103,14 +7115,14 @@ speechSynthesis.getVoices();
             };
         }
         for (var { ref } of this.friends.values()) {
-            if (ref === undefined ||
-                ref.$location === undefined ||
+            if (typeof ref === 'undefined' ||
+                ('$location' in ref) === false ||
                 ref.$location.worldId !== D.id) {
                 continue;
             }
             var { instanceId } = ref.$location;
             var instance = instances[instanceId];
-            if (instance === undefined) {
+            if (typeof instance === 'undefined') {
                 instance = {
                     id: instanceId,
                     occupants: 0,
@@ -7124,7 +7136,7 @@ speechSynthesis.getVoices();
             var lastLocation$ = API.parseLocation(this.lastLocation);
             if (lastLocation$.worldId === D.id) {
                 var instance = instances[lastLocation$.instanceId];
-                if (instance === undefined) {
+                if (typeof instance === 'undefined') {
                     instance = {
                         id: lastLocation$.instanceId,
                         occupants: 1,
@@ -7133,7 +7145,9 @@ speechSynthesis.getVoices();
                     instances[instance.id] = instance;
                 }
                 var ref = API.cachedUsers.get(API.currentUser.id);
-                instance.users.push((ref === undefined) ? API.currentUser : ref);
+                instance.users.push((typeof ref === 'undefined')
+                    ? API.currentUser
+                    : ref);
             }
         }
         var rooms = [];
@@ -7145,7 +7159,7 @@ speechSynthesis.getVoices();
             instance.$location = L;
             if (L.userId) {
                 var ref = API.cachedUsers.get(L.userId);
-                if (ref === undefined) {
+                if (typeof ref === 'undefined') {
                     API.getUser({
                         userId: L.userId
                     }).then((args) => {
@@ -7393,7 +7407,7 @@ speechSynthesis.getVoices();
                                     type: 'success'
                                 });
                                 return args;
-                            });;
+                            });
                             break;
                         case 'Make Private':
                             API.saveAvatar({
@@ -7405,7 +7419,7 @@ speechSynthesis.getVoices();
                                     type: 'success'
                                 });
                                 return args;
-                            });;
+                            });
                             break;
                         default:
                             break;
@@ -7964,7 +7978,7 @@ speechSynthesis.getVoices();
 
     $app.methods.locationToLaunchArg = function (location) {
         return `vrchat://launch?id=${location}`;
-    }
+    };
 
     $app.methods.launchGame = function (...args) {
         var D = this.launchDialog;
@@ -8025,7 +8039,7 @@ speechSynthesis.getVoices();
     };
 
     API.refreshVRCPlusIconsTableData = function (params) {
-        return this.call(`files`, {
+        return this.call('files', {
             method: 'GET',
             params
         }).then((json) => {
@@ -8043,11 +8057,11 @@ speechSynthesis.getVoices();
     });
 
     $app.methods.setVRCPlusIcon = function (userIcon) {
-        if (userIcon != '') {
+        if (userIcon !== '') {
             userIcon = `https://api.vrchat.cloud/api/1/file/${userIcon}/1`;
         }
         API.setVRCPlusIcon({
-            userIcon: userIcon
+            userIcon
         }).then((args) => {
             this.$message({
                 message: 'Icon changed',
@@ -8109,10 +8123,10 @@ speechSynthesis.getVoices();
             return;
         }
         var r = new FileReader();
-        r.onload = function() {
+        r.onload = function () {
             var bodyStart = '---------------------------26696829785232761561272838397\nContent-Disposition: form-data; name="file"; filename="blob"\nContent-Type: image/png\n\n';
             var bodyEnd = '\n---------------------------26696829785232761561272838397--\n';
-            var body = bodyStart + r.result + bodyEnd
+            var body = bodyStart + r.result + bodyEnd;
             var base64Body = btoa(body);
             API.uploadVRCPlusIcon(base64Body
             ).then((args) => {
@@ -8144,44 +8158,15 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.userOnlineFor = function (ctx) {
-        var timeToText = function (sec) {
-            var n = Number(sec);
-            if (isNaN(n)) {
-                return escapeTag(sec);
-            }
-            n = Math.floor(n / 1000);
-            var arr = [];
-            if (n < 0) {
-                n = -n;
-            }
-            if (n >= 86400) {
-                arr.push(`${Math.floor(n / 86400)}d`);
-                n %= 86400;
-            }
-            if (n >= 3600) {
-                arr.push(`${Math.floor(n / 3600)}h`);
-                n %= 3600;
-            }
-            if (n >= 60) {
-                arr.push(`${Math.floor(n / 60)}m`);
-                n %= 60;
-            }
-            if (n ||
-                arr.length === 0) {
-                arr.push(`${n}s`);
-            }
-            return arr.join(' ');
-        };
-
         if ((ctx.ref.state === 'online') && (ctx.ref.$online_for)) {
-            return timeToText(Date.now() - ctx.ref.$online_for)
+            return timeToText(Date.now() - ctx.ref.$online_for);
         } else if (ctx.ref.$offline_for) {
-            return timeToText(Date.now() - ctx.ref.$offline_for)
-        } else {
-            return '-';
+            return timeToText(Date.now() - ctx.ref.$offline_for);
         }
+
+        return '-';
     };
 
     $app = new Vue($app);
     window.$app = $app;
-})();
+}());
