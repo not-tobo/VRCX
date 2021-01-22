@@ -745,9 +745,13 @@ var bar = new ProgressBar.Circle(vroverlay, {
 
     $app.methods.updateVRConfigVars = function () {
         var newConfig = sharedRepository.getObject('VRConfigVars');
-        if ((newConfig) && (JSON.stringify(newConfig) !== JSON.stringify(this.config))) {
-            this.config = newConfig;
-            this.lastFeedEntry = [];
+        if (newConfig) {
+            if (JSON.stringify(newConfig) !== JSON.stringify(this.config)) {
+                this.config = newConfig;
+                this.lastFeedEntry = [];
+            }
+        } else {
+            throw 'config not set';
         }
     };
 
@@ -788,9 +792,6 @@ var bar = new ProgressBar.Circle(vroverlay, {
     $app.methods.updateLoop = async function () {
         try {
             this.updateVRConfigVars();
-            if (!this.config) {
-                return;
-            }
             this.currentTime = new Date().toJSON();
             this.currentUserStatus = sharedRepository.getString('current_user_status');
             this.isGameRunning = sharedRepository.getBool('is_game_running');
