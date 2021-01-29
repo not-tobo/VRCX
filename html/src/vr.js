@@ -830,7 +830,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             return;
         }
         this.updateSharedFeedVideo(feeds);
-        if (('lastFeedEntry' in this) &&
+        if (typeof this.lastFeedEntry !== 'undefined' &&
             (feeds[0].created_at === this.lastFeedEntry.created_at)) {
             return;
         }
