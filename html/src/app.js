@@ -3362,7 +3362,7 @@ speechSynthesis.getVoices();
             nextRefresh: 0,
             isGameRunning: false,
             isGameNoVR: false,
-            appVersion: 'VRCX.PyPyDance.Companion 2021.01.11',
+            appVersion: 'VRCX.PyPyDance.Companion 2021.01.30',
             latestAppVersion: '',
             ossDialog: false,
             exportFriendsListDialog: false,
