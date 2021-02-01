@@ -3441,7 +3441,7 @@ speechSynthesis.getVoices();
                         onClick: () => AppApi.OpenLink('https://github.com/natsumi-sama/VRCX/releases')
                     }
                 }).show();
-                this.notifyMenu('more');
+                this.notifyMenu('settings');
             }
         } else {
             this.latestAppVersion = 'Error occured';
@@ -5830,7 +5830,7 @@ speechSynthesis.getVoices();
         });
     };
 
-    // App: More
+    // App: Settings
 
     $app.data.configTreeData = [];
     $app.data.currentUserTreeData = [];
