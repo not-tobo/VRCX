@@ -791,6 +791,8 @@ html
                                     el-tag.name(type="info" effect="plain" size="mini" :class="userDialog.ref.$trustClass" v-text="userDialog.ref.$trustLevel")
                                     el-tag.x-tag-friend(v-if="userDialog.isFriend && userDialog.friend" type="info" effect="plain" size="mini" style="margin-left:5px") Friend No.{{userDialog.friend.no}}
                                     el-tag.x-tag-vrcplus(type="info" effect="plain" size="mini" v-if="userDialog.ref.$isVRCPlus" style="margin-left:5px") VRC+
+                                    el-tag.x-tag-platform-pc(type="info" effect="plain" size="mini" v-if="userDialog.ref.last_platform === 'standalonewindows'" style="margin-left:5px") PC
+                                    el-tag.x-tag-platform-quest(type="info" effect="plain" size="mini" v-if="userDialog.ref.last_platform === 'android'" style="margin-left:5px") Quest
                                 div(style="margin-top:5px")
                                     span(v-text="userDialog.ref.statusDescription" style="font-size:12px")
                             div(v-if="userDialog.ref.userIcon" style="flex:none;margin-right:10px")
@@ -909,16 +911,23 @@ html
                                         span.extra(v-if="world.occupants") ({{ world.occupants }})
                         el-tab-pane(label="Avatars")
                             el-button(type="default" :loading="userDialog.isAvatarsLoading" @click="refreshUserDialogAvatars()" size="mini" icon="el-icon-refresh" circle)
-                            span(style="margin-left:5px") Total {{ userDialog.avatars.length }}
+                            span(style="margin-left:5px") Total {{ userDialogAvatars.length }}
                             el-radio-group(v-model="userDialog.avatarSorting" size="mini" style="margin-left:30px" @change="changeUserDialogAvatarSorting")
                                 el-radio(label="name") by name
                                 el-radio(label="update") by update
+                            el-radio-group(v-model="userDialog.avatarReleaseStatus" size="mini" style="margin-left:60px")
+                                el-radio(label="all") all
+                                el-radio(label="public") public
+                                el-radio(label="private") private
                             .x-friend-list(v-loading="userDialog.isAvatarsLoading" style="margin-top:10px;min-height:60px")
-                                .x-friend-item(v-for="avatar in userDialog.avatars" :key="avatar.id" @click="showAvatarDialog(avatar.id)")
+                                .x-friend-item(v-for="avatar in userDialogAvatars" :key="avatar.id" @click="showAvatarDialog(avatar.id)")
                                     .avatar
                                         img(v-lazy="avatar.thumbnailImageUrl")
                                     .detail
                                         span.name(v-text="avatar.name")
+                                        span.extra(v-text="avatar.releaseStatus" v-if="avatar.releaseStatus === 'public'" style="color: #67c23a;")
+                                        span.extra(v-text="avatar.releaseStatus" v-else-if="avatar.releaseStatus === 'private'" style="color: #f56c6c;")
+                                        span.extra(v-text="avatar.releaseStatus" v-else)
                         el-tab-pane(label="JSON")
                             el-button(type="default" @click="refreshUserDialogTreeData()" size="mini" icon="el-icon-refresh" circle)
                             el-tree(:data="userDialog.treeData" style="margin-top:5px;font-size:12px")

@@ -6412,6 +6412,7 @@ speechSynthesis.getVoices();
 
         worldSorting: 'update',
         avatarSorting: 'update',
+        avatarReleaseStatus: 'all',
 
         treeData: [],
         memo: ''
@@ -7071,9 +7072,18 @@ speechSynthesis.getVoices();
         this.setUserDialogWorlds(D.worlds);
     };
 
-    $app.methods.changeUserDialogAvatarSorting = function () {
+    $app.methods.changeUserDialogAvatarReleaseStatus = function () {
         var D = this.userDialog;
         this.setUserDialogAvatars(D.avatars);
+    };
+
+    $app.computed.userDialogAvatars = function () {
+        var { avatars, avatarReleaseStatus } = this.userDialog;
+        if (avatarReleaseStatus === 'public' ||
+            avatarReleaseStatus === 'private') {
+            return avatars.filter((avatar) => avatar.releaseStatus === avatarReleaseStatus);
+        }
+        return avatars;
     };
 
     // App: World Dialog
