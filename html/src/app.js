@@ -5830,7 +5830,7 @@ speechSynthesis.getVoices();
         });
     };
 
-    // App: Settings
+    // App: Profile + Settings
 
     $app.data.configTreeData = [];
     $app.data.currentUserTreeData = [];

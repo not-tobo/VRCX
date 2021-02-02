@@ -402,15 +402,7 @@ html
             //- profile
             .x-container(v-show="$refs.menu && $refs.menu.activeIndex === 'profile'")
                 div.options-container(style="margin-top:0")
-                    span.header Game Info
-                    .x-friend-list(style="margin-top:10px")
-                        .x-friend-item
-                            .detail(@click="API.getVisits()")
-                                span.name Online Users
-                                span.extra(v-if="visits") {{visits}} users online.
-                                span.extra(v-else) Click to refresh
-                div.options-container
-                    span.header My Profile
+                    span.header Profile
                     .x-friend-list(style="margin-top:10px")
                         .x-friend-item(@click="showUserDialog(API.currentUser.id)")
                             .avatar
@@ -430,6 +422,14 @@ html
                     div(style="margin-top:10px")
                         el-button(size="small" icon="el-icon-switch-button" @click="logout()") Logout
                         el-button(size="small" icon="el-icon-printer" @click="showExportFriendsListDialog()") Export Friends List
+                div.options-container
+                    span.header Game Info
+                    .x-friend-list(style="margin-top:10px")
+                        .x-friend-item
+                            .detail(@click="API.getVisits()")
+                                span.name Online Users
+                                span.extra(v-if="visits") {{visits}} users online.
+                                span.extra(v-else) Click to refresh
                 div.options-container
                     span.header Direct Access
                     div(style="margin-top:10px")
