@@ -58,7 +58,7 @@ html
                                 .detail
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
-                                        location(:location="feed.data")
+                                        location(:location="feed.data[0]" :hint="feed.data[1]")
                             div(v-else-if="feed.type === 'VideoChange'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
                                 .detail
                                     span.extra
@@ -173,7 +173,7 @@ html
                                 .detail
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
-                                        location(:location="feed.data")
+                                        location(:location="feed.data[0]" :hint="feed.data[1]")
                             div(v-else-if="feed.type === 'VideoChange'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
                                 .detail
                                     span.extra

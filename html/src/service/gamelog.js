@@ -1,46 +1,7 @@
 // requires binding of LogWatcher
 
-var contextMap = new Map(); // <string, object>
-
-class GameLogService {
-    async poll(loginUser) {
-        var rawGameLogs = await LogWatcher.Get();
-        var gameLogs = [];
-        var now = Date.now();
-
-        for (var [fileName, dt, type, ...args] of rawGameLogs) {
-            var context = contextMap.get(fileName);
-            if (context === undefined) {
-                context = {
-                    updatedAt: null,
-
-                    // location
-                    location: null,
-                };
-                contextMap.set(fileName, context);
-            }
-
-            var gameLog = parseRawGameLog(dt, type, args);
-
-            switch (gameLog.type) {
-                case 'location':
-                    context.location = gameLog.location;
-                    break;
-            }
-
-            context.updatedAt = now;
-
-            gameLogs.push(gameLog);
-        }
-
-        return gameLogs;
-    }
-
-    async reset() {
-        await LogWatcher.Reset();
-        contextMap.clear();
-    }
-}
+// <string, object>
+var contextMap = new Map();
 
 function parseRawGameLog(dt, type, args) {
     var gameLog = {
@@ -51,14 +12,12 @@ function parseRawGameLog(dt, type, args) {
     switch (type) {
         case 'location':
             gameLog.location = args[0];
-            break;
-
-        case 'world':
-            gameLog.worldName = args[0];
+            gameLog.worldName = args[1];
             break;
 
         case 'player-joined':
             gameLog.userDisplayName = args[0];
+            gameLog.userType = args[1];
             break;
 
         case 'player-left':
@@ -74,9 +33,55 @@ function parseRawGameLog(dt, type, args) {
             gameLog.playerRequest = args[1];
             gameLog.playerPlayer = args[2];
             break;
+
+        default:
+            break;
     }
 
     return gameLog;
+}
+
+class GameLogService {
+    async poll() {
+        var rawGameLogs = await LogWatcher.Get();
+        var gameLogs = [];
+        var now = Date.now();
+
+        for (var [fileName, dt, type, ...args] of rawGameLogs) {
+            var context = contextMap.get(fileName);
+            if (typeof context === 'undefined') {
+                context = {
+                    updatedAt: null,
+
+                    // location
+                    location: null
+                };
+                contextMap.set(fileName, context);
+            }
+
+            var gameLog = parseRawGameLog(dt, type, args);
+
+            switch (gameLog.type) {
+                case 'location':
+                    context.location = gameLog.location;
+                    break;
+
+                default:
+                    break;
+            }
+
+            context.updatedAt = now;
+
+            gameLogs.push(gameLog);
+        }
+
+        return gameLogs;
+    }
+
+    async reset() {
+        await LogWatcher.Reset();
+        contextMap.clear();
+    }
 }
 
 var self = new GameLogService();

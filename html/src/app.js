@@ -1,4 +1,4 @@
-// Copyright(c) 2019-2020 pypy and individual contributors.
+// Copyright(c) 2019-2021 pypy and individual contributors.
 // All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
@@ -11,8 +11,8 @@ import { DataTables } from 'vue-data-tables';
 // eslint-disable-next-line no-unused-vars
 import ToggleSwitch from 'vuejs-toggle-switch';
 import VSwatches from 'vue-swatches';
-Vue.component('v-swatches', VSwatches)
-import "../node_modules/vue-swatches/dist/vue-swatches.css"
+Vue.component('v-swatches', VSwatches);
+import '../node_modules/vue-swatches/dist/vue-swatches.css';
 import ElementUI from 'element-ui';
 import locale from 'element-ui/lib/locale/lang/en';
 import copy from 'copy-to-clipboard';
@@ -756,6 +756,10 @@ speechSynthesis.getVoices();
         template: '<span @click="showWorldDialog" :class="{ \'x-link\': link && this.location !== \'private\' && this.location !== \'offline\'}">{{ text }}<slot></slot></span>',
         props: {
             location: String,
+            hint: {
+                type: String,
+                default: ''
+            },
             link: {
                 type: Boolean,
                 default: true
@@ -773,6 +777,12 @@ speechSynthesis.getVoices();
                     this.text = 'Offline';
                 } else if (L.isPrivate) {
                     this.text = 'Private';
+                } else if (typeof this.hint === 'string' && this.hint !== '') {
+                    if (L.instanceId) {
+                        this.text = `${this.hint} #${L.instanceName} ${L.accessType}`;
+                    } else {
+                        this.text = this.hint;
+                    }
                 } else if (L.worldId) {
                     var ref = API.cachedWorlds.get(L.worldId);
                     if (typeof ref === 'undefined') {
@@ -4770,7 +4780,7 @@ speechSynthesis.getVoices();
             }
         }
 
-        for (var gameLog of await gameLogService.poll(API.currentUser.username)) {
+        for (var gameLog of await gameLogService.poll()) {
             var tableData = null;
 
             switch (gameLog.type) {
@@ -4779,7 +4789,7 @@ speechSynthesis.getVoices();
                     tableData = {
                         created_at: gameLog.dt,
                         type: 'Location',
-                        data: gameLog.location
+                        data: [gameLog.location, gameLog.worldName]
                     };
                     break;
 
@@ -7072,7 +7082,7 @@ speechSynthesis.getVoices();
         this.setUserDialogWorlds(D.worlds);
     };
 
-    $app.methods.changeUserDialogWorldSorting = function () {
+    $app.methods.changeUserDialogAvatarSorting = function () {
         var D = this.userDialog;
         this.setUserDialogAvatars(D.avatars);
     };

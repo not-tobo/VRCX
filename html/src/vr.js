@@ -1,4 +1,4 @@
-// Copyright(c) 2019-2020 pypy and individual contributors.
+// Copyright(c) 2019-2021 pypy and individual contributors.
 // All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
@@ -457,7 +457,11 @@ var bar = new ProgressBar.Circle(vroverlay, {
     Vue.component('location', {
         template: '<span>{{ text }}<slot></slot></span>',
         props: {
-            location: String
+            location: String,
+            hint: {
+                type: String,
+                default: ''
+            }
         },
         data() {
             return {
@@ -471,6 +475,12 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     this.text = 'Offline';
                 } else if (L.isPrivate) {
                     this.text = 'Private';
+                } else if (typeof this.hint === 'string' && this.hint !== '') {
+                    if (L.instanceId) {
+                        this.text = `${this.hint} #${L.instanceName} ${L.accessType}`;
+                    } else {
+                        this.text = this.hint;
+                    }
                 } else if (L.worldId) {
                     var ref = API.cachedWorlds.get(L.worldId);
                     if (typeof ref === 'undefined') {
