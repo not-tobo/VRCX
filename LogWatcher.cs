@@ -386,20 +386,19 @@ namespace VRCX
         private bool ParseLogVideoBeep(FileInfo fileInfo, LogContext logContext, string line, int offset)
         {
             // 2020.10.16 14:42:31 Log        -  [UdonSync] vrcw executing Beep at the behest of Natsumi-sama
+            // 2021.02.04 02:16:58 Log        -  [ǄǄǅǅǄǄǄǄǄǄǄǅǅǅǄǅǄǄǅǄǄǄǅǄǄǅǅǅǄǄǅǅǄǄǅǅǅǄǄǅǄǄǅǅǅǅǅ] vrcw executing Beep at the behest of Natsumi-sama
 
-            if (line.Length <= 82 ||
-                line[35] != 'U' ||
-                string.Compare(line, 34, "[UdonSync] vrcw executing Beep at the behest of ", 0, 48, StringComparison.Ordinal) != 0)
+            if (string.Compare(line, offset, "vrcw executing Beep at the behest of ", 0, 37, StringComparison.Ordinal) == 0)
             {
-                return false;
+                var data = line.Substring(offset + 37);
+
+                playerRequest = playerPlayer;
+                playerPlayer = data;
+
+                return true;
             }
 
-            var data = line.Substring(82);
-
-            playerRequest = playerPlayer;
-            playerPlayer = data;
-
-            return true;
+            return false;
         }
 
         private bool ParseLogNotification(FileInfo fileInfo, LogContext logContext, string line, int offset)
