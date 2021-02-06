@@ -8470,9 +8470,10 @@ speechSynthesis.getVoices();
             }).then((args) => {
                 if (args.json[slot].message !== D.newMessage) {
                     this.$message({
-                        message: 'VRC API didn\'t update message, try again',
+                        message: 'VRChat API didn\'t update message, try again',
                         type: 'error'
                     });
+                    throw 'VRChat API didn\'t update message, try again';
                 }
             });
         }
@@ -8506,7 +8507,8 @@ speechSynthesis.getVoices();
 
     $app.data.sendInviteResponseDialog = {
         message: '',
-        invite: ''
+        invite: '',
+        messageSlot: ''
     };
 
     $app.data.sendInviteResponseDialogVisible = false;
