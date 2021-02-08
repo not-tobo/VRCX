@@ -8463,11 +8463,7 @@ speechSynthesis.getVoices();
             await API.editInviteMessage(params, messageType, slot).catch((err) => {
                 throw err;
             }).then((args) => {
-                return args;
-            });
-            await API.refreshInviteMessageTableData(messageType).catch((err) => {
-                throw err;
-            }).then((args) => {
+                this.$emit(`INVITE:${messageType.toUpperCase()}`, args);
                 if (args.json[slot].message !== D.newMessage) {
                     this.$message({
                         message: 'VRChat API didn\'t update message, try again',
@@ -8477,9 +8473,9 @@ speechSynthesis.getVoices();
                 } else {
                     this.$message('Invite message updated');
                 }
+                return args;
             });
         }
-
         var I = this.sendInviteResponseDialog;
         var params = {
             responseSlot: slot,
@@ -8633,11 +8629,7 @@ speechSynthesis.getVoices();
             await API.editInviteMessage(params, messageType, slot).catch((err) => {
                 throw err;
             }).then((args) => {
-                return args;
-            });
-            await API.refreshInviteMessageTableData(messageType).catch((err) => {
-                throw err;
-            }).then((args) => {
+                this.$emit(`INVITE:${messageType.toUpperCase()}`, args);
                 if (args.json[slot].message !== D.newMessage) {
                     this.$message({
                         message: 'VRChat API didn\'t update message, try again',
@@ -8647,6 +8639,7 @@ speechSynthesis.getVoices();
                 } else {
                     this.$message('Invite message updated');
                 }
+                return args;
             });
         }
         var I = this.sendInviteDialog;
@@ -8658,6 +8651,7 @@ speechSynthesis.getVoices();
                 this.$message('Invite message sent');
                 return args;
             });
+            this.sendInviteDialogVisible = false;
         } else if (I.messageType === 'requestInvite') {
             I.params.requestSlot = slot;
             API.sendRequestInvite(I.params, I.userId).catch((err) => {
@@ -8666,6 +8660,7 @@ speechSynthesis.getVoices();
                 this.$message('Request invite message sent');
                 return args;
             });
+            this.sendInviteRequestDialogVisible = false;
         }
     };
 
