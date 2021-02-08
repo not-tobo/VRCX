@@ -875,6 +875,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             data: ctx.displayName,
                             isFavorite: ctx.isFavorite,
                             isFriend: ctx.isFriend,
+                            userId: ctx.userId,
                             type: 'OnPlayerJoining'
                         };
                         feeds.splice(i, 0, onPlayerJoining);
