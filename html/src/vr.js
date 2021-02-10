@@ -1038,7 +1038,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         text = `<strong>${noty.displayName}</strong> is now your friend`;
                         break;
                     case 'Unfriend':
-                        text = `<strong>${noty.displayName}</strong> has unfriended you`;
+                        text = `<strong>${noty.displayName}</strong> is no longer your friend`;
                         break;
                     case 'TrustLevel':
                         text = `<strong>${noty.displayName}</strong> trust level is now ${noty.trustLevel}`;
@@ -1116,7 +1116,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         this.speak(`${noty.displayName} is now your friend`);
                         break;
                     case 'Unfriend':
-                        this.speak(`${noty.displayName} has unfriended you`);
+                        this.speak(`${noty.displayName} is no longer your friend`);
                         break;
                     case 'TrustLevel':
                         this.speak(`${noty.displayName} trust level is now ${noty.trustLevel}`);
@@ -1200,7 +1200,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         AppApi.DesktopNotification(noty.displayName, 'has sent you a friend request', imageURL);
                         break;
                     case 'Unfriend':
-                        AppApi.DesktopNotification(noty.displayName, 'has unfriended you', imageURL);
+                        AppApi.DesktopNotification(noty.displayName, 'is no longer your friend', imageURL);
                         break;
                     case 'TrustLevel':
                         AppApi.DesktopNotification(noty.displayName, `trust level is now ${noty.trustLevel}`, imageURL);
