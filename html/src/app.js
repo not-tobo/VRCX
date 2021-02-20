@@ -2078,6 +2078,21 @@ speechSynthesis.getVoices();
         });
     };
 
+    API.sendInvitePhoto = function (params, receiverUserId) {
+        return this.call(`invite/${receiverUserId}/photo`, {
+            uploadImage: true,
+            postData: JSON.stringify(params),
+            imageData: $app.uploadImage
+        }).then((json) => {
+            var args = {
+                json,
+                params
+            };
+            this.$emit('NOTIFICATION:INVITE:PHOTO:SEND', args);
+            return args;
+        });
+    };
+
     API.sendRequestInvite = function (params, receiverUserId) {
         return this.call(`requestInvite/${receiverUserId}`, {
             method: 'POST',
@@ -2088,6 +2103,52 @@ speechSynthesis.getVoices();
                 params
             };
             this.$emit('NOTIFICATION:REQUESTINVITE:SEND', args);
+            return args;
+        });
+    };
+
+    API.sendRequestInvitePhoto = function (params, receiverUserId) {
+        return this.call(`requestInvite/${receiverUserId}/photo`, {
+            uploadImage: true,
+            postData: JSON.stringify(params),
+            imageData: $app.uploadImage
+        }).then((json) => {
+            var args = {
+                json,
+                params
+            };
+            this.$emit('NOTIFICATION:REQUESTINVITE:PHOTO:SEND', args);
+            return args;
+        });
+    };
+
+    API.sendInviteResponse = function (params, inviteID) {
+        return this.call(`invite/${inviteID}/response`, {
+            method: 'POST',
+            params
+        }).then((json) => {
+            var args = {
+                json,
+                params,
+                inviteID
+            };
+            this.$emit('INVITE:RESPONSE:SEND', args);
+            return args;
+        });
+    };
+
+    API.sendInviteResponsePhoto = function (params, inviteID) {
+        return this.call(`invite/${inviteID}/response/photo`, {
+            uploadImage: true,
+            postData: JSON.stringify(params),
+            imageData: $app.uploadImage
+        }).then((json) => {
+            var args = {
+                json,
+                params,
+                inviteID
+            };
+            this.$emit('INVITE:RESPONSE:PHOTO:SEND', args);
             return args;
         });
     };
@@ -4046,6 +4107,9 @@ speechSynthesis.getVoices();
                     message = noty.details[messageList[i]];
                 }
             }
+            if (message) {
+                message = `, ${message}`;
+            }
             if ((this.notificationTTS) && (this.isGameRunning)) {
                 this.playNotyTTS(noty, message);
             }
@@ -4081,16 +4145,16 @@ speechSynthesis.getVoices();
                 this.speak(`${noty.displayName} status is now ${noty.status[0].status} ${noty.status[0].statusDescription}`);
                 break;
             case 'invite':
-                this.speak(`${noty.senderUsername} has invited you to ${noty.details.worldName} ${message}`);
+                this.speak(`${noty.senderUsername} has invited you to ${noty.details.worldName}${message}`);
                 break;
             case 'requestInvite':
-                this.speak(`${noty.senderUsername} has requested an invite ${message}`);
+                this.speak(`${noty.senderUsername} has requested an invite${message}`);
                 break;
             case 'inviteResponse':
-                this.speak(`${noty.senderUsername} has responded to your invite ${message}`);
+                this.speak(`${noty.senderUsername} has responded to your invite${message}`);
                 break;
             case 'requestInviteResponse':
-                this.speak(`${noty.senderUsername} has responded to your invite request ${message}`);
+                this.speak(`${noty.senderUsername} has responded to your invite request${message}`);
                 break;
             case 'friendRequest':
                 this.speak(`${noty.senderUsername} has sent you a friend request`);
@@ -4144,7 +4208,9 @@ speechSynthesis.getVoices();
                 }
             }
         }
-        if (userId) {
+        if ((noty.details) && (noty.details.imageUrl)) {
+            imageURL = noty.details.imageUrl;
+        } else if (userId) {
             imageURL = await API.getCachedUser({
                 userId: userId
             }).catch((err) => {
@@ -4179,16 +4245,16 @@ speechSynthesis.getVoices();
                 AppApi.DesktopNotification(noty.displayName, `status is now ${noty.status[0].status} ${noty.status[0].statusDescription}`, imageURL);
                 break;
             case 'invite':
-                AppApi.DesktopNotification(noty.senderUsername, `has invited you to ${noty.details.worldName} ${message}`, imageURL);
+                AppApi.DesktopNotification(noty.senderUsername, `has invited you to ${noty.details.worldName}${message}`, imageURL);
                 break;
             case 'requestInvite':
-                AppApi.DesktopNotification(noty.senderUsername, `has requested an invite ${message}`, imageURL);
+                AppApi.DesktopNotification(noty.senderUsername, `has requested an invite${message}`, imageURL);
                 break;
             case 'inviteResponse':
-                AppApi.DesktopNotification(noty.senderUsername, `has responded to your invite ${message}`, imageURL);
+                AppApi.DesktopNotification(noty.senderUsername, `has responded to your invite${message}`, imageURL);
                 break;
             case 'requestInviteResponse':
-                AppApi.DesktopNotification(noty.senderUsername, `has responded to your invite request ${message}`, imageURL);
+                AppApi.DesktopNotification(noty.senderUsername, `has responded to your invite request${message}`, imageURL);
                 break;
             case 'friendRequest':
                 AppApi.DesktopNotification(noty.senderUsername, 'has sent you a friend request', imageURL);
@@ -8928,6 +8994,41 @@ speechSynthesis.getVoices();
         });
     };
 
+    $app.data.uploadImage = '';
+
+    $app.methods.inviteImageUpload = function (e) {
+        var files = e.target.files || e.dataTransfer.files;
+        if (!files.length) {
+            return;
+        }
+        if (files[0].size >= 10485760) { //10MB
+            $app.$message({
+                message: 'File size too large',
+                type: 'error'
+            });
+            return;
+        }
+        if (!files[0].type.match(/image.*/)) {
+            $app.$message({
+                message: 'File isn\'t an image',
+                type: 'error'
+            });
+            return;
+        }
+        var r = new FileReader();
+        r.onload = function () {
+            $app.uploadImage = btoa(r.result);
+        };
+        r.readAsBinaryString(files[0]);
+    };
+
+    $app.methods.clearInviteImageUpload = function () {
+        if (document.querySelector('#InviteImageUploadButton')) {
+            document.querySelector('#InviteImageUploadButton').value = '';
+        }
+        this.uploadImage = '';
+    };
+
     $app.methods.userOnlineFor = function (ctx) {
         if ((ctx.ref.state === 'online') && (ctx.ref.$online_for)) {
             return timeToText(Date.now() - ctx.ref.$online_for);
@@ -9029,10 +9130,17 @@ speechSynthesis.getVoices();
             API.editInviteMessage(params, messageType, slot).catch((err) => {
                 throw err;
             }).then((args) => {
-                this.$message('Invite message updated');
+                API.$emit(`INVITE:${messageType.toUpperCase()}`, args);
+                if (args.json[slot].message !== D.newMessage) {
+                    this.$message({
+                        message: 'VRChat API didn\'t update message, try again',
+                        type: 'error'
+                    });
+                    throw new Error('VRChat API didn\'t update message, try again');
+                } else {
+                    this.$message('Invite message updated');
+                }
                 return args;
-            }).finally(() => {
-                API.refreshInviteMessageTableData(messageType);
             });
         }
     };
@@ -9072,7 +9180,7 @@ speechSynthesis.getVoices();
             await API.editInviteMessage(params, messageType, slot).catch((err) => {
                 throw err;
             }).then((args) => {
-                this.$emit(`INVITE:${messageType.toUpperCase()}`, args);
+                API.$emit(`INVITE:${messageType.toUpperCase()}`, args);
                 if (args.json[slot].message !== D.newMessage) {
                     this.$message({
                         message: 'VRChat API didn\'t update message, try again',
@@ -9090,20 +9198,37 @@ speechSynthesis.getVoices();
             responseSlot: slot,
             rsvp: true
         };
-        API.sendInviteResponse(params, I.invite.id).catch((err) => {
-            throw err;
-        }).then((args) => {
-            API.hideNotification({
-                notificationId: I.invite.id
+        if ($app.uploadImage) {
+            API.sendInviteResponsePhoto(params, I.invite.id).catch((err) => {
+                throw err;
+            }).then((args) => {
+                API.hideNotification({
+                    notificationId: I.invite.id
+                });
+                this.$message({
+                    message: 'Invite response message sent',
+                    type: 'success'
+                });
+                this.sendInviteResponseDialogVisible = false;
+                this.sendInviteRequestResponseDialogVisible = false;
+                return args;
             });
-            this.$message({
-                message: 'Invite response message sent',
-                type: 'success'
+        } else {
+            API.sendInviteResponse(params, I.invite.id).catch((err) => {
+                throw err;
+            }).then((args) => {
+                API.hideNotification({
+                    notificationId: I.invite.id
+                });
+                this.$message({
+                    message: 'Invite response message sent',
+                    type: 'success'
+                });
+                this.sendInviteResponseDialogVisible = false;
+                this.sendInviteRequestResponseDialogVisible = false;
+                return args;
             });
-            this.sendInviteResponseDialogVisible = false;
-            this.sendInviteRequestResponseDialogVisible = false;
-            return args;
-        });
+        }
     };
 
     $app.methods.cancelEditAndSendInviteResponse = function () {
@@ -9133,6 +9258,7 @@ speechSynthesis.getVoices();
         };
         API.refreshInviteMessageTableData('response');
         this.$nextTick(() => adjustDialogZ(this.$refs.sendInviteResponseDialog.$el));
+        this.clearInviteImageUpload();
         this.sendInviteResponseDialogVisible = true;
     };
 
@@ -9159,36 +9285,36 @@ speechSynthesis.getVoices();
             responseSlot: D.messageSlot,
             rsvp: true
         };
-        API.sendInviteResponse(params, D.invite.id, D.messageType).catch((err) => {
-            throw err;
-        }).then((args) => {
-            API.hideNotification({
-                notificationId: D.invite.id
+        if ($app.uploadImage) {
+            API.sendInviteResponsePhoto(params, D.invite.id, D.messageType).catch((err) => {
+                throw err;
+            }).then((args) => {
+                API.hideNotification({
+                    notificationId: D.invite.id
+                });
+                this.$message({
+                    message: 'Invite response photo message sent',
+                    type: 'success'
+                });
+                return args;
             });
-            this.$message({
-                message: 'Invite response message sent',
-                type: 'success'
+        } else {
+            API.sendInviteResponse(params, D.invite.id, D.messageType).catch((err) => {
+                throw err;
+            }).then((args) => {
+                API.hideNotification({
+                    notificationId: D.invite.id
+                });
+                this.$message({
+                    message: 'Invite response message sent',
+                    type: 'success'
+                });
+                return args;
             });
-            return args;
-        });
+        }
         this.sendInviteResponseDialogVisible = false;
         this.sendInviteRequestResponseDialogVisible = false;
         this.sendInviteResponseConfirmDialog.visible = false;
-    };
-
-    API.sendInviteResponse = function (params, inviteID) {
-        return this.call(`invite/${inviteID}/response`, {
-            method: 'POST',
-            params
-        }).then((json) => {
-            var args = {
-                json,
-                params,
-                inviteID
-            };
-            this.$emit('INVITE:RESPONSE:SEND', args);
-            return args;
-        });
     };
 
     // App: Invite Request Response Message Dialog
@@ -9210,6 +9336,7 @@ speechSynthesis.getVoices();
         };
         API.refreshInviteMessageTableData('requestResponse');
         this.$nextTick(() => adjustDialogZ(this.$refs.sendInviteRequestResponseDialog.$el));
+        this.clearInviteImageUpload();
         this.sendInviteRequestResponseDialogVisible = true;
     };
 
@@ -9244,7 +9371,7 @@ speechSynthesis.getVoices();
             await API.editInviteMessage(params, messageType, slot).catch((err) => {
                 throw err;
             }).then((args) => {
-                this.$emit(`INVITE:${messageType.toUpperCase()}`, args);
+                API.$emit(`INVITE:${messageType.toUpperCase()}`, args);
                 if (args.json[slot].message !== D.newMessage) {
                     this.$message({
                         message: 'VRChat API didn\'t update message, try again',
@@ -9271,12 +9398,21 @@ speechSynthesis.getVoices();
             var inviteLoop = () => {
                 if (J.userIds.length > 0) {
                     var receiverUserId = J.userIds.shift();
-                    API.sendInvite({
-                        instanceId: J.worldId,
-                        worldId: J.worldId,
-                        worldName: J.worldName,
-                        messageSlot: slot
-                    }, receiverUserId).finally(inviteLoop);
+                    if ($app.uploadImage) {
+                        API.sendInvitePhoto({
+                            instanceId: J.worldId,
+                            worldId: J.worldId,
+                            worldName: J.worldName,
+                            messageSlot: slot
+                        }, receiverUserId).finally(inviteLoop);
+                    } else {
+                        API.sendInvite({
+                            instanceId: J.worldId,
+                            worldId: J.worldId,
+                            worldName: J.worldName,
+                            messageSlot: slot
+                        }, receiverUserId).finally(inviteLoop);
+                    }
                 } else {
                     J.loading = false;
                     J.visible = false;
@@ -9290,26 +9426,51 @@ speechSynthesis.getVoices();
         } else {
             if (I.messageType === 'invite') {
                 I.params.messageSlot = slot;
-                API.sendInvite(I.params, I.userId).catch((err) => {
-                    throw err;
-                }).then((args) => {
-                    this.$message({
-                        message: 'Invite message sent',
-                        type: 'success'
+                if ($app.uploadImage) {
+                    API.sendInvitePhoto(I.params, I.userId).catch((err) => {
+                        throw err;
+                    }).then((args) => {
+                        this.$message({
+                            message: 'Invite photo message sent',
+                            type: 'success'
+                        });
+                        return args;
                     });
-                    return args;
-                });
+                } else {
+                    API.sendInvite(I.params, I.userId).catch((err) => {
+                        throw err;
+                    }).then((args) => {
+                        this.$message({
+                            message: 'Invite message sent',
+                            type: 'success'
+                        });
+                        return args;
+                    });
+                }
             } else if (I.messageType === 'requestInvite') {
                 I.params.requestSlot = slot;
-                API.sendRequestInvite(I.params, I.userId).catch((err) => {
-                    throw err;
-                }).then((args) => {
-                    this.$message({
-                        message: 'Request invite message sent',
-                        type: 'success'
+                if ($app.uploadImage) {
+                    API.sendRequestInvitePhoto(I.params, I.userId).catch((err) => {
+                        this.clearInviteImageUpload();
+                        throw err;
+                    }).then((args) => {
+                        this.$message({
+                            message: 'Request invite photo message sent',
+                            type: 'success'
+                        });
+                        return args;
                     });
-                    return args;
-                });
+                } else {
+                    API.sendRequestInvite(I.params, I.userId).catch((err) => {
+                        throw err;
+                    }).then((args) => {
+                        this.$message({
+                            message: 'Request invite message sent',
+                            type: 'success'
+                        });
+                        return args;
+                    });
+                }
             }
         }
         this.sendInviteDialogVisible = false;
@@ -9347,6 +9508,7 @@ speechSynthesis.getVoices();
         };
         API.refreshInviteMessageTableData('message');
         this.$nextTick(() => adjustDialogZ(this.$refs.sendInviteDialog.$el));
+        this.clearInviteImageUpload();
         this.sendInviteDialogVisible = true;
     };
 
@@ -9382,12 +9544,21 @@ speechSynthesis.getVoices();
             var inviteLoop = () => {
                 if (J.userIds.length > 0) {
                     var receiverUserId = J.userIds.shift();
-                    API.sendInvite({
-                        instanceId: J.worldId,
-                        worldId: J.worldId,
-                        worldName: J.worldName,
-                        messageSlot: D.messageSlot
-                    }, receiverUserId).finally(inviteLoop);
+                    if ($app.uploadImage) {
+                        API.sendInvitePhoto({
+                            instanceId: J.worldId,
+                            worldId: J.worldId,
+                            worldName: J.worldName,
+                            messageSlot: D.messageSlot
+                        }, receiverUserId).finally(inviteLoop);
+                    } else {
+                        API.sendInvite({
+                            instanceId: J.worldId,
+                            worldId: J.worldId,
+                            worldName: J.worldName,
+                            messageSlot: D.messageSlot
+                        }, receiverUserId).finally(inviteLoop);
+                    }
                 } else {
                     J.loading = false;
                     J.visible = false;
@@ -9401,24 +9572,51 @@ speechSynthesis.getVoices();
         } else {
             if (D.messageType === 'invite') {
                 D.params.messageSlot = D.messageSlot;
-                API.sendInvite(D.params, D.userId).catch((err) => {
-                    throw err;
-                }).then((args) => {
-                    this.$message({
-                        message: 'Invite message sent',
-                        type: 'success'
+                if ($app.uploadImage) {
+                    API.sendInvitePhoto(D.params, D.userId).catch((err) => {
+                        throw err;
+                    }).then((args) => {
+                        this.$message({
+                            message: 'Invite photo message sent',
+                            type: 'success'
+                        });
+                        return args;
                     });
-                    return args;
-                });
+                } else {
+                    API.sendInvite(D.params, D.userId).catch((err) => {
+                        throw err;
+                    }).then((args) => {
+                        this.$message({
+                            message: 'Invite message sent',
+                            type: 'success'
+                        });
+                        return args;
+                    });
+                }
             } else if (D.messageType === 'requestInvite') {
                 D.params.requestSlot = D.messageSlot;
-                API.sendRequestInvite(D.params, D.userId).then((args) => {
-                    this.$message({
-                        message: 'Request invite message sent',
-                        type: 'success'
+                if ($app.uploadImage) {
+                    API.sendRequestInvitePhoto(D.params, D.userId).catch((err) => {
+                        this.clearInviteImageUpload();
+                        throw err;
+                    }).then((args) => {
+                        this.$message({
+                            message: 'Request invite photo message sent',
+                            type: 'success'
+                        });
+                        return args;
                     });
-                    return args;
-                });
+                } else {
+                    API.sendRequestInvite(D.params, D.userId).catch((err) => {
+                        throw err;
+                    }).then((args) => {
+                        this.$message({
+                            message: 'Request invite message sent',
+                            type: 'success'
+                        });
+                        return args;
+                    });
+                }
             }
         }
         this.sendInviteDialogVisible = false;
@@ -9447,6 +9645,7 @@ speechSynthesis.getVoices();
         };
         API.refreshInviteMessageTableData('request');
         this.$nextTick(() => adjustDialogZ(this.$refs.sendInviteRequestDialog.$el));
+        this.clearInviteImageUpload();
         this.sendInviteRequestDialogVisible = true;
     };
 
