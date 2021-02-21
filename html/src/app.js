@@ -9130,7 +9130,7 @@ speechSynthesis.getVoices();
                 throw err;
             }).then((args) => {
                 API.$emit(`INVITE:${messageType.toUpperCase()}`, args);
-                if (args.json[slot].message !== D.newMessage) {
+                if (args.json[slot].message === D.inviteMessage.message) {
                     this.$message({
                         message: 'VRChat API didn\'t update message, try again',
                         type: 'error'
@@ -9180,7 +9180,7 @@ speechSynthesis.getVoices();
                 throw err;
             }).then((args) => {
                 API.$emit(`INVITE:${messageType.toUpperCase()}`, args);
-                if (args.json[slot].message !== D.newMessage) {
+                if (args.json[slot].message === D.inviteMessage.message) {
                     this.$message({
                         message: 'VRChat API didn\'t update message, try again',
                         type: 'error'
@@ -9371,7 +9371,7 @@ speechSynthesis.getVoices();
                 throw err;
             }).then((args) => {
                 API.$emit(`INVITE:${messageType.toUpperCase()}`, args);
-                if (args.json[slot].message !== D.newMessage) {
+                if (args.json[slot].message === D.inviteMessage.message) {
                     this.$message({
                         message: 'VRChat API didn\'t update message, try again',
                         type: 'error'
