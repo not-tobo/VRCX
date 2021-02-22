@@ -3684,7 +3684,7 @@ speechSynthesis.getVoices();
         if ((this.isGameRunning) && ((this.sharedFeedFilters.wrist.OnPlayerJoining === 'Friends') || (this.sharedFeedFilters.wrist.OnPlayerJoining === 'VIP') ||
             (this.sharedFeedFilters.noty.OnPlayerJoining === 'Friends') || (this.sharedFeedFilters.noty.OnPlayerJoining === 'VIP'))) {
             var bias = new Date(Date.now() - 120000).toJSON();
-            var locationBias = new Date(Date.now() - 10000).toJSON();
+            var locationBias = new Date(Date.now() - 15000).toJSON(); //15 seconds
             for (var i = 0; i < wristFeed.length; i++) {
                 var ctx = wristFeed[i];
                 if ((ctx.created_at < bias) || (ctx.type === 'Location')) {
@@ -3775,7 +3775,7 @@ speechSynthesis.getVoices();
             }
             // on Location change remove OnPlayerJoined
             if ((ctx.type === 'Location') && (this.hideOnPlayerJoined)) {
-                var locationBias = new Date(Date.parse(ctx.created_at) + 10000).toJSON(); //10 seconds
+                var locationBias = new Date(Date.parse(ctx.created_at) + 15000).toJSON(); //15 seconds
                 for (var k = w - 1; k > -1; k--) {
                     var feedItem = wristArr[k];
                     if ((feedItem.created_at > locationBias) || (feedItem.type === 'Location')) {
@@ -8880,12 +8880,12 @@ speechSynthesis.getVoices();
                 json,
                 params
             };
-            this.$emit('FILES', args);
+            this.$emit('VRCPLUSICON:LIST', args);
             return args;
         });
     };
 
-    API.$on('FILES', function (args) {
+    API.$on('VRCPLUSICON:LIST', function (args) {
         $app.VRCPlusIconsTable = args.json;
     });
 
@@ -8920,10 +8920,21 @@ speechSynthesis.getVoices();
 
     $app.methods.deleteVRCPlusIcon = function (userIcon) {
         API.deleteVRCPlusIcon(userIcon).then((args) => {
-            this.displayVRCPlusIconsTable();
+            API.$emit('VRCPLUSICON:DELETE', args);
             return args;
         });
     };
+
+    API.$on('VRCPLUSICON:DELETE', function (args) {
+        var array = $app.VRCPlusIconsTable;
+        var { length } = array;
+        for (var i = 0; i < length; ++i) {
+            if (args.userIcon === array[i].id) {
+                array.splice(i, 1);
+                break;
+            }
+        }
+    });
 
     API.deleteVRCPlusIcon = function (userIcon) {
         return this.call(`file/${userIcon}`, {
@@ -8951,6 +8962,11 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.onFileChangeVRCPlusIcon = function (e) {
+        var clearFile = function() {
+            if (document.querySelector('#VRCPlusIconUploadButton')) {
+                document.querySelector('#VRCPlusIconUploadButton').value = '';
+            }
+        };
         var files = e.target.files || e.dataTransfer.files;
         if (!files.length) {
             return;
@@ -8960,6 +8976,7 @@ speechSynthesis.getVoices();
                 message: 'File size too large',
                 type: 'error'
             });
+            clearFile();
             return;
         }
         if (!files[0].type.match(/image.*/)) {
@@ -8967,6 +8984,7 @@ speechSynthesis.getVoices();
                 message: 'File isn\'t an image',
                 type: 'error'
             });
+            clearFile();
             return;
         }
         var r = new FileReader();
@@ -8981,6 +8999,7 @@ speechSynthesis.getVoices();
             });
         };
         r.readAsBinaryString(files[0]);
+        clearFile();
     };
 
     $app.methods.displayVRCPlusIconUpload = function () {
@@ -8996,9 +9015,16 @@ speechSynthesis.getVoices();
                 json,
                 params
             };
+            this.$emit('VRCPLUSICON:ADD', args);
             return args;
         });
     };
+
+    API.$on('VRCPLUSICON:ADD', function (args) {
+        if (Object.keys($app.VRCPlusIconsTable).length !== 0) {
+            $app.VRCPlusIconsTable.push(args.json);
+        }
+    });
 
     $app.data.uploadImage = '';
 
@@ -9012,13 +9038,15 @@ speechSynthesis.getVoices();
                 message: 'File size too large',
                 type: 'error'
             });
+            this.clearInviteImageUpload();
             return;
         }
-        if (!files[0].type.match(/image.*/)) {
+        if (!files[0].type.match(/image.png/)) {
             $app.$message({
-                message: 'File isn\'t an image',
+                message: 'File isn\'t a png',
                 type: 'error'
             });
+            this.clearInviteImageUpload();
             return;
         }
         var r = new FileReader();
