@@ -2242,16 +2242,18 @@ speechSynthesis.getVoices();
     });
 
     API.$on('PLAYER-MODERATION:SEND', function (args) {
-        this.$emit('PLAYER-MODERATION', {
+        var ref = {
             json: args.json,
             params: {
                 playerModerationId: args.json.id
             }
-        });
+        };
+        this.$emit('PLAYER-MODERATION', ref);
+        this.$emit('PLAYER-MODERATION:@SEND', ref);
     });
 
     API.$on('PLAYER-MODERATION:DELETE', function (args) {
-        var { type, moderated } = args.param;
+        var { type, moderated } = args.params;
         var userId = this.currentUser.id;
         for (var ref of this.cachedPlayerModerations.values()) {
             if (ref.$isDeleted === false &&
@@ -7308,7 +7310,7 @@ speechSynthesis.getVoices();
         D.isFriend = false;
     });
 
-    API.$on('PLAYER-MODERATION', function (args) {
+    API.$on('PLAYER-MODERATION:@SEND', function (args) {
         var { ref } = args;
         var D = $app.userDialog;
         if (D.visible === false ||
@@ -7324,6 +7326,10 @@ speechSynthesis.getVoices();
         } else if (ref.type === 'hideAvatar') {
             D.isHideAvatar = true;
         }
+        $app.$message({
+            message: 'User moderated',
+            type: 'success'
+        });
     });
 
     API.$on('PLAYER-MODERATION:@DELETE', function (args) {
