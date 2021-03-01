@@ -303,7 +303,7 @@ html
                                 span {{ device[2] }}%
             .x-containerbottom
                 span(style="float:right;padding-left:15px") {{ nowPlayingobj.videoProgressText }}
-                span {{ nowPlayingobj.videoName ? nowPlayingobj.videoName : ' ‎' }}
+                marquee-text {{ nowPlayingobj.videoID ? `${nowPlayingobj.videoID} : ` : ''}} {{ nowPlayingobj.videoName ? nowPlayingobj.videoName : ' ‎' }} {{ nowPlayingobj.playerPlayer ? `(${nowPlayingobj.playerPlayer}) ‎  ‎‎` : ' ‎' }}
                 #progress
                 span(style="float:right") {{ currentTime | formatDate('YYYY-MM-DD HH:MI:SS AMPM') }}
                 span CPU {{ cpuUsage }}%

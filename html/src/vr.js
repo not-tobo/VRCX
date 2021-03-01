@@ -13,6 +13,8 @@ import sharedRepository from './repository/shared.js';
 import configRepository from './repository/config.js';
 import webApiService from './service/webapi.js';
 import ProgressBar from 'progressbar.js';
+import MarqueeText from 'vue-marquee-text-component';
+Vue.component('marquee-text', MarqueeText);
 
 speechSynthesis.getVoices();
 
