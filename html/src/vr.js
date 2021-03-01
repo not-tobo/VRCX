@@ -1008,6 +1008,13 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 }
                 this.nowPlayingobj.videoProgressText = sec2time(videoProgress);
                 percentage = Math.floor((((videoLength - videoProgress) * 100) / videoLength) * 100) / 100;
+                if ((this.appType === '2') && (this.nowPlayingobj.videoName) && (configRepository.getBool('discordActive'))) {
+                    var requestedBy = '';
+                    if (this.nowPlayingobj.playerPlayer !== '') { requestedBy = 'Requested by: ' + this.nowPlayingobj.playerPlayer; }
+                    Discord.SetText('Video: ' + this.nowPlayingobj.videoName, requestedBy);
+                    Discord.SetAssets('pypy', `Instance time: ${timeToText(Date.now() - Date.parse(this.lastLocation.date))}`, 'ayaya', 'https://github.com/Natsumi-sama/VRCX');
+                    Discord.SetTimestamps(Date.now(), Date.parse(this.nowPlayingobj.videoChangeTime) + Number(videoLength) * 1000);
+                }
             }
             else {
                 this.newPlayingobj = {
@@ -1051,11 +1058,6 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         this.speak(`now playing ${ttsURL} ${this.newPlayingobj.videoName} ${ttsRequestedBy}`);
                     }
                     if (configRepository.getBool('discordActive')) {
-                        var requestedBy = '';
-                        if (this.newPlayingobj.playerPlayer !== '') { requestedBy = 'Requested by: ' + this.newPlayingobj.playerPlayer; }
-                        Discord.SetText('Video: ' + this.newPlayingobj.videoName, requestedBy);
-                        Discord.SetAssets('pypy', 'https://github.com/Natsumi-sama/VRCX', 'ayaya', 'AYAYA');
-                        Discord.SetTimestamps(Date.now(), Date.parse(this.newPlayingobj.videoChangeTime) + Number(videoLength) * 1000);
                         Discord.SetActive(true);
                     }
                 }
