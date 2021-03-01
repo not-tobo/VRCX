@@ -714,7 +714,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             },
             isGameRunning: false,
             isGameNoVR: false,
-            lastLocation: '',
+            lastLocation: {},
             wristFeedLastEntry: '',
             notyFeedLastEntry: '',
             wristFeed: [],
@@ -757,7 +757,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
         this.currentUserStatus = sharedRepository.getString('current_user_status');
         this.isGameRunning = sharedRepository.getBool('is_game_running');
         this.isGameNoVR = sharedRepository.getBool('is_Game_No_VR');
-        this.lastLocation = sharedRepository.getString('last_location');
+        this.lastLocation = sharedRepository.getObject('last_location');
         var newConfig = sharedRepository.getObject('VRConfigVars');
         if (newConfig) {
             if (JSON.stringify(newConfig) !== JSON.stringify(this.config)) {
@@ -991,7 +991,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             var currentTime = Date.now() / 1000;
             var videoStartTime = videoLength + Date.parse(this.newPlayingobj.videoChangeTime) / 1000;
             var videoProgress = Math.floor((videoStartTime - currentTime) * 100) / 100;
-            var L = API.parseLocation(this.lastLocation);
+            var L = API.parseLocation(this.lastLocation.location);
             if ((!this.isGameRunning) || (L.worldId != 'wrld_f20326da-f1ac-45fc-a062-609723b097b1')) {
                 videoProgress = -60;
             }
