@@ -3701,8 +3701,7 @@ speechSynthesis.getVoices();
                             break;
                         }
                         if ((feedItem.data === ctx.displayName) ||
-                            (((feedItem.type === 'Friend') || (feedItem.type === 'Status')) && (feedItem.displayName === ctx.displayName)) ||
-                            ((feedItem.type === 'GPS') && (feedItem.created_at !== ctx.created_at) && (feedItem.displayName === ctx.displayName))) {
+                            (((feedItem.type === 'Friend') || (feedItem.type === 'Status')) && (feedItem.displayName === ctx.displayName))) {
                             joining = false;
                             break;
                         }
