@@ -1165,7 +1165,7 @@ speechSynthesis.getVoices();
             json.last_login = API.currentUser.last_login;
             if ($app.lastLocation.location) {
                 json.location = $app.lastLocation.location;
-                json.$location_at = Date.parse($app.lastLocation.date);
+                json.$location_at = $app.lastLocation.date;
             }
             json.$online_for = API.currentUser.$online_for;
             json.$offline_for = API.currentUser.$offline_for;
@@ -3766,7 +3766,10 @@ speechSynthesis.getVoices();
         var wristFilter = this.sharedFeedFilters.wrist;
         var notyFilter = this.sharedFeedFilters.noty;
         var locationChange = false;
-        while ((w < 20) || (n < 5) || ((!locationChange) && (this.hideOnPlayerJoined))) {
+        var playerCountDone = false;
+        var playerCount = 0;
+        var friendCount = 0;
+        while ((w < 20) || (n < 5) || ((!locationChange) && (this.hideOnPlayerJoined)) || !playerCountDone) {
             var ctx = data[--i];
             if ((i <= -1) || (ctx.created_at < bias)) {
                 break;
@@ -3810,6 +3813,26 @@ speechSynthesis.getVoices();
                     break;
                 }
             }
+            // instance player count
+            if (ctx.type === 'Location') {
+                playerCountDone = true;
+            }
+            if ((!playerCountDone) && (ctx.type === 'OnPlayerJoined')) {
+                playerCount++;
+                if (isFriend) {
+                    friendCount++;
+                }
+            }
+            if ((!playerCountDone) && (ctx.type === 'OnPlayerLeft')) {
+                playerCount--;
+                if (isFriend) {
+                    friendCount--;
+                }
+            }
+            if (((ctx.type === 'OnPlayerJoined') || (ctx.type === 'OnPlayerLeft')) &&
+                (ctx.data === API.currentUser.displayName)) {
+                continue;
+            }
             if ((w < 20) && (wristFilter[ctx.type]) &&
                 ((wristFilter[ctx.type] === 'On') ||
                 (wristFilter[ctx.type] === 'Everyone') ||
@@ -3835,6 +3858,9 @@ speechSynthesis.getVoices();
                 ++n;
             }
         }
+        this.lastLocation.playerCount = playerCount;
+        this.lastLocation.friendCount = friendCount;
+        sharedRepository.setObject('last_location', this.lastLocation);
         this.sharedFeed.gameLog.wrist = wristArr;
         this.sharedFeed.gameLog.noty = notyArr;
         this.sharedFeed.pendingUpdate = true;
@@ -5384,9 +5410,11 @@ speechSynthesis.getVoices();
     // App: gameLog
 
     $app.data.lastLocation = {
-        date: '',
+        date: 0,
         location: '',
-        name: ''
+        name: '',
+        playerCount: 0,
+        friendCount: 0
     };
     $app.data.lastLocation$ = {};
     $app.data.discordActive = configRepository.getBool('discordActive');
@@ -5414,6 +5442,11 @@ speechSynthesis.getVoices();
             {
                 prop: 'data',
                 value: ''
+            },
+            {
+                prop: 'data',
+                value: true,
+                filterFn: (row, filter) => row.data !== API.currentUser.displayName
             }
         ],
         tableProps: {
@@ -5441,7 +5474,7 @@ speechSynthesis.getVoices();
         await gameLogService.reset();
         this.gameLogTable.data = [];
         this.lastLocation = {
-            date: '',
+            date: 0,
             location: '',
             name: ''
         };
@@ -5468,11 +5501,6 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.updateGameLog = async function () {
-        var {
-            displayName: currentUserDisplayName,
-            username: currentUserName
-        } = API.currentUser;
-
         function convert_youtube_time(duration) {
             var a = duration.match(/\d+/g);
             if (duration.indexOf('M') >= 0 && duration.indexOf('H') == -1 && duration.indexOf('S') == -1) {
@@ -5526,7 +5554,7 @@ speechSynthesis.getVoices();
                 case 'location':
                     if (this.isGameRunning) {
                         this.lastLocation = {
-                            date: gameLog.dt,
+                            date: Date.parse(gameLog.dt),
                             location: gameLog.location,
                             name: gameLog.worldName
                         };
@@ -5539,9 +5567,6 @@ speechSynthesis.getVoices();
                     break;
 
                 case 'player-joined':
-                    if (currentUserDisplayName === gameLog.userDisplayName) {
-                        continue;
-                    }
                     tableData = {
                         created_at: gameLog.dt,
                         type: 'OnPlayerJoined',
@@ -5550,9 +5575,6 @@ speechSynthesis.getVoices();
                     break;
 
                 case 'player-left':
-                    if (currentUserDisplayName === gameLog.userDisplayName) {
-                        continue;
-                    }
                     tableData = {
                         created_at: gameLog.dt,
                         type: 'OnPlayerLeft',

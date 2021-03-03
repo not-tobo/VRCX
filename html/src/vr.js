@@ -714,7 +714,14 @@ var bar = new ProgressBar.Circle(vroverlay, {
             },
             isGameRunning: false,
             isGameNoVR: false,
-            lastLocation: {},
+            lastLocation: {
+                date: 0,
+                location: '',
+                name: '',
+                playerCount: 0,
+                friendCount: 0
+            },
+            lastLocationTimer: '',
             wristFeedLastEntry: '',
             notyFeedLastEntry: '',
             wristFeed: [],
@@ -758,6 +765,9 @@ var bar = new ProgressBar.Circle(vroverlay, {
         this.isGameRunning = sharedRepository.getBool('is_game_running');
         this.isGameNoVR = sharedRepository.getBool('is_Game_No_VR');
         this.lastLocation = sharedRepository.getObject('last_location');
+        if (this.lastLocation.location) {
+            this.lastLocationTimer = timeToText(Date.now() - this.lastLocation.date);
+        }
         var newConfig = sharedRepository.getObject('VRConfigVars');
         if (newConfig) {
             if (JSON.stringify(newConfig) !== JSON.stringify(this.config)) {
@@ -1012,7 +1022,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     var requestedBy = '';
                     if (this.nowPlayingobj.playerPlayer !== '') { requestedBy = 'Requested by: ' + this.nowPlayingobj.playerPlayer; }
                     Discord.SetText('Video: ' + this.nowPlayingobj.videoName, requestedBy);
-                    Discord.SetAssets('pypy', `Instance time: ${timeToText(Date.now() - Date.parse(this.lastLocation.date))}`, 'ayaya', 'https://github.com/Natsumi-sama/VRCX');
+                    Discord.SetAssets('pypy', `Instance time: ${this.lastLocationTimer}`, 'ayaya', 'https://github.com/Natsumi-sama/VRCX');
                     Discord.SetTimestamps(Date.now(), Date.parse(this.nowPlayingobj.videoChangeTime) + Number(videoLength) * 1000);
                 }
             }
