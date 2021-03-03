@@ -5475,7 +5475,9 @@ speechSynthesis.getVoices();
         this.lastLocation = {
             date: 0,
             location: '',
-            name: ''
+            name: '',
+            playerCount: 0,
+            friendCount: 0
         };
     };
 
@@ -6972,10 +6974,12 @@ speechSynthesis.getVoices();
     sharedRepository.setBool('is_game_running', false);
     var isGameRunningStateChange = function () {
         sharedRepository.setBool('is_game_running', this.isGameRunning);
-        $app.lastLocation = {
-            date: '',
+        this.lastLocation = {
+            date: 0,
             location: '',
-            name: ''
+            name: '',
+            playerCount: 0,
+            friendCount: 0
         };
         if (this.isGameRunning) {
             API.currentUser.$online_for = Date.now();

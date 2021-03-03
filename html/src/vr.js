@@ -765,8 +765,10 @@ var bar = new ProgressBar.Circle(vroverlay, {
         this.isGameRunning = sharedRepository.getBool('is_game_running');
         this.isGameNoVR = sharedRepository.getBool('is_Game_No_VR');
         this.lastLocation = sharedRepository.getObject('last_location');
-        if (this.lastLocation.location) {
+        if (this.lastLocation.date !== 0) {
             this.lastLocationTimer = timeToText(Date.now() - this.lastLocation.date);
+        } else {
+            this.lastLocationTimer = '';
         }
         var newConfig = sharedRepository.getObject('VRConfigVars');
         if (newConfig) {
