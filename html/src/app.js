@@ -2325,7 +2325,7 @@ speechSynthesis.getVoices();
         this.expirePlayerModerations();
         Promise.all([
             this.getPlayerModerations(),
-            //this.getPlayerModerationsAgainstMe()
+            //this.getPlayerModerationsAgainstMe();
         ]).finally(() => {
             this.isPlayerModerationsLoading = false;
         }).then(() => {
@@ -3700,7 +3700,7 @@ speechSynthesis.getVoices();
                             joining = false;
                             break;
                         }
-                        if ((feedItem.data === ctx.displayName) ||
+                        if (((feedItem.type === 'OnPlayerJoined') && (feedItem.data === ctx.displayName)) ||
                             (((feedItem.type === 'Friend') || (feedItem.type === 'Status')) && (feedItem.displayName === ctx.displayName))) {
                             joining = false;
                             break;
