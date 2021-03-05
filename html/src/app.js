@@ -2325,7 +2325,7 @@ speechSynthesis.getVoices();
         this.expirePlayerModerations();
         Promise.all([
             this.getPlayerModerations(),
-            this.getPlayerModerationsAgainstMe()
+            //this.getPlayerModerationsAgainstMe()
         ]).finally(() => {
             this.isPlayerModerationsLoading = false;
         }).then(() => {
