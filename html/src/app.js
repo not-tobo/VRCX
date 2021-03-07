@@ -3593,9 +3593,6 @@ speechSynthesis.getVoices();
                     API.getCurrentUser().catch((err1) => {
                         throw err1;
                     });
-                    if (this.isGameRunning) {
-                        API.refreshPlayerModerations();
-                    }
                 }
                 this.checkActiveFriends();
                 AppApi.CheckGameRunning().then(([isGameRunning, isGameNoVR]) => {
