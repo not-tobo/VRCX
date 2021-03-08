@@ -305,6 +305,7 @@ html
                 span(style="float:right;padding-left:15px") {{ nowPlayingobj.videoProgressText }}
                 marquee-text {{ nowPlayingobj.videoID ? `${nowPlayingobj.videoID} : ` : ''}} {{ nowPlayingobj.videoName ? nowPlayingobj.videoName : ' ‎' }} {{ nowPlayingobj.playerPlayer ? `(${nowPlayingobj.playerPlayer}) ‎  ‎‎` : ' ‎' }}
                 #progress
+                template(v-if="lastLocation.date != 0")
                 span(style="float:right") Timer: {{ lastLocationTimer }}
                 span(style="display:inline-block") Players: {{ lastLocation.playerCount }} 
                 span(style="display:inline-block;font-weight:bold") {{ lastLocation.friendCount !== 0 ? `‎‎‎‎‎‎‎‎‏‏‎ ‎(${lastLocation.friendCount})` : ''}}
