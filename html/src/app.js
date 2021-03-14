@@ -6806,16 +6806,18 @@ speechSynthesis.getVoices();
     }
     $app.data.sharedFeedFilters = JSON.parse(configRepository.getString('sharedFeedFilters'));
 
-    $app.data.toggleSwitchOptionsEveryone = {
-        layout: {
-            backgroundColor: 'white',
-            selectedBackgroundColor: '#409eff',
-            selectedColor: 'white',
+    var toggleSwitchLayout = {
+        backgroundColor: 'white',
+        selectedBackgroundColor: '#409eff',
+        selectedColor: 'white',
             color: '#409eff',
-            borderColor: '#409eff',
-            fontWeight: 'bold',
-            fontFamily: '"Noto Sans JP", "Noto Sans KR", "Meiryo UI", "Malgun Gothic", "Segoe UI", "sans-serif"'
-        },
+        borderColor: '#409eff',
+        fontWeight: 'bold',
+        fontFamily: '"Noto Sans JP", "Noto Sans KR", "Meiryo UI", "Malgun Gothic", "Segoe UI", "sans-serif"'
+    };
+
+    $app.data.toggleSwitchOptionsEveryone = {
+        layout: toggleSwitchLayout,
         size: {
             height: 1.5,
             width: 15,
@@ -6827,15 +6829,7 @@ speechSynthesis.getVoices();
         }
     };
     $app.data.toggleSwitchOptionsFriends = {
-        layout: {
-            backgroundColor: 'white',
-            selectedBackgroundColor: '#409eff',
-            selectedColor: 'white',
-            color: '#409eff',
-            borderColor: '#409eff',
-            fontWeight: 'bold',
-            fontFamily: '"Noto Sans JP", "Noto Sans KR", "Meiryo UI", "Malgun Gothic", "Segoe UI", "sans-serif"'
-        },
+        layout: toggleSwitchLayout,
         size: {
             height: 1.5,
             width: 11.25,
@@ -6847,15 +6841,7 @@ speechSynthesis.getVoices();
         }
     };
     $app.data.toggleSwitchOptionsOn = {
-        layout: {
-            backgroundColor: 'white',
-            selectedBackgroundColor: '#409eff',
-            selectedColor: 'white',
-            color: '#409eff',
-            borderColor: '#409eff',
-            fontWeight: 'bold',
-            fontFamily: '"Noto Sans JP", "Noto Sans KR", "Meiryo UI", "Malgun Gothic", "Segoe UI", "sans-serif"'
-        },
+        layout: toggleSwitchLayout,
         size: {
             height: 1.5,
             width: 7.5,
@@ -6867,15 +6853,7 @@ speechSynthesis.getVoices();
         }
     };
     $app.data.desktopToastToggleSwitchOption = {
-        layout: {
-            backgroundColor: 'white',
-            selectedBackgroundColor: '#409eff',
-            selectedColor: 'white',
-            color: '#409eff',
-            borderColor: '#409eff',
-            fontWeight: 'bold',
-            fontFamily: '"Noto Sans JP", "Noto Sans KR", "Meiryo UI", "Malgun Gothic", "Segoe UI", "sans-serif"'
-        },
+        layout: toggleSwitchLayout,
         size: {
             height: 1.5,
             width: 22,
