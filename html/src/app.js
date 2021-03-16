@@ -3613,7 +3613,7 @@ speechSynthesis.getVoices();
         setTimeout(() => this.updateLoop(), 500);
     };
 
-    $app.debug = false;
+    $app.data.debug = false;
 
     $app.data.sharedFeed = {
         gameLog: {
