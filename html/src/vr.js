@@ -718,8 +718,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 date: 0,
                 location: '',
                 name: '',
-                playerCount: 0,
-                friendCount: 0
+                playerList: [],
+                friendList: []
             },
             lastLocationTimer: '',
             wristFeedLastEntry: '',
