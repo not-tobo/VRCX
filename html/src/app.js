@@ -2639,7 +2639,7 @@ speechSynthesis.getVoices();
 
     API.refreshFavoriteItems = function () {
         var types = {
-            'friend': [0, 'getFavoriteFriends'],
+            // 'friend': [0, 'getFavoriteFriends'],
             'world': [0, 'getFavoriteWorlds'],
             'avatar': [0, 'getFavoriteAvatars']
         };
