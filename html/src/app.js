@@ -1741,6 +1741,21 @@ speechSynthesis.getVoices();
         this.$emit('USER:CURRENT', args);
     });
 
+    API.$on('AVATAR:DELETE', function (args) {
+        var { json } = args;
+        this.cachedAvatars.delete(json._id);
+        if ($app.userDialog.id === json.authorId) {
+            var map = new Map();
+            for (var ref of this.cachedAvatars.values()) {
+                if (ref.authorId === json.authorId) {
+                    map.set(ref.id, ref);
+                }
+            }
+            var array = Array.from(map.values());
+            $app.setUserDialogAvatars(array);
+        }
+    });
+
     API.applyAvatar = function (json) {
         var ref = this.cachedAvatars.get(json.id);
         if (typeof ref === 'undefined') {
@@ -1876,6 +1891,11 @@ speechSynthesis.getVoices();
         });
     };
 
+    /*
+        params: {
+            avatarId: string
+        }
+    */
     API.selectFallbackAvatar = function (params) {
         return this.call(`avatars/${params.avatarId}/selectfallback`, {
             method: 'PUT',
@@ -1886,6 +1906,25 @@ speechSynthesis.getVoices();
                 params
             };
             this.$emit('AVATAR:SELECT', args);
+            return args;
+        });
+    };
+
+    /*
+        params: {
+            avatarId: string
+        }
+    */
+    API.deleteAvatar = function (params) {
+        return this.call(`avatars/${params.avatarId}`, {
+            method: 'DELETE',
+            params
+        }).then((json) => {
+            var args = {
+                json,
+                params
+            };
+            this.$emit('AVATAR:DELETE', args);
             return args;
         });
     };
@@ -8429,11 +8468,23 @@ speechSynthesis.getVoices();
                                     message: 'Avatar updated to private',
                                     type: 'success'
                                 });
-                                return args;
-                            });
-                            break;
-                        default:
-                            break;
+                                    return args;
+                                });
+                                break;
+                            case 'Delete':
+                                API.deleteAvatar({
+                                    avatarId: D.id
+                                }).then((args) => {
+                                    this.$message({
+                                        message: 'Avatar deleted',
+                                        type: 'success'
+                                    });
+                                    D.visible = false;
+                                    return args;
+                                });
+                                break;
+                            default:
+                                break;
                         }
                     }
                 });
