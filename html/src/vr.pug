@@ -264,7 +264,7 @@ html
             .x-containerbottom
                 div(style="display:flex;flex-direction:row")
                     template(v-if="devices.length")
-                        div(v-for="device in devices" style="flex:none;text-align:center;width:57px;height:77px")
+                        div(v-for="device in devices" style="flex:none;text-align:center;width:62px;height:82px")
                             template(v-if="device[0] === 'tracker'")
                                 img(v-if="device[1] !== 'connected'" src="images/tracker_status_off.png" style="width:32px;height:32px")
                                 img(v-else-if="device[2] < 20" src="images/tracker_status_ready_low.png" style="width:32px;height:32px")
