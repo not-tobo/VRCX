@@ -1011,7 +1011,7 @@ html
                             div(v-if="userDialog.ref.location" style="display:flex;flex-direction:column;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #eee")
                                 div(style="flex:none")
                                     location(:location="userDialog.ref.location")
-                                        template(#default v-if="userDialog.instance.occupants") ({{ userDialog.instance.occupants }})
+                                        template(#default v-if="userDialog.instance.occupants")  ({{ userDialog.instance.occupants }})
                                     launch(:location="userDialog.ref.location" style="margin-left:5px")
                                     invite-yourself(:location="userDialog.ref.location" style="margin-left:5px")
                                     el-button(v-if="copyUrlInstanceCheck(userDialog.ref.location)" @click="copyUrl(userDialog.ref.location)" size="mini" icon="el-icon-link" style="margin-left:5px" circle)
