@@ -7595,7 +7595,10 @@ speechSynthesis.getVoices();
         }
         if (this.isGameRunning &&
             this.lastLocation.location === L.tag) {
-            var ref = API.currentUser;
+            var ref = API.cachedUsers.get(API.currentUser.id);
+            if (typeof ref === 'undefined') {
+                ref = API.currentUser;
+            }
             var playersInInstance = this.lastLocation.playerList;
             if (playersInInstance.includes(ref.displayName)) {
                 users.push(ref);
@@ -8150,7 +8153,10 @@ speechSynthesis.getVoices();
                     };
                     instances[instance.id] = instance;
                 }
-                var ref = API.currentUser;
+                var ref = API.cachedUsers.get(API.currentUser.id);
+                if (typeof ref === 'undefined') {
+                    ref = API.currentUser;
+                }
                 var playersInInstance = this.lastLocation.playerList;
                 if (playersInInstance.includes(ref.displayName)) {
                     instance.users.push(ref);
