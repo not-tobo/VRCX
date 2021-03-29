@@ -5004,7 +5004,8 @@ speechSynthesis.getVoices();
                 ctx.state !== 'online' &&
                 typeof ref !== 'undefined' &&
                 ref.location !== '' &&
-                ref.location !== 'offline') {
+                ref.location !== 'offline' &&
+                ref.location !== 'private') {
                 API.getUser({
                     userId: id
                 });
