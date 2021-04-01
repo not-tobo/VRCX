@@ -368,7 +368,7 @@ speechSynthesis.getVoices();
             if (typeof req !== 'undefined') {
                 return req;
             }
-        } else if (init.uploadImage || init.uploadImagePUT) {
+        } else if (init.uploadImage || init.uploadFilePUT) {
         } else {
             init.headers = {
                 'Content-Type': 'application/json;charset=utf-8',
@@ -10120,8 +10120,18 @@ speechSynthesis.getVoices();
         return a[field].toLowerCase().localeCompare(b[field].toLowerCase());
     };
 
-    $app.methods.md5 = async function (file) {
+    $app.methods.genMd5 = async function (file) {
         var response = await AppApi.MD5File(file);
+        return response;
+    };
+
+    $app.methods.genSig = async function (file) {
+        var response = await AppApi.SignFile(file);
+        return response;
+    };
+
+    $app.methods.genLength = async function (file) {
+        var response = await AppApi.FileLength(file);
         return response;
     };
 
@@ -10144,9 +10154,9 @@ speechSynthesis.getVoices();
             clearFile();
             return;
         }
-        if (!files[0].type.match(/image.*/)) {
+        if (!files[0].type.match(/image.png/)) {
             $app.$message({
-                message: 'File isn\'t an image',
+                message: 'File isn\'t a png',
                 type: 'error'
             });
             clearFile();
@@ -10155,27 +10165,30 @@ speechSynthesis.getVoices();
         this.avatarDialog.loading = true;
         var r = new FileReader();
         r.onload = async function (file) {
-            var base64Body = btoa(r.result);
-            var fileSize = file.total;
-            var md5 = await $app.md5(base64Body);
+            var base64File = btoa(r.result);
+            var fileMd5 = await $app.genMd5(base64File);
+            var fileSizeInBytes = file.total;
+            var base64SignatureFile = await $app.genSig(base64File);
+            var signatureMd5 = await $app.genMd5(base64SignatureFile);
+            var signatureSizeInBytes = await $app.genLength(base64SignatureFile);
             var avatarId = $app.avatarDialog.id;
             var { imageUrl } = $app.avatarDialog.ref;
             var url = new URL(imageUrl);
             var pathArray = url.pathname.split('/');
             var fileId = pathArray[4];
-            var signatureMd5 = await $app.md5(btoa(Math.random().toString(36).substring(7))); // lol...
-            var signatureSize = Math.floor(Math.random() * (10000 - 500 + 1)) + 500;
             $app.avatarImage = {
-                file: base64Body,
-                fileMd5: md5,
-                fileId: fileId,
-                avatarId: avatarId
+                base64File,
+                fileMd5,
+                base64SignatureFile,
+                signatureMd5,
+                fileId,
+                avatarId
             };
             var params = {
-                fileMd5: md5,
-                fileSizeInBytes: fileSize,
-                signatureMd5: signatureMd5,
-                signatureSizeInBytes: signatureSize
+                fileMd5,
+                fileSizeInBytes,
+                signatureMd5,
+                signatureSizeInBytes
             };
             API.uploadAvatarImage(params, fileId);
         };
@@ -10223,10 +10236,10 @@ speechSynthesis.getVoices();
         });
         var fileId = json.id;
         var fileVersion = json.versions[json.versions.length - 1].version;
-        await this.call(`file/${fileId}/${fileVersion}/signature/finish`, {
+        this.call(`file/${fileId}/${fileVersion}/signature/finish`, {
             method: 'PUT'
         });
-        await this.call(`file/${fileId}/${fileVersion}/file/finish`, {
+        this.call(`file/${fileId}/${fileVersion}/file/finish`, {
             method: 'PUT'
         });
         $app.avatarDialog.loading = false;
@@ -10235,11 +10248,11 @@ speechSynthesis.getVoices();
     API.$on('AVATARIMAGE:STAGE1', function (args) {
         var fileId = args.json.id;
         var fileVersion = args.json.versions[args.json.versions.length - 1].version;
-        var parmas = {
+        var params = {
             fileId,
             fileVersion
         };
-        this.uploadAvatarImageStage2(parmas);
+        this.uploadAvatarImageStage2(params);
     });
 
     API.uploadAvatarImageStage2 = async function (params) {
@@ -10263,19 +10276,20 @@ speechSynthesis.getVoices();
     API.$on('AVATARIMAGE:STAGE2', function (args) {
         var { url } = args.json;
         var { fileId, fileVersion } = args.params;
-        var parmas = {
+        var params = {
             url,
             fileId,
             fileVersion
         };
-        this.uploadAvatarImageStage3(parmas);
+        this.uploadAvatarImageStage3(params);
     });
 
     API.uploadAvatarImageStage3 = function (params) {
         return webApiService.execute({
             url: params.url,
-            uploadImagePUT: true,
-            imageData: $app.avatarImage.file,
+            uploadFilePUT: true,
+            fileData: $app.avatarImage.base64File,
+            fileMIME: 'image/png',
             headers: {
                 'Content-MD5': $app.avatarImage.fileMd5
             }
@@ -10295,11 +10309,11 @@ speechSynthesis.getVoices();
 
     API.$on('AVATARIMAGE:STAGE3', function (args) {
         var { fileId, fileVersion } = args.params;
-        var parmas = {
+        var params = {
             fileId,
             fileVersion
         };
-        this.uploadAvatarImageStage4(parmas);
+        this.uploadAvatarImageStage4(params);
     });
 
     API.uploadAvatarImageStage4 = function (params) {
@@ -10321,14 +10335,75 @@ speechSynthesis.getVoices();
 
     API.$on('AVATARIMAGE:STAGE4', function (args) {
         var { fileId, fileVersion } = args.params;
-        var parmas = {
+        var params = {
             fileId,
             fileVersion
         };
-        this.uploadAvatarImageStage5(parmas);
+        this.uploadAvatarImageStage5(params);
     });
 
-    API.uploadAvatarImageStage5 = function (params) {
+    API.uploadAvatarImageStage5 = async function (params) {
+        try {
+            return await this.call(`file/${params.fileId}/${params.fileVersion}/signature/start`, {
+                method: 'PUT'
+            }).then((json) => {
+                var args = {
+                    json,
+                    params
+                };
+                this.$emit('AVATARIMAGE:STAGE5', args);
+                return args;
+            });
+        } catch (err) {
+            console.error(err);
+            this.uploadAvatarFailCleanup(params.fileId);
+        }
+    };
+
+    API.$on('AVATARIMAGE:STAGE5', function (args) {
+        var { url } = args.json;
+        var { fileId, fileVersion } = args.params;
+        var params = {
+            url,
+            fileId,
+            fileVersion
+        };
+        this.uploadAvatarImageStage6(params);
+    });
+
+    API.uploadAvatarImageStage6 = function (params) {
+        return webApiService.execute({
+            url: params.url,
+            uploadFilePUT: true,
+            fileData: $app.avatarImage.base64SignatureFile,
+            fileMIME: 'application/x-rsync-signature',
+            headers: {
+                'Content-MD5': $app.avatarImage.signatureMd5
+            }
+        }).then((json) => {
+            if (json.status !== 200) {
+                $app.avatarDialog.loading = false;
+                this.$throw('Avatar image upload failed', json);
+            }
+            var args = {
+                json,
+                params
+            };
+            this.$emit('AVATARIMAGE:STAGE6', args);
+            return args;
+        });
+    };
+
+    API.$on('AVATARIMAGE:STAGE6', function (args) {
+        var { fileId, fileVersion } = args.params;
+        var params = {
+            fileId,
+            fileVersion
+        };
+        this.uploadAvatarImageStage7(params);
+    });
+
+    API.uploadAvatarImageStage7 = function (params) {
         return this.call(`file/${params.fileId}/${params.fileVersion}/signature/finish`, {
             method: 'PUT',
             params: {
@@ -10340,21 +10415,21 @@ speechSynthesis.getVoices();
                 json,
                 params
             };
-            this.$emit('AVATARIMAGE:STAGE5', args);
+            this.$emit('AVATARIMAGE:STAGE7', args);
             return args;
         });
     };
 
-    API.$on('AVATARIMAGE:STAGE5', function (args) {
+    API.$on('AVATARIMAGE:STAGE7', function (args) {
         var { fileId, fileVersion } = args.params;
         var parmas = {
             id: $app.avatarImage.avatarId,
             imageUrl: `https://api.vrchat.cloud/api/1/file/${fileId}/${fileVersion}/file`
         };
-        this.uploadAvatarImageStage6(parmas);
+        this.uploadAvatarImageStage8(parmas);
     });
 
-    API.uploadAvatarImageStage6 = function (params) {
+    API.uploadAvatarImageStage8 = function (params) {
         return this.call(`avatars/${params.id}`, {
             method: 'PUT',
             params
@@ -10363,13 +10438,13 @@ speechSynthesis.getVoices();
                 json,
                 params
             };
-            this.$emit('AVATARIMAGE:STAGE6', args);
+            this.$emit('AVATARIMAGE:STAGE8', args);
             this.$emit('AVATAR', args);
             return args;
         });
     };
 
-    API.$on('AVATARIMAGE:STAGE6', function (args) {
+    API.$on('AVATARIMAGE:STAGE8', function (args) {
         $app.avatarDialog.loading = false;
         if (args.json.imageUrl === args.params.imageUrl) {
             $app.$message({
