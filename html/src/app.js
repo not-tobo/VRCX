@@ -3566,7 +3566,7 @@ speechSynthesis.getVoices();
             nextFriendsRefresh: 0,
             isGameRunning: false,
             isGameNoVR: false,
-            appVersion: 'VRCX.PyPyDance.Companion 2021.04.04',
+            appVersion: 'VRCX.PyPyDance.Companion 2021.04.04.1',
             latestAppVersion: '',
             ossDialog: false,
             exportFriendsListDialog: false,
