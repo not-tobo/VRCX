@@ -22,6 +22,7 @@ var PyPyVideosTable = JSON.parse(atob(PyPyVideos.json));
 var playerPlayer = '';
 var playerRequest = '';
 
+import {appVersion} from './constants.js';
 import sharedRepository from './repository/shared.js';
 import configRepository from './repository/config.js';
 import webApiService from './service/webapi.js';
@@ -379,7 +380,7 @@ speechSynthesis.getVoices();
                 : '{}';
         }
         init.headers = {
-            'User-Agent': $app.appVersion,
+            'User-Agent': appVersion,
             ...init.headers
         };
         var req = webApiService.execute(init).catch((err) => {
@@ -3566,7 +3567,7 @@ speechSynthesis.getVoices();
             nextFriendsRefresh: 0,
             isGameRunning: false,
             isGameNoVR: false,
-            appVersion: 'VRCX.PyPyDance.Companion 2021.04.04.1',
+            appVersion,
             latestAppVersion: '',
             ossDialog: false,
             exportFriendsListDialog: false,
