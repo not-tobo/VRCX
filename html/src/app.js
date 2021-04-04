@@ -10542,10 +10542,17 @@ speechSynthesis.getVoices();
 
     $app.methods.getAvatarName = function (args) {
         var D = this.userDialog;
+        D.$avatarInfo = {
+            id: '',
+            name: '-'
+        };
         if (!D.visible) {
             return;
         }
         var imageUrl = D.ref.currentAvatarImageUrl;
+        if (imageUrl.substring(0, 41) !== 'https://api.vrchat.cloud/api/1/file/file_') {
+            return;
+        }
         var url = new URL(imageUrl);
         var pathArray = url.pathname.split('/');
         var fileId = pathArray[4];
@@ -10553,10 +10560,6 @@ speechSynthesis.getVoices();
             D.$avatarInfo = API.cachedAvatarNames.get(fileId);
             return;
         }
-        D.$avatarInfo = {
-            id: '',
-            name: ''
-        };
         var params = {
             fileId
         };
