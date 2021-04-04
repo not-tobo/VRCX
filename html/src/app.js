@@ -5214,7 +5214,8 @@ speechSynthesis.getVoices();
                 id = user.userId;
             }
             if ((user.location === 'offline') ||
-                ((id) && (!this.friendsGroup0_.filter(e => e.id === id).length > 0) &&
+                ((id) && (id !== API.currentUser.id) &&
+                (!this.friendsGroup0_.filter(e => e.id === id).length > 0) &&
                 (!this.friendsGroup1_.filter(e => e.id === id).length > 0))) {
                 // Offline
                 style.offline = true;
