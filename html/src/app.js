@@ -350,9 +350,6 @@ speechSynthesis.getVoices();
         var init = {
             url: `https://api.vrchat.cloud/api/1/${endpoint}`,
             method: 'GET',
-            headers: {
-                'User-Agent': `VRCX ${$app.appVersion}`
-            },
             ...options
         };
         var { params } = init;
@@ -381,6 +378,10 @@ speechSynthesis.getVoices();
                 ? JSON.stringify(params)
                 : '{}';
         }
+        init.headers = {
+            'User-Agent': $app.appVersion,
+            ...init.headers
+        };
         var req = webApiService.execute(init).catch((err) => {
             this.$throw(0, err);
         }).then((response) => {
