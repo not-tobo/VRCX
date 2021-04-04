@@ -7397,8 +7397,8 @@ speechSynthesis.getVoices();
         treeData: [],
         memo: '',
         $avatarInfo: {
-            id: '',
-            name: '',
+            ownerId: '',
+            avatarName: '',
         }
     };
 
@@ -8000,18 +8000,23 @@ speechSynthesis.getVoices();
             });
         } else if (command === 'Show Avatar Details') {
             var { currentAvatarImageUrl } = D.ref;
-            var id = extractFileId(currentAvatarImageUrl);
-            if (id) {
-                API.call(`file/${id}`).then(({ ownerId }) => {
-                    for (var ref of API.cachedAvatars.values()) {
-                        if (ref.imageUrl === currentAvatarImageUrl) {
-                            this.showAvatarDialog(ref.id);
-                            return;
-                        }
-                    }
-                    D.loading = true;
-                    var params = {
-                        n: 50,
+            for (var ref of API.cachedAvatars.values()) {
+                if (ref.imageUrl === currentAvatarImageUrl) {
+                    this.showAvatarDialog(ref.id);
+                    return;
+                }
+            }
+            var fileId = extractFileId(currentAvatarImageUrl);
+            if (fileId) {
+                if (API.cachedAvatarNames.has(fileId)) {
+                    var { ownerId } = API.cachedAvatarNames.get(fileId);
+                } else {
+                    var args = API.getAvatarImages({fileId: fileId});
+                    var ownerId = args.json.ownerId;
+                }
+                D.loading = true;
+                var params = {
+                    n: 50,
                         offset: 0,
                         sort: 'updated',
                         order: 'descending',
@@ -8042,9 +8047,8 @@ speechSynthesis.getVoices();
                                 });
                                 return;
                             }
-                            this.showUserDialog(ownerId);
-                        }
-                    });
+                        this.showUserDialog(ownerId);
+                    }
                 });
             } else {
                 this.$message({
@@ -10494,8 +10498,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    API.getAvatarImages = function (params) {
-        return this.call(`file/${params.fileId}`, {
+    API.getAvatarImages = async function (params) {
+        return await this.call(`file/${params.fileId}`, {
             method: 'GET',
             params
         }).then((json) => {
@@ -10503,8 +10507,30 @@ speechSynthesis.getVoices();
                 json,
                 params
             };
+            this.$emit('AVATARIMAGE:GET', args);
             return args;
         });
+    };
+
+    API.$on('AVATARIMAGE:GET', function (args) {
+        $app.storeAvatarImage(args);
+    });
+
+    $app.methods.storeAvatarImage = function (args) {
+        var fileId = args.params.fileId;
+        var avatarName = '';
+        var imageName = args.json.name;
+        var avatarNameRegex = /Avatar - (.*) - Image -/g.exec(imageName);
+        if (avatarNameRegex) {
+            avatarName = avatarNameRegex[1];
+        }
+        var ownerId = args.json.ownerId;
+        var avatarInfo = {
+            ownerId,
+            avatarName
+        };
+        API.cachedAvatarNames.set(fileId, avatarInfo);
+        return avatarInfo;
     };
 
     $app.methods.setAvatarImage = function (image) {
@@ -10543,19 +10569,17 @@ speechSynthesis.getVoices();
     $app.methods.getAvatarName = function (args) {
         var D = this.userDialog;
         D.$avatarInfo = {
-            id: '',
-            name: '-'
+            ownerId: '',
+            avatarName: '-'
         };
         if (!D.visible) {
             return;
         }
         var imageUrl = D.ref.currentAvatarImageUrl;
-        if (imageUrl.substring(0, 41) !== 'https://api.vrchat.cloud/api/1/file/file_') {
+        var fileId = extractFileId(imageUrl);
+        if (!fileId) {
             return;
         }
-        var url = new URL(imageUrl);
-        var pathArray = url.pathname.split('/');
-        var fileId = pathArray[4];
         if (API.cachedAvatarNames.has(fileId)) {
             D.$avatarInfo = API.cachedAvatarNames.get(fileId);
             return;
@@ -10564,19 +10588,8 @@ speechSynthesis.getVoices();
             fileId
         };
         API.getAvatarImages(params).then((args) => {
-            var name = '';
-            var imageName = args.json.name;
-            var avatarNameRegex = /Avatar - (.*) - Image -/g.exec(imageName);
-            if (avatarNameRegex) {
-                name = avatarNameRegex[1];
-            }
-            var id = args.json.ownerId;
-            var avatarInfo = {
-                id,
-                name
-            };
-            API.cachedAvatarNames.set(fileId, avatarInfo);
-            D.$avatarInfo = avatarInfo;
+            var avatarInfo = this.storeAvatarImage(args);
+            this.userDialog.$avatarInfo = avatarInfo;
         });
     };
 
