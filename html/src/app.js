@@ -10032,7 +10032,7 @@ speechSynthesis.getVoices();
 
     $app.data.friendsListSearch = '';
     $app.data.friendsListSearchFilterVIP = false;
-    $app.data.friendsListSearchFilters = [ 'User Name', 'Display Name', 'Status', 'Bio', 'Memo' ];
+    $app.data.friendsListSearchFilters = [ 'Display Name', 'User Name', 'Rank', 'Status', 'Bio', 'Memo' ];
 
     $app.methods.friendsListSearchChange = function () {
         var filters = this.friendsListSearchFilters;
@@ -10075,6 +10075,11 @@ speechSynthesis.getVoices();
                     filters.includes('Status') &&
                     ctx.ref.statusDescription) {
                     match = String(ctx.ref.statusDescription).toUpperCase().includes(query);
+                }
+                if (!match &&
+                    filters.includes('Rank') &&
+                    ctx.ref.$friendNum) {
+                    match = String(ctx.ref.$trustLevel).toUpperCase().includes(query);
                 }
                 if (!match) {
                     continue;
@@ -10147,6 +10152,20 @@ speechSynthesis.getVoices();
 
     $app.methods.sortAlphabetically = function (a, b, field) {
         return a[field].toLowerCase().localeCompare(b[field].toLowerCase());
+    };
+
+    $app.methods.sortLanguages = function (a, b) {
+        var sortedA = [];
+        var sortedB = [];
+        a.$languages.forEach((item) => {
+            sortedA.push(item.value);
+        });
+        b.$languages.forEach((item) => {
+            sortedB.push(item.value);
+        });
+        sortedA.sort();
+        sortedB.sort();
+        return JSON.stringify(sortedA).localeCompare(JSON.stringify(sortedB));
     };
 
     $app.methods.genMd5 = async function (file) {
