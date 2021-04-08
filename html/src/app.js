@@ -7277,6 +7277,7 @@ speechSynthesis.getVoices();
         var VRConfigVars = {
             notificationTTS: this.notificationTTS,
             notificationTTSVoice: this.notificationTTSVoice,
+            overlayNotifications: this.overlayNotifications,
             hideDevicesFromFeed: this.hideDevicesFromFeed,
             minimalFeed: this.minimalFeed,
             displayVRCPlusIconsAsAvatar: this.displayVRCPlusIconsAsAvatar,
