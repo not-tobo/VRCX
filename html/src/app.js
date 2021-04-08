@@ -9384,9 +9384,7 @@ speechSynthesis.getVoices();
 
     $app.methods.compareCurrentVRCPlusIcon = function (userIcon) {
         try {
-            var url = new URL(API.currentUser.userIcon);
-            var pathArray = url.pathname.split('/');
-            var currentUserIcon = pathArray[4];
+            var currentUserIcon = extractFileId(API.currentUser.userIcon);
             if (userIcon === currentUserIcon) {
                 return true;
             }
@@ -10321,9 +10319,15 @@ speechSynthesis.getVoices();
             var signatureSizeInBytes = await $app.genLength(base64SignatureFile);
             var avatarId = $app.avatarDialog.id;
             var { imageUrl } = $app.avatarDialog.ref;
-            var url = new URL(imageUrl);
-            var pathArray = url.pathname.split('/');
-            var fileId = pathArray[4];
+            var fileId = extractFileId(imageUrl);
+            if (!fileId) {
+                $app.$message({
+                    message: 'Current avatar image invalid',
+                    type: 'error'
+                });
+                clearFile();
+                return;
+            }
             $app.avatarImage = {
                 base64File,
                 fileMd5,
@@ -10603,9 +10607,10 @@ speechSynthesis.getVoices();
         } else {
             return;
         }
-        var url = new URL(imageUrl);
-        var pathArray = url.pathname.split('/');
-        var fileId = pathArray[4];
+        var fileId = extractFileId(imageUrl);
+        if (!fileId) {
+            return;
+        }
         var params = {
             fileId
         };
