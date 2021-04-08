@@ -140,7 +140,7 @@ html
                                 .detail
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
-                                        | ✨ #[span.name(v-text="feed.data")] spawned portal
+                                        | ✨ #[span.name(v-text="feed.data")]
                             div(v-else-if="feed.type === 'Event'" class="x-friend-item")
                                 .detail
                                     span.extra
