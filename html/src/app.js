@@ -3904,11 +3904,16 @@ speechSynthesis.getVoices();
             }
             var isFriend = false;
             var isFavorite = false;
-            for (var ref of API.cachedUsers.values()) {
-                if (ref.displayName === ctx.data) {
-                    isFriend = this.friends.has(ref.id);
-                    isFavorite = API.cachedFavoritesByObjectId.has(ref.id);
-                    break;
+            if ((ctx.type === 'OnPlayerJoined') ||
+                (ctx.type === 'OnPlayerLeft') ||
+                (ctx.type === 'PortalSpawn') ||
+                (ctx.type === 'VideoChange')) {
+                for (var ref of API.cachedUsers.values()) {
+                    if (ref.displayName === ctx.data) {
+                        isFriend = this.friends.has(ref.id);
+                        isFavorite = API.cachedFavoritesByObjectId.has(ref.id);
+                        break;
+                    }
                 }
             }
             if ((w < 20) && (wristFilter[ctx.type]) &&
