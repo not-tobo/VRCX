@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2019 pypy. All rights reserved.
+// Copyright(c) 2019 pypy. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT>.
@@ -30,6 +30,7 @@ namespace VRCX
         private bool m_ResetLog;
         private static string playerPlayer = string.Empty;
         private static string playerRequest = string.Empty;
+        private static bool ShaderKeywordsLimitReached = false;
 
         // NOTE
         // FileSystemWatcher() is unreliable
@@ -192,6 +193,9 @@ namespace VRCX
                                     offset += 2;
                                     if (ParseLogOnPlayerJoinedOrLeft(fileInfo, logContext, line, offset) == true ||
                                         ParseLogLocation(fileInfo, logContext, line, offset) == true ||
+                                        ParseLogPortalSpawn(fileInfo, logContext, line, offset) == true ||
+                                        ParseLogJoinBlocked(fileInfo, logContext, line, offset) == true ||
+                                        ParseLogVideoError(fileInfo, logContext, line, offset) == true ||
                                         ParseLogVideoChange(fileInfo, logContext, line, offset) == true ||
                                         ParseLogVideoBeep(fileInfo, logContext, line, offset) == true)
                                     {
@@ -201,7 +205,8 @@ namespace VRCX
                                 continue;
                             }
 
-                            if (ParseLogNotification(fileInfo, logContext, line, 34) == true)
+                            if (ParseLogNotification(fileInfo, logContext, line, 34) == true ||
+                                ParseLogShaderKeywordsLimit(fileInfo, logContext, line, 34) == true)
                             {
                                 continue;
                             }
@@ -276,6 +281,7 @@ namespace VRCX
                 });
                 playerPlayer = string.Empty;
                 playerRequest = string.Empty;
+                ShaderKeywordsLimitReached = false;
 
                 return true;
             }
@@ -351,13 +357,109 @@ namespace VRCX
             return false;
         }
 
+        private bool ParseLogPortalSpawn(FileInfo fileInfo, LogContext logContext, string line, int offset)
+        {
+            // 2021.04.06 11:25:45 Log        -  [Network Processing] RPC invoked ConfigurePortal on (Clone [1600004] Portals/PortalInternalDynamic) for Natsumi-sama
+
+            if (string.Compare(line, offset, "RPC invoked ConfigurePortal on (Clone [", 0, 39, StringComparison.Ordinal) != 0)
+            {
+                return false;
+            }
+
+            var pos = line.LastIndexOf("] Portals/PortalInternalDynamic) for ");
+            if (pos < 0)
+            {
+                return false;
+            }
+
+            //var portalId = line.Substring(offset + 39, pos - (offset + 39));
+            var data = line.Substring(pos + 37);
+
+            AppendLog(new[]
+            {
+                fileInfo.Name,
+                ConvertLogTimeToISO8601(line),
+                "portal-spawn",
+                data
+            });
+
+            return true;
+        }
+
+        private bool ParseLogShaderKeywordsLimit(FileInfo fileInfo, LogContext logContext, string line, int offset)
+        {
+            // 2021.04.04 12:21:06 Error - Maximum number (256) of shader keywords exceeded, keyword _TOGGLESIMPLEBLUR_ON will be ignored.
+
+            if (string.Compare(line, offset, "Maximum number (256) of shader keywords exceeded", 0, 48, StringComparison.Ordinal) != 0)
+            {
+                return false;
+            }
+
+            if (ShaderKeywordsLimitReached == true)
+            {
+                return false;
+            }
+
+            AppendLog(new[]
+            {
+                fileInfo.Name,
+                ConvertLogTimeToISO8601(line),
+                "event",
+                "Shader Keyword Limit has been reached"
+            });
+            ShaderKeywordsLimitReached = true;
+
+            return true;
+        }
+
+        private bool ParseLogJoinBlocked(FileInfo fileInfo, LogContext logContext, string line, int offset)
+        {
+            // 2021.04.07 09:34:37 Error      -  [Behaviour] Master is not sending any events! Moving to a new instance.
+
+            if (string.Compare(line, offset, "Master is not sending any events! Moving to a new instance.", 0, 59, StringComparison.Ordinal) != 0)
+            {
+                return false;
+            }
+
+            AppendLog(new[]
+            {
+                fileInfo.Name,
+                ConvertLogTimeToISO8601(line),
+                "event",
+                "Joining instance blocked by master"
+            });
+
+            return true;
+        }
+
+        private bool ParseLogVideoError(FileInfo fileInfo, LogContext logContext, string line, int offset)
+        {
+            // 2021.04.08 06:37:45 Error -  [Video Playback] ERROR: Video unavailable
+            // 2021.04.08 06:40:07 Error -  [Video Playback] ERROR: Private video
+
+            if (string.Compare(line, offset, "ERROR: ", 0, 7, StringComparison.Ordinal) != 0)
+            {
+                return false;
+            }
+
+            var data = line.Substring(offset + 7);
+
+            AppendLog(new[]
+            {
+                fileInfo.Name,
+                ConvertLogTimeToISO8601(line),
+                "event",
+                "VideoError: " + data
+            });
+
+            return true;
+        }
+
         private bool ParseLogVideoChange(FileInfo fileInfo, LogContext logContext, string line, int offset)
         {
             // 2020.10.16 14:42:33 Log        -  [Video Playback] Attempting to resolve URL 'http://storage.llss.io/yUKvv_nCpj0.mp4'
 
-            if (line.Length <= 78 ||
-                line[35] != 'V' ||
-                string.Compare(line, 34, "[Video Playback] Attempting to resolve URL '", 0, 44, StringComparison.Ordinal) != 0)
+            if (string.Compare(line, offset, "Attempting to resolve URL '", 0, 27, StringComparison.Ordinal) != 0)
             {
                 return false;
             }

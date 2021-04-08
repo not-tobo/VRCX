@@ -4372,6 +4372,12 @@ speechSynthesis.getVoices();
             case 'unmute':
                 this.speak(`${noty.sourceDisplayName} has unmuted you`);
                 break;
+            case 'PortalSpawn':
+                this.speak(`${noty.data} has spawned a portal`);
+                break;
+            case 'Event':
+                this.speak(noty.data);
+                break;
             default:
                 break;
         }
@@ -4443,6 +4449,12 @@ speechSynthesis.getVoices();
             case 'unmute':
                 AppApi.XSNotification('VRCX', `${noty.sourceDisplayName} has unmuted you`, timeout, image);
                 break;
+            case 'PortalSpawn':
+                AppApi.XSNotification('VRCX', `${noty.data} has spawned a portal`, timeout, image);
+                break;
+            case 'Event':
+                AppApi.XSNotification('VRCX', noty.data, timeout, image);
+                break;
             default:
                 break;
         }
@@ -4512,6 +4524,12 @@ speechSynthesis.getVoices();
                 break;
             case 'unmute':
                 AppApi.DesktopNotification(noty.sourceDisplayName, `has unmuted you`, image);
+                break;
+            case 'PortalSpawn':
+                AppApi.DesktopNotification(noty.data, `has spawned a portal`, image);
+                break;
+            case 'Event':
+                AppApi.DesktopNotification('Event', noty.data, '');
                 break;
             default:
                 break;
@@ -5814,6 +5832,23 @@ speechSynthesis.getVoices();
                     };
                     break;
 
+                case 'portal-spawn':
+                    tableData = {
+                        created_at: gameLog.dt,
+                        type: 'PortalSpawn',
+                        data: gameLog.userDisplayName
+                    };
+                    break;
+
+
+                case 'event':
+                    tableData = {
+                        created_at: gameLog.dt,
+                        type: 'Event',
+                        data: gameLog.event
+                    };
+                    break;
+
                 case 'video-change':
                     var videoobj = {};
                     videoobj.videoURL = gameLog.videoURL;
@@ -7024,6 +7059,8 @@ speechSynthesis.getVoices();
         sharedFeedFilters.noty.block = 'On';
         sharedFeedFilters.noty.mute = 'On';
         sharedFeedFilters.noty.unmute = 'On';
+        sharedFeedFilters.noty.PortalSpawn = 'Everyone';
+        sharedFeedFilters.noty.Event = 'On';
         sharedFeedFilters.wrist.Location = 'On';
         sharedFeedFilters.wrist.OnPlayerJoined = 'Everyone';
         sharedFeedFilters.wrist.OnPlayerLeft = 'Everyone';
@@ -7046,6 +7083,8 @@ speechSynthesis.getVoices();
         sharedFeedFilters.wrist.block = 'On';
         sharedFeedFilters.wrist.mute = 'On';
         sharedFeedFilters.wrist.unmute = 'On';
+        sharedFeedFilters.wrist.PortalSpawn = 'Everyone';
+        sharedFeedFilters.wrist.Event = 'On';
 
         sharedFeedFilters.noty.VideoChange = 'On';
         sharedFeedFilters.wrist.VideoChange = 'On';
