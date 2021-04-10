@@ -1058,7 +1058,14 @@ var bar = new ProgressBar.Circle(vroverlay, {
             this.nowPlayingobj = this.newPlayingobj;
             if (this.appType === '2') {
                 if (this.nowPlayingobj.videoURL != '') {
-                    if (configRepository.getBool('VRCX_videoNotification')) {
+                    if (configRepository.getBool('VRCX_xsNotifications')) {
+                        var timeout = parseInt(this.config.notificationTimeout) / 1000;
+                        var message = this.newPlayingobj.videoName;
+                        if (this.newPlayingobj.playerPlayer !== '') {
+                            message = (`${message} (${this.newPlayingobj.playerPlayer})`);
+                        }
+                        AppApi.XSNotification('VRCX', message, timeout, false);
+                    } else if (configRepository.getBool('VRCX_videoNotification')) {
                         if (this.newPlayingobj.playerPlayer !== '') {
                             new Noty({
                                 type: 'alert',
