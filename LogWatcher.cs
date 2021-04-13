@@ -162,6 +162,7 @@ namespace VRCX
         {
             try
             {
+                ShaderKeywordsLimitReached = false;
                 using (var stream = new FileStream(fileInfo.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 65536, FileOptions.SequentialScan))
                 {
                     stream.Position = logContext.Position;
@@ -281,7 +282,6 @@ namespace VRCX
                 });
                 playerPlayer = string.Empty;
                 playerRequest = string.Empty;
-                ShaderKeywordsLimitReached = false;
 
                 return true;
             }
@@ -390,12 +390,12 @@ namespace VRCX
         {
             // 2021.04.04 12:21:06 Error - Maximum number (256) of shader keywords exceeded, keyword _TOGGLESIMPLEBLUR_ON will be ignored.
 
-            if (string.Compare(line, offset, "Maximum number (256) of shader keywords exceeded", 0, 48, StringComparison.Ordinal) != 0)
+            if (ShaderKeywordsLimitReached == true)
             {
                 return false;
             }
 
-            if (ShaderKeywordsLimitReached == true)
+            if (string.Compare(line, offset, "Maximum number (256) of shader keywords exceeded", 0, 48, StringComparison.Ordinal) != 0)
             {
                 return false;
             }
