@@ -1417,6 +1417,31 @@ speechSynthesis.getVoices();
         }
     });
 
+    API.$on('WORLD:DELETE', function (args) {
+        var { json } = args;
+        this.cachedWorlds.delete(json.id);
+        if ($app.worldDialog.ref.authorId === json.authorId) {
+            var map = new Map();
+            for (var ref of this.cachedWorlds.values()) {
+                if (ref.authorId === json.authorId) {
+                    map.set(ref.id, ref);
+                }
+            }
+            var array = Array.from(map.values());
+            $app.setUserDialogWorlds(array);
+        }
+    });
+
+    API.$on('WORLD:SAVE', function (args) {
+        var { json } = args;
+        this.$emit('WORLD', {
+            json,
+            params: {
+                worldId: json.id
+            }
+        });
+    });
+
     API.applyWorld = function (json) {
         var ref = this.cachedWorlds.get(json.id);
         if (typeof ref === 'undefined') {
@@ -1531,6 +1556,43 @@ speechSynthesis.getVoices();
                 params
             };
             this.$emit('WORLD:LIST', args);
+            return args;
+        });
+    };
+
+    /*
+        params: {
+            worldId: string
+        }
+    */
+    API.deleteWorld = function (params) {
+        return this.call(`worlds/${params.worldId}`, {
+            method: 'DELETE'
+        }).then((json) => {
+            var args = {
+                json,
+                params
+            };
+            this.$emit('WORLD:DELETE', args);
+            return args;
+        });
+    };
+
+    /*
+        params: {
+            worldId: string
+        }
+    */
+    API.saveWorld = function (params) {
+        return this.call(`worlds/${params.id}`, {
+            method: 'PUT',
+            params
+        }).then((json) => {
+            var args = {
+                json,
+                params
+            };
+            this.$emit('WORLD:SAVE', args);
             return args;
         });
     };
@@ -1926,8 +1988,7 @@ speechSynthesis.getVoices();
     */
     API.deleteAvatar = function (params) {
         return this.call(`avatars/${params.avatarId}`, {
-            method: 'DELETE',
-            params
+            method: 'DELETE'
         }).then((json) => {
             var args = {
                 json,
@@ -7474,7 +7535,7 @@ speechSynthesis.getVoices();
         });
     };
 
-    $app.methods.promptChangeDescription = function (avatar) {
+    $app.methods.promptChangeAvatarDescription = function (avatar) {
         this.$prompt('Enter avatar description', 'Change Description', {
             distinguishCancelAndClose: true,
             confirmButtonText: 'OK',
@@ -7490,6 +7551,56 @@ speechSynthesis.getVoices();
                     }).then((args) => {
                         this.$message({
                             message: 'Avatar description changed',
+                            type: 'success'
+                        });
+                        return args;
+                    });
+                }
+            }
+        });
+    };
+
+    $app.methods.promptRenameWorld = function (world) {
+        this.$prompt('Enter world name', 'Rename World', {
+            distinguishCancelAndClose: true,
+            confirmButtonText: 'OK',
+            cancelButtonText: 'Cancel',
+            inputValue: world.ref.name,
+            inputErrorMessage: 'Valid name is required',
+            callback: (action, instance) => {
+                if (action === 'confirm' &&
+                    instance.inputValue !== world.ref.name) {
+                    API.saveWorld({
+                        id: world.id,
+                        name: instance.inputValue
+                    }).then((args) => {
+                        this.$message({
+                            message: 'World renamed',
+                            type: 'success'
+                        });
+                        return args;
+                    });
+                }
+            }
+        });
+    };
+
+    $app.methods.promptChangeWorldDescription = function (world) {
+        this.$prompt('Enter world description', 'Change Description', {
+            distinguishCancelAndClose: true,
+            confirmButtonText: 'OK',
+            cancelButtonText: 'Cancel',
+            inputValue: world.ref.description,
+            inputErrorMessage: 'Valid description is required',
+            callback: (action, instance) => {
+                if (action === 'confirm' &&
+                    instance.inputValue !== world.ref.description) {
+                    API.saveWorld({
+                        id: world.id,
+                        description: instance.inputValue
+                    }).then((args) => {
+                        this.$message({
+                            message: 'World description changed',
                             type: 'success'
                         });
                         return args;
@@ -7939,7 +8050,7 @@ speechSynthesis.getVoices();
         var map = new Map();
         for (var ref of API.cachedWorlds.values()) {
             if (ref.authorId === D.id) {
-                map.set(ref.id, ref);
+                API.cachedWorlds.delete(ref.id);
             }
         }
         API.bulk({
@@ -8430,10 +8541,11 @@ speechSynthesis.getVoices();
         if (D.visible === false) {
             return;
         }
-        if (command === 'Refresh') {
-            D.loading = true;
-            API.getWorld({
-                worldId: D.id
+        switch (command) {
+            case 'Refresh':
+                D.loading = true;
+                API.getWorld({
+                    worldId: D.id
             }).catch((err) => {
                 D.loading = false;
                 D.visible = false;
@@ -8448,17 +8560,26 @@ speechSynthesis.getVoices();
                     if (args.cache) {
                         API.getWorld(args.params);
                     }
-                }
-                return args;
-            });
-        } else if (command === 'New Instance') {
-            this.showNewInstanceDialog(D.$location.tag);
-        } else if (command === 'Add Favorite') {
-            this.showFavoriteDialog('world', D.id);
-        } else {
-            this.$confirm(`Continue? ${command}`, 'Confirm', {
-                confirmButtonText: 'Confirm',
-                cancelButtonText: 'Cancel',
+                    }
+                    return args;
+                });
+                break;
+            case 'New Instance':
+                this.showNewInstanceDialog(D.$location.tag);
+                break;
+            case 'Add Favorite':
+                this.showFavoriteDialog('world', D.id);
+                break;
+            case 'Rename':
+                this.promptRenameWorld(D);
+                break;
+            case 'Change Description':
+                this.promptChangeWorldDescription(D);
+                break;
+            default:
+                this.$confirm(`Continue? ${command}`, 'Confirm', {
+                    confirmButtonText: 'Confirm',
+                    cancelButtonText: 'Cancel',
                 type: 'info',
                 callback: (action) => {
                     if (action !== 'confirm') {
@@ -8489,14 +8610,27 @@ speechSynthesis.getVoices();
                                     message: 'Home world has been reset',
                                     type: 'success'
                                 });
-                                return args;
-                            });
-                            break;
-                        default:
-                            break;
+                                    return args;
+                                });
+                                break;
+                            case 'Delete':
+                                API.deleteWorld({
+                                    worldId: D.id
+                                }).then((args) => {
+                                    this.$message({
+                                        message: 'World has been deleted',
+                                        type: 'success'
+                                    });
+                                    D.visible = false;
+                                    return args;
+                                });
+                                break;
+                            default:
+                                break;
+                        }
                     }
-                }
-            });
+                });
+                break;
         }
     };
 
@@ -8624,7 +8758,7 @@ speechSynthesis.getVoices();
                 this.displayAvatarImages();
                 break;
             case 'Change Description':
-                this.promptChangeDescription(D);
+                this.promptChangeAvatarDescription(D);
                 break;
             case 'Add Favorite':
                 this.showFavoriteDialog('avatar', D.id);
