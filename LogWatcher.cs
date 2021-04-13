@@ -162,7 +162,6 @@ namespace VRCX
         {
             try
             {
-                ShaderKeywordsLimitReached = false;
                 using (var stream = new FileStream(fileInfo.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 65536, FileOptions.SequentialScan))
                 {
                     stream.Position = logContext.Position;
@@ -282,6 +281,7 @@ namespace VRCX
                 });
                 playerPlayer = string.Empty;
                 playerRequest = string.Empty;
+                ShaderKeywordsLimitReached = false;
 
                 return true;
             }
