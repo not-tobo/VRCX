@@ -1068,7 +1068,11 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             text: this.newPlayingobj.videoName
                         }).show();
                     }
-                    if (this.config.notificationTTS) {
+                    if ((this.config.notificationTTS === 'Always') ||
+                        ((this.config.notificationTTS === 'Outside VR') && ((this.isGameNoVR) || (!this.isGameRunning))) ||
+                        ((this.config.notificationTTS === 'Inside VR') && (!this.isGameNoVR) && (this.isGameRunning)) ||
+                        ((this.config.notificationTTS === 'Game Closed') && (!this.isGameRunning)) ||
+                        ((this.config.notificationTTS === 'Desktop Mode') && (this.isGameNoVR) && (this.isGameRunning))) {
                         var ttsURL = '';
                         if (this.newPlayingobj.videoID == 'YouTube') { ttsURL = 'URL' }
                         var ttsRequestedBy = '';
