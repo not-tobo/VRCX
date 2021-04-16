@@ -7274,6 +7274,7 @@ speechSynthesis.getVoices();
             notificationTTS: this.notificationTTS,
             notificationTTSVoice: this.notificationTTSVoice,
             overlayNotifications: this.overlayNotifications,
+            xsNotifications: this.xsNotifications,
             hideDevicesFromFeed: this.hideDevicesFromFeed,
             minimalFeed: this.minimalFeed,
             displayVRCPlusIconsAsAvatar: this.displayVRCPlusIconsAsAvatar,

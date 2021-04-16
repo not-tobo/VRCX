@@ -913,7 +913,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     message = noty.details[messageList[i]];
                 }
             }
-            if ((this.config.overlayNotifications) && (!this.isGameNoVR) && (this.isGameRunning)) {
+            if ((this.config.overlayNotifications) && (!this.isGameNoVR) && (this.isGameRunning) && (!this.config.xsNotifications)) {
                 var text = '';
                 switch (noty.type) {
                     case 'OnPlayerJoined':
