@@ -964,21 +964,6 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     case 'DisplayName':
                         text = `<strong>${noty.previousDisplayName}</strong> changed their name to ${noty.displayName}`;
                         break;
-                    case 'showAvatar':
-                        text = `<strong>${noty.sourceDisplayName}</strong> has shown your avatar`;
-                        break;
-                    case 'hideAvatar':
-                        text = `<strong>${noty.sourceDisplayName}</strong> has hidden your avatar`;
-                        break;
-                    case 'block':
-                        text = `<strong>${noty.sourceDisplayName}</strong> has blocked you`;
-                        break;
-                    case 'mute':
-                        text = `<strong>${noty.sourceDisplayName}</strong> has muted you`;
-                        break;
-                    case 'unmute':
-                        text = `<strong>${noty.sourceDisplayName}</strong> has unmuted you`;
-                        break;
                     case 'PortalSpawn':
                         text = `<strong>${noty.data}</strong> has spawned a portal`;
                         break;
