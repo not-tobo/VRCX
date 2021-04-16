@@ -19,6 +19,7 @@ namespace VRCX
             public long Length;
             public long Position;
             public string RecentWorldName;
+            public bool ShaderKeywordsLimitReached = false;
         }
 
         public static readonly LogWatcher Instance;
@@ -30,7 +31,6 @@ namespace VRCX
         private bool m_ResetLog;
         private static string playerPlayer = string.Empty;
         private static string playerRequest = string.Empty;
-        private static bool ShaderKeywordsLimitReached = false;
 
         // NOTE
         // FileSystemWatcher() is unreliable
@@ -281,7 +281,6 @@ namespace VRCX
                 });
                 playerPlayer = string.Empty;
                 playerRequest = string.Empty;
-                ShaderKeywordsLimitReached = false;
 
                 return true;
             }
@@ -390,7 +389,7 @@ namespace VRCX
         {
             // 2021.04.04 12:21:06 Error - Maximum number (256) of shader keywords exceeded, keyword _TOGGLESIMPLEBLUR_ON will be ignored.
 
-            if (ShaderKeywordsLimitReached == true)
+            if (logContext.ShaderKeywordsLimitReached == true)
             {
                 return false;
             }
@@ -407,7 +406,7 @@ namespace VRCX
                 "event",
                 "Shader Keyword Limit has been reached"
             });
-            ShaderKeywordsLimitReached = true;
+            logContext.ShaderKeywordsLimitReached = true;
 
             return true;
         }
