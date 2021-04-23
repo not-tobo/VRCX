@@ -19,6 +19,7 @@ namespace VRCX
             public long Length;
             public long Position;
             public string RecentWorldName;
+            public string LastVideoURL;
             public bool ShaderKeywordsLimitReached = false;
         }
 
@@ -206,7 +207,8 @@ namespace VRCX
                             }
 
                             if (ParseLogNotification(fileInfo, logContext, line, 34) == true ||
-                                ParseLogShaderKeywordsLimit(fileInfo, logContext, line, 34) == true)
+                                ParseLogShaderKeywordsLimit(fileInfo, logContext, line, 34) == true ||
+                                ParseLogSDK2VideoPlay(fileInfo, logContext, line, 34) == true)
                             {
                                 continue;
                             }
@@ -502,6 +504,42 @@ namespace VRCX
             }
 
             return false;
+        }
+
+        private bool ParseLogSDK2VideoPlay(FileInfo fileInfo, LogContext logContext, string line, int offset)
+        {
+            // 2021.04.23 13:12:25 Log        -  User Natsumi-sama added URL https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
+            if (string.Compare(line, offset, "User ", 0, 5, StringComparison.Ordinal) != 0)
+            {
+                return false;
+            }
+
+            var pos = line.LastIndexOf(" added URL ");
+            if (pos < 0)
+            {
+                return false;
+            }
+
+            var playerPlayer = line.Substring(offset + 5, pos - (offset + 5));
+            var data = line.Substring(pos + 11);
+
+            if (logContext.LastVideoURL == data)
+            {
+                return false;
+            }
+            logContext.LastVideoURL = data;
+
+            AppendLog(new[]
+            {
+                fileInfo.Name,
+                ConvertLogTimeToISO8601(line),
+                "video-change",
+                data,
+                playerPlayer
+            });
+
+            return true;
         }
 
         private bool ParseLogNotification(FileInfo fileInfo, LogContext logContext, string line, int offset)
