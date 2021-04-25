@@ -2593,7 +2593,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('FAVORITE:ADD', function (args) {
-        if (!API.cachedAvatars.has(args.json.id)) {
+        if ((args.params.type === 'avatar') && (!API.cachedAvatars.has(args.params.favoriteId))) {
             this.refreshFavoriteAvatars(args.params.tags);
         }
     });
