@@ -14,6 +14,7 @@ namespace VRCX
             repository.Register("SQLite", SQLite.Instance, true);
             repository.Register("LogWatcher", LogWatcher.Instance, true);
             repository.Register("Discord", Discord.Instance, true);
+            repository.Register("LiteDB", LiteDB.Instance, true);
         }
     }
 }

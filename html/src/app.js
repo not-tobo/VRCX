@@ -40,7 +40,8 @@ speechSynthesis.getVoices();
         'VRCXStorage',
         'SQLite',
         'LogWatcher',
-        'Discord'
+        'Discord',
+        'LiteDB'
     );
 
     await configRepository.init();
@@ -1848,6 +1849,7 @@ speechSynthesis.getVoices();
                 unityPackageUrlObject: {},
                 created_at: '',
                 updated_at: '',
+                $cached: false,
                 ...json
             };
             this.cachedAvatars.set(ref.id, ref);
@@ -7270,6 +7272,24 @@ speechSynthesis.getVoices();
         $app.updateVRConfigVars();
     });
 
+    $app.data.localAvatarDatabaseAvailable = await LiteDB.CheckAvatarDatabase();
+    $app.data.localAvatarDatabaseEnable = configRepository.getBool('VRCX_localAvatarDatabaseEnable');
+    $app.data.localAvatarDatabaseCache = configRepository.getBool('VRCX_localAvatarDatabaseCache');
+
+    API.$on('LOGIN', function () {
+        if ($app.localAvatarDatabaseAvailable) {
+            $app.refreshLocalAvatarCache();
+        }
+    });
+
+    var localAvatarDatabaseStateChange = function () {
+        configRepository.setBool('VRCX_localAvatarDatabaseEnable', this.localAvatarDatabaseEnable);
+        configRepository.setBool('VRCX_localAvatarDatabaseCache', this.localAvatarDatabaseCache);
+        this.refreshLocalAvatarCache();
+    };
+    $app.watch.localAvatarDatabaseEnable = localAvatarDatabaseStateChange;
+    $app.watch.localAvatarDatabaseCache = localAvatarDatabaseStateChange;
+
     API.$on('LOGIN', function () {
         $app.currentUserTreeData = [];
         $app.pastDisplayNameTable.data = [];
@@ -7533,6 +7553,22 @@ speechSynthesis.getVoices();
                 if (action === 'confirm' &&
                     instance.inputValue) {
                     this.showFavoriteDialog('avatar', instance.inputValue);
+                }
+            }
+        });
+    };
+
+    $app.methods.promptLocalAvatarGroupDialog = function () {
+        this.$prompt('Enter a group name', 'Avatar Group', {
+            distinguishCancelAndClose: true,
+            confirmButtonText: 'OK',
+            cancelButtonText: 'Cancel',
+            inputPattern: /\S+/,
+            inputErrorMessage: 'Name is required',
+            callback: (action, instance) => {
+                if (action === 'confirm' &&
+                    instance.inputValue) {
+                    this.addLocalAvatarCategory(instance.inputValue);
                 }
             }
         });
@@ -8671,9 +8707,20 @@ speechSynthesis.getVoices();
         D.visible = true;
         D.ref = ref;
         D.isFavorite = API.cachedFavoritesByObjectId.has(avatarId);
+        if (!D.isFavorite) {
+            for (i = 0; i < this.localAvatarFavorites.length; i++) {
+                if (this.localAvatarFavorites[i].ref.id === avatarId) {
+                    D.isFavorite = true;
+                    break;
+                }
+            }
+        }
         if (D.ref.authorId === API.currentUser.id) {
             API.getAvatar({avatarId});
         } else {
+            if (D.ref.$cached) {
+                D.fileSize = 'FavCat';
+            }
             var id = extractFileId(D.ref.assetUrl);
             var fileId = extractFileId(D.ref.imageUrl);
             if (id) {
@@ -8729,15 +8776,18 @@ speechSynthesis.getVoices();
                 callback: (action) => {
                     if (action !== 'confirm') {
                         return;
-                    }
-                    switch (command) {
-                        case 'Delete Favorite':
-                            API.deleteFavorite({
-                                objectId: D.id
-                            });
-                            break;
-                        case 'Select Avatar':
-                            API.selectAvatar({
+                        }
+                        switch (command) {
+                            case 'Delete Favorite':
+                                if (API.cachedFavoritesByObjectId.has(D.id)) {
+                                    API.deleteFavorite({
+                                        objectId: D.id
+                                    });
+                                }
+                                this.removeLocalAllAvatarFavorite(D.id);
+                                break;
+                            case 'Select Avatar':
+                                API.selectAvatar({
                                 avatarId: D.id
                             }).then((args) => {
                                 this.$message({
@@ -10987,6 +11037,270 @@ speechSynthesis.getVoices();
         }
         this.discordNamesContent = lines.join('\n');
         this.discordNamesDialogVisible = true;
+    };
+
+    // LiteDB
+
+    $app.methods.addLocalAvatarFavorite = async function (ref, category) {
+        if (!ref.created_at) {
+            ref.created_at = '0001-01-01T00:00:00.0000000Z';
+        }
+        var avatar = {
+            Category: category,
+            AuthorId: ref.authorId,
+            AuthorName: ref.authorName,
+            Description: ref.description,
+            ImageUrl: ref.imageUrl,
+            Name: ref.name,
+            ReleaseStatus: ref.releaseStatus,
+            ThumbnailUrl: ref.thumbnailImageUrl,
+            CreatedAt: ref.created_at,
+            UpdatedAt: ref.updated_at,
+            _id: ref.id
+        };
+        var json = JSON.stringify(avatar);
+        await LiteDB.InsertAvatarFav(json);
+
+        this.localAvatarFavoriteGroups[category].count++;
+
+        this.localAvatarFavorites.push({
+            addedOn: new Date().toJSON(),
+            category,
+            ref
+        });
+        $app.$message({
+            message: `Avatar added to ${category}`,
+            type: 'success'
+        });
+        this.avatarDialog.isFavorite = true;
+        this.favoriteDialog.visible = false;
+    };
+
+    $app.methods.removeLocalAvatarFavorite = async function (id, group) {
+        var avatar = {
+            ObjectId: id,
+            Category: group
+        };
+        var json = JSON.stringify(avatar);
+        var result = await LiteDB.RemoveAvatarFav(json);
+        if (result) {
+            this.localAvatarFavorites = this.localAvatarFavorites.filter(a => a.ref.id != id || a.category != group);
+            this.localAvatarFavoriteGroups[group].count--;
+            if (this.localAvatarFavoriteGroups[group].count <= 0) {
+                this.localAvatarFavoriteGroups[group].count = 0;
+            }
+            if (this.avatarDialog.visible) {
+                this.avatarDialog.isFavorite = false;
+                for (i = 0; i < this.localAvatarFavorites.length; i++) {
+                    if (this.localAvatarFavorites[i].ref.id === id) {
+                        this.avatarDialog.isFavorite = true;
+                        break;
+                    }
+                }
+            }
+            $app.$message({
+                message: `Avatar removed from ${group}`,
+                type: 'success'
+            });
+        } else {
+            $app.$message({
+                message: `Failed to remove avatar from ${group}`,
+                type: 'error'
+            });
+        }
+    };
+
+    $app.methods.removeLocalAllAvatarFavorite = async function (avatarId) {
+        var avatar = {
+            ObjectId: avatarId
+        };
+        var json = JSON.stringify(avatar);
+        var result = await LiteDB.RemoveAllAvatarFav(json);
+        var deleted = JSON.parse(result);
+        if (deleted) {
+            deleted.forEach((item) => {
+                this.localAvatarFavoriteGroups[item.Category].count--;
+                if (this.localAvatarFavoriteGroups[item.Category].count <= 0) {
+                    this.localAvatarFavoriteGroups[item.Category].count = 0;
+                }
+            });
+            this.localAvatarFavorites = this.localAvatarFavorites.filter(a => a.ref.id != avatarId);
+            if (this.avatarDialog.visible) {
+                this.avatarDialog.isFavorite = false;
+                for (i = 0; i < this.localAvatarFavorites.length; i++) {
+                    if (this.localAvatarFavorites[i].ref.id === avatarId) {
+                        this.avatarDialog.isFavorite = true;
+                        break;
+                    }
+                }
+            }
+            $app.$message({
+                message: 'Avatar removed from all favorite groups',
+                type: 'success'
+            });
+        } else {
+            $app.$message({
+                message: 'Failed to remove avatar from favorites',
+                type: 'error'
+            });
+        }
+    };
+
+    $app.data.localAvatarFavorites = [];
+    $app.data.localAvatarFavoriteGroups = {};
+    $app.data.localAvatarFavoriteGroupNames = [];
+
+    $app.methods.refreshLocalAvatarCache = async function () {
+        if (this.localAvatarDatabaseEnable) {
+            var isGameRunning = await AppApi.CheckGameRunning();
+            if (this.localAvatarDatabaseCache) {
+                await this.getLocalAvatarCache(isGameRunning[0]);
+            }
+            await this.getLocalAvatarFavorites(isGameRunning[0]);
+        }
+    };
+
+    $app.methods.getLocalAvatarFavorites = async function (isGameRunning) {
+        await this.getLocalAvatarCategories(isGameRunning);
+        var json = await LiteDB.GetAvatarFavs(isGameRunning);
+        var list = JSON.parse(json);
+        this.localAvatarFavorites = [];
+        list.forEach((item) => {
+            var createdAt = new Date(Date.parse(item.CreatedAt)).toJSON();
+            if (Date.parse(createdAt) < 0) {
+                createdAt = '';
+            }
+            var avatar = {
+                authorId: item.AuthorId,
+                authorName: item.AuthorName,
+                description: item.Description,
+                imageUrl: item.ImageUrl,
+                name: item.Name,
+                releaseStatus: item.ReleaseStatus,
+                thumbnailImageUrl: item.ThumbnailUrl,
+                created_at: createdAt,
+                updated_at: new Date(Date.parse(item.UpdatedAt)).toJSON(),
+                id: item._id,
+                $cached: true
+            };
+            if ((API.currentUser.id !== item.AuthorId) &&
+                (!API.cachedAvatars.has(item._id))) {
+                API.applyAvatar(avatar);
+            }
+            if (this.localAvatarFavoriteGroups[item.Category]) {
+                this.localAvatarFavoriteGroups[item.Category].count++;
+            }
+            this.localAvatarFavorites.push({
+                addedOn: new Date(Date.parse(item.AddedOn)).toJSON(),
+                category: item.Category,
+                ref: avatar
+            });
+        });
+    };
+
+    $app.methods.getLocalAvatarCache = async function (isGameRunning) {
+        var json = await LiteDB.GetAvatarAllCache(isGameRunning);
+        var list = JSON.parse(json);
+        list.forEach((item) => {
+            if ((API.currentUser.id !== item.AuthorId) &&
+                (!API.cachedAvatars.has(item._id)) &&
+                (item.ReleaseStatus === 'public')) {
+                var createdAt = new Date(Date.parse(item.CreatedAt)).toJSON();
+                if (Date.parse(createdAt) < 0) {
+                    createdAt = '';
+                }
+                var avatar = {
+                    authorId: item.AuthorId,
+                    authorName: item.AuthorName,
+                    description: item.Description,
+                    imageUrl: item.ImageUrl,
+                    name: item.Name,
+                    releaseStatus: item.ReleaseStatus,
+                    thumbnailImageUrl: item.ThumbnailUrl,
+                    created_at: createdAt,
+                    updated_at: new Date(Date.parse(item.UpdatedAt)).toJSON(),
+                    id: item._id,
+                    $cached: true
+                };
+                API.applyAvatar(avatar);
+            }
+        });
+    };
+
+    $app.methods.getLocalAvatarCategories = async function (isGameRunning) {
+        this.localAvatarFavoriteGroups = {};
+        this.localAvatarFavoriteGroupNames = [];
+        var json = await LiteDB.GetAvatarFavCategories(isGameRunning);
+        var list = JSON.parse(json);
+        list.forEach((item) => {
+            this.localAvatarFavoriteGroups[item._id] = {
+                name: item._id,
+                sortType: item.SortType,
+                visibleRows: item.VisibleRows,
+                count: 0
+            };
+            this.localAvatarFavoriteGroupNames.push(item._id);
+        });
+    };
+
+    $app.methods.removeLocalAvatarCategory = async function (category) {
+        var result = await LiteDB.RemoveAvatarFavCategory(category);
+        if (result) {
+            var index = this.localAvatarFavoriteGroupNames.indexOf(category);
+            if (index > -1) {
+              this.localAvatarFavoriteGroupNames.splice(index, 1);
+            }
+            delete this.localAvatarFavoriteGroups[category];
+            $app.$message({
+                message: `Removed group ${category}`,
+                type: 'success'
+            });
+        } else {
+            $app.$message({
+                message: `Failed to remove group ${category}`,
+                type: 'error'
+            });
+        }
+    };
+
+    $app.methods.addLocalAvatarCategory = async function (categoryName) {
+        if (this.localAvatarFavoriteGroups[categoryName]) {
+            $app.$message({
+                message: `Group ${categoryName} already exists`,
+                type: 'warning'
+            });
+            return;
+        }
+        var category = {
+            _id: categoryName,
+            SortType: "!added",
+            VisibleRows: 0
+        };
+        var json = JSON.stringify(category);
+        await LiteDB.AddAvatarFavCategory(json);
+        var addCategory = {
+            name: categoryName,
+            sortType: "!added",
+            visibleRows: 0,
+            count: 0
+        };
+        this.localAvatarFavoriteGroupNames.push(categoryName);
+        this.localAvatarFavoriteGroupNames.sort(function(a, b){return a.toLowerCase().localeCompare(b.toLowerCase())});
+        this.localAvatarFavoriteGroups[categoryName] = addCategory;
+        $app.$message({
+            message: `Added group ${categoryName}`,
+            type: 'success'
+        });
+    };
+
+    $app.methods.checkIfFavorited = function (id, group) {
+        for (var i = 0; i < this.localAvatarFavorites.length; ++i) {
+            var item = this.localAvatarFavorites[i];
+            if ((item.ref.id === id) && (item.category === group)) {
+                return true;
+            }
+        }
+        return false;
     };
 
     $app = new Vue($app);
