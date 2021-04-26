@@ -18,7 +18,6 @@ using Windows.UI.Notifications;
 using Windows.Data.Xml.Dom;
 using librsync.net;
 using System.Net.Sockets;
-using System.Text.Json.Serialization;
 
 namespace VRCX
 {

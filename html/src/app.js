@@ -19,9 +19,6 @@ import copy from 'copy-to-clipboard';
 import PyPyVideos from './PyPyVideos.json';
 var PyPyVideosTable = JSON.parse(atob(PyPyVideos.json));
 
-var playerPlayer = '';
-var playerRequest = '';
-
 import {appVersion} from './constants.js';
 import sharedRepository from './repository/shared.js';
 import configRepository from './repository/config.js';
