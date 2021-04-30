@@ -11360,7 +11360,7 @@ speechSynthesis.getVoices();
         });
     };
 
-    // world/avatar dialog tab click
+    // userDialog world/avatar tab click
 
     $app.data.userDialogLastActiveTab = '';
     $app.data.userDialogLastAvatar = '';
