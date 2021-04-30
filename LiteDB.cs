@@ -158,6 +158,20 @@ namespace VRCX
             return jsonOut;
         }
 
+        public void RemoveAllAvatarCache(string AvatarId)
+        {
+            using (var AvatarFavDb = new LiteDatabase($"Filename={AvatarDatabasePath}favcat-favs.db"))
+            {
+                var AvatarFavData = AvatarFavDb.GetCollection<AvatarFavorites>("Avatar_favorites");
+                using (var AvatarCacheDb = new LiteDatabase($"Filename={AvatarDatabasePath}favcat-store.db"))
+                {
+                    var AvatarCacheData = AvatarCacheDb.GetCollection<AvatarCache>("avatars");
+                    AvatarFavData.DeleteMany(Query.EQ("ObjectId", AvatarId));
+                    AvatarCacheData.DeleteMany(Query.EQ("_id", AvatarId));
+                }
+            }
+        }
+
         public string GetAvatarFavCategories(bool isGameRunning)
         {
             var FavsDB = $"{AvatarDatabasePath}favcat-favs.db";

@@ -7864,6 +7864,7 @@ speechSynthesis.getVoices();
                         if ((userId === API.currentUser.id) && (D.avatars.length === 0)) {
                             this.refreshUserDialogAvatars();
                         }
+                        this.checkAvatarAvailable(userId);
                     }
                 } else if (this.$refs.userDialogTabs.currentName === '3') {
                     this.userDialogLastActiveTab = 'JSON';
@@ -8742,7 +8743,7 @@ speechSynthesis.getVoices();
             API.getAvatar({avatarId});
         } else {
             if (D.ref.$cached) {
-                D.fileSize = 'FavCat';
+                D.fileSize = 'Cache';
             }
             var id = extractFileId(D.ref.assetUrl);
             var fileId = extractFileId(D.ref.imageUrl);
@@ -11316,6 +11317,10 @@ speechSynthesis.getVoices();
         });
     };
 
+    $app.methods.deleteLocalAvatarCache = function (avatarId) {
+        LiteDB.RemoveAllAvatarCache(avatarId);
+    };
+
     $app.methods.checkIfFavorited = function (id, group) {
         for (var i = 0; i < this.localAvatarFavorites.length; ++i) {
             var item = this.localAvatarFavorites[i];
@@ -11324,6 +11329,35 @@ speechSynthesis.getVoices();
             }
         }
         return false;
+    };
+
+    $app.methods.checkAvatarAvailable = function (userId) {
+        var avatars = this.userDialog.avatars;
+        avatars.forEach((avatar) => {
+            var imageURL = avatar.thumbnailImageUrl;
+            fetch(imageURL, {
+                method: 'HEAD',
+                redirect: 'follow',
+                headers: {
+                    'User-Agent': appVersion
+                }
+            }).then(response => {
+                if (response.status === 403) {
+                    API.cachedAvatars.delete(avatar.id);
+                    for (var i = 0; i < avatars.length; i++) {
+                        if (avatars[i].id === avatar.id) {
+                            avatars.splice(i, 1);
+                            break;
+                        }
+                    }
+                    if (!this.isGameRunning) {
+                        this.deleteLocalAvatarCache(avatar.id);
+                    }
+                }
+            }).catch(error => {
+                console.log(error);
+            });
+        });
     };
 
     // world/avatar dialog tab click
@@ -11340,9 +11374,11 @@ speechSynthesis.getVoices();
         if (obj.label === 'Avatars') {
             this.setUserDialogAvatars(userId);
             if (this.userDialogLastAvatar !== userId) {
+                this.userDialogLastAvatar = userId;
                 if ((userId === API.currentUser.id) && (this.userDialog.avatars.length === 0)) {
                     this.refreshUserDialogAvatars();
                 }
+                this.checkAvatarAvailable(userId);
             }
         } else if (obj.label === 'Worlds') {
             this.setUserDialogWorlds(userId);
