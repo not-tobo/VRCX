@@ -196,6 +196,7 @@ namespace VRCX
                                         ParseLogLocation(fileInfo, logContext, line, offset) == true ||
                                         ParseLogPortalSpawn(fileInfo, logContext, line, offset) == true ||
                                         ParseLogJoinBlocked(fileInfo, logContext, line, offset) == true ||
+                                        ParseAvatarPedestalChange(fileInfo, logContext, line, offset) == true ||
                                         ParseLogVideoError(fileInfo, logContext, line, offset) == true ||
                                         ParseLogVideoChange(fileInfo, logContext, line, offset) == true ||
                                         ParseLogVideoBeep(fileInfo, logContext, line, offset) == true)
@@ -428,6 +429,28 @@ namespace VRCX
                 ConvertLogTimeToISO8601(line),
                 "event",
                 "Joining instance blocked by master"
+            });
+
+            return true;
+        }
+
+        private bool ParseAvatarPedestalChange(FileInfo fileInfo, LogContext logContext, string line, int offset)
+        {
+            // 2021.05.07 10:48:19 Log        -  [Network Processing] RPC invoked SwitchAvatar on AvatarPedestal for User
+
+            if (string.Compare(line, offset, "RPC invoked SwitchAvatar on AvatarPedestal for ", 0, 47, StringComparison.Ordinal) != 0)
+            {
+                return false;
+            }
+
+            var data = line.Substring(offset + 47);
+
+            AppendLog(new[]
+            {
+                fileInfo.Name,
+                ConvertLogTimeToISO8601(line),
+                "event",
+                $"{data} changed avatar pedestal"
             });
 
             return true;
