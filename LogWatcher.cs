@@ -196,7 +196,7 @@ namespace VRCX
                                         ParseLogLocation(fileInfo, logContext, line, offset) == true ||
                                         ParseLogPortalSpawn(fileInfo, logContext, line, offset) == true ||
                                         ParseLogJoinBlocked(fileInfo, logContext, line, offset) == true ||
-                                        ParseAvatarPedestalChange(fileInfo, logContext, line, offset) == true ||
+                                        ParseLogAvatarPedestalChange(fileInfo, logContext, line, offset) == true ||
                                         ParseLogVideoError(fileInfo, logContext, line, offset) == true ||
                                         ParseLogVideoChange(fileInfo, logContext, line, offset) == true ||
                                         ParseLogVideoBeep(fileInfo, logContext, line, offset) == true)
@@ -434,7 +434,7 @@ namespace VRCX
             return true;
         }
 
-        private bool ParseAvatarPedestalChange(FileInfo fileInfo, LogContext logContext, string line, int offset)
+        private bool ParseLogAvatarPedestalChange(FileInfo fileInfo, LogContext logContext, string line, int offset)
         {
             // 2021.05.07 10:48:19 Log        -  [Network Processing] RPC invoked SwitchAvatar on AvatarPedestal for User
 
