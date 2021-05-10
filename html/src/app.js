@@ -11086,6 +11086,23 @@ speechSynthesis.getVoices();
 
     // LiteDB
 
+    $app.methods.initLocalAvatarDatabase = async function () {
+        try {
+            await LiteDB.InitAvatarDatabase();
+            this.$message({
+                message: 'Avatar database created',
+                type: 'success'
+            });
+            this.localAvatarDatabaseAvailable = await LiteDB.CheckAvatarDatabase();
+            this.refreshLocalAvatarCache();
+        } catch {
+            this.$message({
+                message: 'Failed to create avatar database',
+                type: 'error'
+            });
+        }
+    };
+
     $app.methods.addLocalAvatarFavorite = async function (ref, category) {
         if (!ref.created_at) {
             ref.created_at = '0001-01-01T00:00:00.0000000Z';
@@ -11113,7 +11130,7 @@ speechSynthesis.getVoices();
             category,
             ref
         });
-        $app.$message({
+        this.$message({
             message: `Avatar added to ${category}`,
             type: 'success'
         });
@@ -11143,12 +11160,12 @@ speechSynthesis.getVoices();
                     }
                 }
             }
-            $app.$message({
+            this.$message({
                 message: `Avatar removed from ${group}`,
                 type: 'success'
             });
         } else {
-            $app.$message({
+            this.$message({
                 message: `Failed to remove avatar from ${group}`,
                 type: 'error'
             });
@@ -11179,12 +11196,12 @@ speechSynthesis.getVoices();
                     }
                 }
             }
-            $app.$message({
+            this.$message({
                 message: 'Avatar removed from all favorite groups',
                 type: 'success'
             });
         } else {
-            $app.$message({
+            this.$message({
                 message: 'Failed to remove avatar from favorites',
                 type: 'error'
             });
@@ -11332,12 +11349,12 @@ speechSynthesis.getVoices();
               this.localAvatarFavoriteGroupNames.splice(index, 1);
             }
             delete this.localAvatarFavoriteGroups[category];
-            $app.$message({
+            this.$message({
                 message: `Removed group ${category}`,
                 type: 'success'
             });
         } else {
-            $app.$message({
+            this.$message({
                 message: `Failed to remove group ${category}`,
                 type: 'error'
             });
@@ -11346,7 +11363,7 @@ speechSynthesis.getVoices();
 
     $app.methods.addLocalAvatarCategory = async function (categoryName) {
         if (this.localAvatarFavoriteGroups[categoryName]) {
-            $app.$message({
+            this.$message({
                 message: `Group ${categoryName} already exists`,
                 type: 'warning'
             });
@@ -11355,20 +11372,20 @@ speechSynthesis.getVoices();
         var category = {
             _id: categoryName,
             SortType: "!added",
-            VisibleRows: 0
+            VisibleRows: 1
         };
         var json = JSON.stringify(category);
         await LiteDB.AddAvatarFavCategory(json);
         var addCategory = {
             name: categoryName,
             sortType: "!added",
-            visibleRows: 0,
+            visibleRows: 1,
             count: 0
         };
         this.localAvatarFavoriteGroupNames.push(categoryName);
         this.localAvatarFavoriteGroupNames.sort(function(a, b){return a.toLowerCase().localeCompare(b.toLowerCase())});
         this.localAvatarFavoriteGroups[categoryName] = addCategory;
-        $app.$message({
+        this.$message({
             message: `Added group ${categoryName}`,
             type: 'success'
         });
@@ -11407,12 +11424,13 @@ speechSynthesis.getVoices();
                             avatars.splice(i, 1);
                             break;
                         }
+                        }
+                        if (!this.isGameRunning) {
+                            this.deleteLocalAvatarCache(avatar.id);
+                            console.log(`Removed deleted avatar "${avatar.name}" from database`);
+                        }
                     }
-                    if (!this.isGameRunning) {
-                        this.deleteLocalAvatarCache(avatar.id);
-                    }
-                }
-            }).catch(error => {
+                }).catch(error => {
                 console.log(error);
             });
             }

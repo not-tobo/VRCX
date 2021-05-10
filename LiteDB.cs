@@ -76,6 +76,54 @@ namespace VRCX
             }
         }
 
+        public void InitAvatarDatabase()
+        {
+            if (!Directory.Exists(AvatarDatabasePath))
+                Directory.CreateDirectory(AvatarDatabasePath);
+            using (var AvatarFavDb = new LiteDatabase($"Filename={AvatarDatabasePath}favcat-favs.db"))
+            {
+                var AvatarFavData = AvatarFavDb.GetCollection<AvatarFavorites>("Avatar_favorites");
+                var Avatar = new AvatarFavorites
+                {
+                    ObjectId = "avtr_c38a1615-5bf5-42b4-84eb-a8b6c37cbd11",
+                    Category = "Local Favorites",
+                    AddedOn = DateTime.UtcNow
+                };
+                AvatarFavData.Insert(Avatar);
+            }
+            using (var AvatarCacheDb = new LiteDatabase($"Filename={AvatarDatabasePath}favcat-store.db"))
+            {
+                var AvatarCacheData = AvatarCacheDb.GetCollection<AvatarCache>("avatars");
+                var Avatar = new AvatarCache
+                {
+                    _id = "avtr_c38a1615-5bf5-42b4-84eb-a8b6c37cbd11",
+                    Name = "Robot",
+                    Description = "Beep Boop",
+                    AuthorId = "8JoV9XEdpo",
+                    AuthorName = "vrchat",
+                    ImageUrl = "https://api.vrchat.cloud/api/1/file/file_0e8c4e32-7444-44ea-ade4-313c010d4bae/1/file",
+                    ThumbnailUrl = "https://api.vrchat.cloud/api/1/image/file_0e8c4e32-7444-44ea-ade4-313c010d4bae/1/256",
+                    ReleaseStatus = "public",
+                    Platform = "standalonewindows",
+                    SupportedPlatforms = "StandaloneWindows",
+                    CreatedAt = DateTime.Parse("2019-05-09T20:20:19.368Z"),
+                    UpdatedAt = DateTime.Parse("2020-10-01T21:06:25.403Z")
+                };
+                AvatarCacheData.Insert(Avatar);
+            }
+            using (var AvatarFavDb = new LiteDatabase($"Filename={AvatarDatabasePath}favcat-favs.db"))
+            {
+                var AvatarFavCategoryData = AvatarFavDb.GetCollection<AvatarCategories>("Avatar_categories");
+                var Category = new AvatarCategories
+                {
+                    _id = "Local Favorites",
+                    SortType = "!added",
+                    VisibleRows = 1
+                };
+                AvatarFavCategoryData.Insert(Category);
+            }
+        }
+
         public void InsertAvatarFav(string Data)
         {
             var json = System.Text.Json.JsonSerializer.Deserialize<AvatarCache>(Data);

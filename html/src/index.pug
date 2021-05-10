@@ -942,19 +942,24 @@ html
                         el-button-group
                             el-button(size="small" icon="el-icon-s-operation" @click="showLaunchOptions()") Launch Options
                             el-button(size="small" icon="el-icon-s-operation" @click="showVRChatConfig()") VRChat config.json
-                div.options-container(v-if="localAvatarDatabaseAvailable")
-                    span.header FavCat Avatar Datebase Integration 
-                    div.options-container-item
-                        span.name Enable
-                        el-switch(v-model="localAvatarDatabaseEnable")
+                div.options-container
+                    span.header Local Avatar Datebase
+                    template(v-if="localAvatarDatabaseAvailable")
+                        div.options-container-item
+                            span.name Enable
+                            el-switch(v-model="localAvatarDatabaseEnable")
                     div.options-container-item
                         span.name Load avatar cache per user
                         el-switch(v-model="localAvatarDatabaseAuthorCache")
                         span.name(style="margin-left:15px")
                     div.options-container-item
-                        span.name Import entire avatar cache
-                        el-switch(v-model="localAvatarDatabaseCache")
-                        span.name(style="margin-left:15px") (This uses a bit of extra RAM)
+                            span.name Import entire avatar cache
+                            el-switch(v-model="localAvatarDatabaseCache")
+                            span.name(style="margin-left:15px") (This uses a bit of extra RAM)
+                    template(v-else)
+                        div.options-container-item
+                            el-button-group
+                                el-button(size="small" icon="el-icon-circle-plus-outline" @click="initLocalAvatarDatabase()") Create database
                 div.options-container
                     span.header PyPyDance Companion Fork Options
                     div.options-container-item
