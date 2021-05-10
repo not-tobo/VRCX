@@ -948,6 +948,10 @@ html
                         span.name Enable
                         el-switch(v-model="localAvatarDatabaseEnable")
                     div.options-container-item
+                        span.name Load avatar cache per user
+                        el-switch(v-model="localAvatarDatabaseAuthorCache")
+                        span.name(style="margin-left:15px")
+                    div.options-container-item
                         span.name Import entire avatar cache
                         el-switch(v-model="localAvatarDatabaseCache")
                         span.name(style="margin-left:15px") (This uses a bit of extra RAM)
@@ -1272,6 +1276,9 @@ html
                                     el-tag(v-else-if="worldDialog.ref.releaseStatus === 'public'" type="success" effect="plain" size="mini") Public
                                     el-tag(v-else type="danger" effect="plain" size="mini") Private
                                     el-tag(type="info" effect="plain" size="mini" v-text="worldDialog.fileSize" style="margin-left:5px")
+                                    el-tag(v-if="worldDialog.inCache" type="info" effect="plain" size="mini" style="margin-left:5px")
+                                        span(v-text="worldDialog.cacheSize")
+                                        |  Cache
                                 div(style="margin-top:5px")
                                     span(v-show="worldDialog.ref.name !== worldDialog.ref.description" v-text="worldDialog.ref.description" style="font-size:12px")
                             div(style="flex:none;margin-left:10px")

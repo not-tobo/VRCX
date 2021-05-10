@@ -7280,6 +7280,7 @@ speechSynthesis.getVoices();
     $app.data.localAvatarDatabaseAvailable = await LiteDB.CheckAvatarDatabase();
     $app.data.localAvatarDatabaseEnable = configRepository.getBool('VRCX_localAvatarDatabaseEnable');
     $app.data.localAvatarDatabaseCache = configRepository.getBool('VRCX_localAvatarDatabaseCache');
+    $app.data.localAvatarDatabaseAuthorCache = configRepository.getBool('VRCX_localAvatarDatabaseAuthorCache');
 
     API.$on('LOGIN', function () {
         if ($app.localAvatarDatabaseAvailable) {
@@ -7290,10 +7291,12 @@ speechSynthesis.getVoices();
     var localAvatarDatabaseStateChange = function () {
         configRepository.setBool('VRCX_localAvatarDatabaseEnable', this.localAvatarDatabaseEnable);
         configRepository.setBool('VRCX_localAvatarDatabaseCache', this.localAvatarDatabaseCache);
+        configRepository.setBool('VRCX_localAvatarDatabaseAuthorCache', this.localAvatarDatabaseAuthorCache);
         this.refreshLocalAvatarCache();
     };
     $app.watch.localAvatarDatabaseEnable = localAvatarDatabaseStateChange;
     $app.watch.localAvatarDatabaseCache = localAvatarDatabaseStateChange;
+    $app.watch.localAvatarDatabaseAuthorCache = localAvatarDatabaseStateChange
 
     API.$on('LOGIN', function () {
         $app.currentUserTreeData = [];
@@ -7872,7 +7875,13 @@ speechSynthesis.getVoices();
                         if ((userId === API.currentUser.id) && (D.avatars.length === 0)) {
                             this.refreshUserDialogAvatars();
                         }
-                        this.checkAvatarAvailable(userId);
+                        if (this.localAvatarDatabaseEnable) {
+                            if (this.localAvatarDatabaseAuthorCache) {
+                                this.getLocalAvatarCacheFromAuthor(userId);
+                            } else {
+                                this.checkAvatarAvailable(userId);
+                            }
+                        }
                     }
                 } else if (this.$refs.userDialogTabs.currentName === '3') {
                     this.userDialogLastActiveTab = 'JSON';
@@ -8343,7 +8352,9 @@ speechSynthesis.getVoices();
         rooms: [],
         treeData: [],
         fileCreatedAt: '',
-        fileSize: ''
+        fileSize: '',
+        inCache: false,
+        cacheSize: 0
     };
 
     API.$on('LOGOUT', function () {
@@ -8405,6 +8416,8 @@ speechSynthesis.getVoices();
         D.fileSize = 'Loading';
         D.visible = true;
         D.loading = true;
+        D.inCache = false;
+        D.cacheSize = 0;
         API.getCachedWorld({
             worldId: L.worldId
         }).catch((err) => {
@@ -11235,7 +11248,40 @@ speechSynthesis.getVoices();
         var list = JSON.parse(json);
         list.forEach((item) => {
             if ((API.currentUser.id !== item.AuthorId) &&
-                (!API.cachedAvatars.has(item._id)) &&
+                (item.ReleaseStatus === 'public') &&
+                (!API.cachedAvatars.has(item._id))) {
+                var createdAt = new Date(Date.parse(item.CreatedAt)).toJSON();
+                if (Date.parse(createdAt) < 0) {
+                    createdAt = '';
+                }
+                var avatar = {
+                    authorId: item.AuthorId,
+                    authorName: item.AuthorName,
+                    description: item.Description,
+                    imageUrl: item.ImageUrl,
+                    name: item.Name,
+                    releaseStatus: item.ReleaseStatus,
+                    thumbnailImageUrl: item.ThumbnailUrl,
+                    created_at: createdAt,
+                    updated_at: new Date(Date.parse(item.UpdatedAt)).toJSON(),
+                    id: item._id,
+                    $cached: true
+                };
+                API.applyAvatar(avatar);
+            }
+        });
+    };
+
+    $app.methods.getLocalAvatarCacheFromAuthor = async function (userId) {
+        if (userId === API.currentUser.id) {
+            return;
+        }
+        this.userDialog.isAvatarsLoading = true;
+        var isGameRunning = await AppApi.CheckGameRunning();
+        var json = await LiteDB.GetAvatarCacheFromAuthor(isGameRunning[0], userId);
+        var list = JSON.parse(json);
+        list.forEach((item) => {
+            if ((!API.cachedAvatars.has(item._id)) &&
                 (item.ReleaseStatus === 'public')) {
                 var createdAt = new Date(Date.parse(item.CreatedAt)).toJSON();
                 if (Date.parse(createdAt) < 0) {
@@ -11257,6 +11303,9 @@ speechSynthesis.getVoices();
                 API.applyAvatar(avatar);
             }
         });
+        this.setUserDialogAvatars(userId);
+        this.userDialog.isAvatarsLoading = false;
+        this.checkAvatarAvailable(userId);
     };
 
     $app.methods.getLocalAvatarCategories = async function (isGameRunning) {
@@ -11342,9 +11391,10 @@ speechSynthesis.getVoices();
     $app.methods.checkAvatarAvailable = function (userId) {
         var avatars = this.userDialog.avatars;
         avatars.forEach((avatar) => {
-            var imageURL = avatar.thumbnailImageUrl;
-            fetch(imageURL, {
-                method: 'HEAD',
+            if (avatar.$cached) {
+                var imageURL = avatar.thumbnailImageUrl;
+                fetch(imageURL, {
+                    method: 'HEAD',
                 redirect: 'follow',
                 headers: {
                     'User-Agent': appVersion
@@ -11365,6 +11415,7 @@ speechSynthesis.getVoices();
             }).catch(error => {
                 console.log(error);
             });
+            }
         });
     };
 
@@ -11386,7 +11437,13 @@ speechSynthesis.getVoices();
                 if ((userId === API.currentUser.id) && (this.userDialog.avatars.length === 0)) {
                     this.refreshUserDialogAvatars();
                 }
-                this.checkAvatarAvailable(userId);
+                if (this.localAvatarDatabaseEnable) {
+                    if (this.localAvatarDatabaseAuthorCache) {
+                        this.getLocalAvatarCacheFromAuthor(userId);
+                    } else {
+                        this.checkAvatarAvailable(userId);
+                    }
+                }
             }
         } else if (obj.label === 'Worlds') {
             this.setUserDialogWorlds(userId);

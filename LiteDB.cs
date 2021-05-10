@@ -177,7 +177,7 @@ namespace VRCX
             var FavsDB = $"{AvatarDatabasePath}favcat-favs.db";
             if (isGameRunning)
             {
-                System.IO.File.Copy($"{AvatarDatabasePath}favcat-favs.db", $"{AvatarDatabasePath}temp-favs.db", true);
+                File.Copy($"{AvatarDatabasePath}favcat-favs.db", $"{AvatarDatabasePath}temp-favs.db", true);
                 FavsDB = $"{AvatarDatabasePath}temp-favs.db";
             }
             var AvatarCategoryList = new List<AvatarCategories>();
@@ -191,9 +191,7 @@ namespace VRCX
                 }
             }
             if (File.Exists($"{AvatarDatabasePath}temp-favs.db"))
-            {
-                System.IO.File.Delete($"{AvatarDatabasePath}temp-favs.db");
-            }
+                File.Delete($"{AvatarDatabasePath}temp-favs.db");
             var json = System.Text.Json.JsonSerializer.Serialize(AvatarCategoryList);
             return json;
         }
@@ -250,8 +248,8 @@ namespace VRCX
             var StoreDB = $"{AvatarDatabasePath}favcat-store.db";
             if (isGameRunning)
             {
-                System.IO.File.Copy($"{AvatarDatabasePath}favcat-favs.db", $"{AvatarDatabasePath}temp-favs.db", true);
-                System.IO.File.Copy($"{AvatarDatabasePath}favcat-store.db", $"{AvatarDatabasePath}temp-store.db", true);
+                File.Copy($"{AvatarDatabasePath}favcat-favs.db", $"{AvatarDatabasePath}temp-favs.db", true);
+                File.Copy($"{AvatarDatabasePath}favcat-store.db", $"{AvatarDatabasePath}temp-store.db", true);
                 FavsDB = $"{AvatarDatabasePath}temp-favs.db";
                 StoreDB = $"{AvatarDatabasePath}temp-store.db";
             }
@@ -278,8 +276,8 @@ namespace VRCX
             }
             if (File.Exists($"{AvatarDatabasePath}temp-favs.db") && File.Exists($"{AvatarDatabasePath}temp-store.db"))
             {
-                System.IO.File.Delete($"{AvatarDatabasePath}temp-favs.db");
-                System.IO.File.Delete($"{AvatarDatabasePath}temp-store.db");
+                File.Delete($"{AvatarDatabasePath}temp-favs.db");
+                File.Delete($"{AvatarDatabasePath}temp-store.db");
             }
             var json = System.Text.Json.JsonSerializer.Serialize(AvatarFavList);
             return json;
@@ -290,7 +288,7 @@ namespace VRCX
             var StoreDB = $"{AvatarDatabasePath}favcat-store.db";
             if (isGameRunning)
             {
-                System.IO.File.Copy($"{AvatarDatabasePath}favcat-store.db", $"{AvatarDatabasePath}temp-store.db", true);
+                File.Copy($"{AvatarDatabasePath}favcat-store.db", $"{AvatarDatabasePath}temp-store.db", true);
                 StoreDB = $"{AvatarDatabasePath}temp-store.db";
             }
             var AvatarCacheList = new List<AvatarCache>();
@@ -304,9 +302,31 @@ namespace VRCX
                 }
             }
             if (File.Exists($"{AvatarDatabasePath}temp-store.db"))
+                File.Delete($"{AvatarDatabasePath}temp-store.db");
+            var json = System.Text.Json.JsonSerializer.Serialize(AvatarCacheList);
+            return json;
+        }
+
+        public string GetAvatarCacheFromAuthor(bool isGameRunning, string AuthorId)
+        {
+            var StoreDB = $"{AvatarDatabasePath}favcat-store.db";
+            if (isGameRunning)
             {
-                System.IO.File.Delete($"{AvatarDatabasePath}temp-store.db");
+                File.Copy($"{AvatarDatabasePath}favcat-store.db", $"{AvatarDatabasePath}temp-store.db", true);
+                StoreDB = $"{AvatarDatabasePath}temp-store.db";
             }
+            var AvatarCacheList = new List<AvatarCache>();
+            using (var AvatarCacheDb = new LiteDatabase($"Filename={StoreDB}"))
+            {
+                var AvatarCacheData = AvatarCacheDb.GetCollection<AvatarCache>("avatars");
+                var AllAvatarCache = AvatarCacheData.Find(Query.EQ("AuthorId", AuthorId));
+                foreach (var Avatar in AllAvatarCache)
+                {
+                    AvatarCacheList.Add(Avatar);
+                }
+            }
+            if (File.Exists($"{AvatarDatabasePath}temp-store.db"))
+                File.Delete($"{AvatarDatabasePath}temp-store.db");
             var json = System.Text.Json.JsonSerializer.Serialize(AvatarCacheList);
             return json;
         }
