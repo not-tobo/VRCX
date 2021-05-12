@@ -5779,7 +5779,6 @@ speechSynthesis.getVoices();
 
         for (var gameLog of await gameLogService.poll()) {
             var tableData = null;
-
             switch (gameLog.type) {
                 case 'location':
                     if (this.isGameRunning) {
@@ -5830,7 +5829,6 @@ speechSynthesis.getVoices();
                     };
                     break;
 
-
                 case 'event':
                     tableData = {
                         created_at: gameLog.dt,
@@ -5848,10 +5846,6 @@ speechSynthesis.getVoices();
                     videoobj.videoID = '';
                     videoobj.playerYeet = '';
                     videoobj.videoVolume = '';
-                    if ((videoobj.playerPlayer != '') && (videoobj.playerRequest != '') && (videoobj.playerPlayer != videoobj.playerRequest)) {
-                        videoobj.playerYeet = videoobj.playerPlayer;
-                        videoobj.playerPlayer = videoobj.playerRequest;
-                    }
                     if (videoobj.videoURL.substring(0, 23) === "http://storage.llss.io/") {
                         videoobj.fileName = videoobj.videoURL.substring(23);
                         for (var video of PyPyVideosTable) {
@@ -5878,7 +5872,11 @@ speechSynthesis.getVoices();
                         var videoID = videoobj.videoURL.substring(17, 28);
                         await youtubeAPI(videoID);
                     }
-
+                    if ((videoobj.playerPlayer != '') && (videoobj.playerRequest != '') && (videoobj.playerPlayer != videoobj.playerRequest) &&
+                        (videoobj.videoURL.substring(0, 23) === "http://storage.llss.io/")) {
+                        videoobj.playerYeet = videoobj.playerPlayer;
+                        videoobj.playerPlayer = videoobj.playerRequest;
+                    }
                     tableData = {
                         created_at: gameLog.dt,
                         type: 'VideoChange',
@@ -5889,7 +5887,6 @@ speechSynthesis.getVoices();
                 default:
                     break;
             }
-
             if (tableData !== null) {
                 this.gameLogTable.data.push(tableData);
             }
