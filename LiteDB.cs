@@ -209,14 +209,12 @@ namespace VRCX
         public void RemoveAllAvatarCache(string AvatarId)
         {
             using (var AvatarFavDb = new LiteDatabase($"Filename={AvatarDatabasePath}favcat-favs.db"))
+            using (var AvatarCacheDb = new LiteDatabase($"Filename={AvatarDatabasePath}favcat-store.db"))
             {
                 var AvatarFavData = AvatarFavDb.GetCollection<AvatarFavorites>("Avatar_favorites");
-                using (var AvatarCacheDb = new LiteDatabase($"Filename={AvatarDatabasePath}favcat-store.db"))
-                {
-                    var AvatarCacheData = AvatarCacheDb.GetCollection<AvatarCache>("avatars");
-                    AvatarFavData.DeleteMany(Query.EQ("ObjectId", AvatarId));
-                    AvatarCacheData.DeleteMany(Query.EQ("_id", AvatarId));
-                }
+                var AvatarCacheData = AvatarCacheDb.GetCollection<AvatarCache>("avatars");
+                AvatarFavData.DeleteMany(Query.EQ("ObjectId", AvatarId));
+                AvatarCacheData.DeleteMany(Query.EQ("_id", AvatarId));
             }
         }
 
@@ -303,13 +301,12 @@ namespace VRCX
             }
             var AvatarFavList = new List<AvatarCache>();
             using (var AvatarFavDb = new LiteDatabase($"Filename={FavsDB}"))
+            using (var AvatarCacheDb = new LiteDatabase($"Filename={StoreDB}"))
             {
                 var AvatarFavData = AvatarFavDb.GetCollection<AvatarFavorites>("Avatar_favorites");
-                using (var AvatarCacheDb = new LiteDatabase($"Filename={StoreDB}"))
-                {
-                    var AvatarCacheData = AvatarCacheDb.GetCollection<AvatarCache>("avatars");
-                    var AllAvatarFavs = AvatarFavData.FindAll();
-                    foreach (var Avatar in AllAvatarFavs)
+                var AvatarCacheData = AvatarCacheDb.GetCollection<AvatarCache>("avatars");
+                var AllAvatarFavs = AvatarFavData.FindAll();
+                foreach (var Avatar in AllAvatarFavs)
                     {
                         var AvatarCacheItem = AvatarCacheData.FindById(Avatar.ObjectId);
                         if (AvatarCacheItem != null)
@@ -318,7 +315,6 @@ namespace VRCX
                             AvatarCacheItem.AddedOn = Avatar.AddedOn;
                             AvatarCacheItem.id = Avatar._id;
                             AvatarFavList.Add(AvatarCacheItem);
-                        }
                     }
                 }
             }

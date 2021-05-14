@@ -8761,7 +8761,7 @@ speechSynthesis.getVoices();
             API.getAvatar({avatarId});
         } else {
             if (D.ref.$cached) {
-                D.fileSize = 'Cache';
+                D.fileSize = 'Local Database';
             }
             var id = extractFileId(D.ref.assetUrl);
             var fileId = extractFileId(D.ref.imageUrl);
