@@ -71,7 +71,7 @@ namespace VRCX
             {
                 return "";
             }
-            var json = System.IO.File.ReadAllText(configFile);
+            var json = File.ReadAllText(configFile);
             return json;
         }
 
@@ -79,7 +79,7 @@ namespace VRCX
         {
             var logPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"Low\VRChat\VRChat\";
             var configFile = Path.Combine(logPath, @"config.json");
-            System.IO.File.WriteAllText(configFile, json);
+            File.WriteAllText(configFile, json);
         }
 
         public void ShowDevTools()
