@@ -7473,8 +7473,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    $app.methods.promptAvatarDialog = function () {
-        this.$prompt('Enter a Avatar ID (UUID)', 'Direct Access', {
+    $app.methods.promptSelectAvatarDialog = function () {
+        this.$prompt('Enter a Avatar ID (UUID)', 'Select avatar', {
             distinguishCancelAndClose: true,
             confirmButtonText: 'OK',
             cancelButtonText: 'Cancel',
@@ -7483,7 +7483,15 @@ speechSynthesis.getVoices();
             callback: (action, instance) => {
                 if (action === 'confirm' &&
                     instance.inputValue) {
-                    this.showAvatarDialog(instance.inputValue);
+                    API.selectAvatar({
+                        avatarId: instance.inputValue
+                    }).then((args) => {
+                        this.$message({
+                            message: 'Avatar changed',
+                            type: 'success'
+                        });
+                        return args;
+                    });
                 }
             }
         });
@@ -7618,6 +7626,10 @@ speechSynthesis.getVoices();
             callback: (action, instance) => {
                 if (action === 'confirm' &&
                     instance.inputValue) {
+                    if (API.cachedAvatars.has(instance.inputValue)) {
+                        this.showAvatarDialog(instance.inputValue);
+                        return;
+                    }
                     this.showFavoriteDialog('avatar', instance.inputValue);
                 }
             }
@@ -8360,6 +8372,8 @@ speechSynthesis.getVoices();
             }
         } else if (command === 'Previous Images') {
             this.displayPreviousImages('User');
+        }  else if (command === 'Select Avatar') {
+            this.promptSelectAvatarDialog();
         } else {
             this.$confirm(`Continue? ${command}`, 'Confirm', {
                 confirmButtonText: 'Confirm',
@@ -8928,6 +8942,9 @@ speechSynthesis.getVoices();
                 break;
             case 'Change Description':
                 this.promptChangeAvatarDescription(D);
+                break;
+            case 'Download Unity Package':
+                this.openExternalLink(this.avatarDialog.ref.unityPackageUrl);
                 break;
             case 'Add Favorite':
                 this.showFavoriteDialog('avatar', D.id);
