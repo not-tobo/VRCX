@@ -402,35 +402,6 @@ html
                                                     .detail
                                                         span.name(v-text="favorite.ref.name")
                                                         span.extra(v-text="favorite.ref.authorName")
-                                                    template(v-if="API.cachedFavoritesByObjectId.has(favorite.ref.id)")
-                                                        el-tooltip(placement="left")
-                                                            template(#content)
-                                                                span Unfavorite
-                                                            el-button(type="default" icon="el-icon-star-on" size="mini" circle @click.native.stop="deleteFavorite(favorite.ref.id)")
-                                                    template(v-else)
-                                                        el-tooltip(placement="left")
-                                                            template(#content)
-                                                                span Favorite
-                                                            el-dropdown(trigger="click" @click.native.stop size="mini" style="margin-left:5px")
-                                                                el-button(type="default" icon="el-icon-star-off" size="mini" circle)
-                                                                el-dropdown-menu(#default="dropdown")
-                                                                    template(v-for="groupAPI in API.favoriteAvatarGroups" :key="groupAPI.name")
-                                                                        el-dropdown-item(style="display:block;margin:10px 0" @click.native="addFavoriteAvatar(favorite.ref, groupAPI)" :disabled="groupAPI.count >= groupAPI.capacity") {{ groupAPI.displayName }} ({{ groupAPI.count }} / {{ groupAPI.capacity }})
-                                                    el-tooltip(placement="top")
-                                                        template(#content)
-                                                            span Copy
-                                                        el-dropdown(trigger="click" @click.native.stop size="mini" style="margin-left:5px")
-                                                            el-button(type="default" icon="el-icon-document-copy" size="mini" circle :disabled="isGameRunning")
-                                                            el-dropdown-menu(#default="dropdown")
-                                                                template(v-for="group in localAvatarFavoriteGroups" :key="group.name")
-                                                                    template(v-if="checkIfFavorited(favorite.ref.id, group.name)")
-                                                                        el-dropdown-item(icon="el-icon-check" style="display:block;margin:10px 0" @click.native="removeLocalAvatarFavorite(favorite.ref.id, group.name)") {{ group.name }} ({{ group.count }})
-                                                                    template(v-else)
-                                                                        el-dropdown-item(style="display:block;margin:10px 0" @click.native="addLocalAvatarFavorite(favorite.ref, group.name)") {{ group.name }} ({{ group.count }})
-                                                    el-tooltip(placement="right")
-                                                        template(#content)
-                                                            span Unfavorite
-                                                        el-button(@click.stop="removeLocalAvatarFavorite(favorite.ref.id, favorite.category)" :disabled="isGameRunning" size="mini" icon="el-icon-delete" circle style="margin-left:5px")
                                                 template(v-else)
                                                     .detail
                                                         span.name(v-text="favorite.ref.name || favorite.ref.id")
@@ -966,7 +937,9 @@ html
                             el-button(size="small" icon="el-icon-s-operation" @click="showLaunchOptions()") Launch Options
                             el-button(size="small" icon="el-icon-s-operation" @click="showVRChatConfig()") VRChat config.json
                 div.options-container
-                    span.header Local Avatar Datebase
+                    span.header Local Avatar Database
+                    div.options-container-item
+                        span.name This will be following suit and being deprecated as well
                     template(v-if="localAvatarDatabaseAvailable")
                         div.options-container-item
                             span.name Enable
