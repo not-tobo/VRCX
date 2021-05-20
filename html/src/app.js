@@ -5834,11 +5834,14 @@ speechSynthesis.getVoices();
                 method: 'GET'
             });
             var youtubeAPIGet = response.data;
-            var youtubeAPIResult = JSON.parse(youtubeAPIGet);
-            if (youtubeAPIResult.pageInfo.totalResults !== 0) {
-                videoobj.videoName = youtubeAPIResult.items[0].snippet.title;
-                videoobj.videoLength = convert_youtube_time(youtubeAPIResult.items[0].contentDetails.duration);
-                videoobj.videoID = 'YouTube';
+            try {
+                var youtubeAPIResult = JSON.parse(youtubeAPIGet);
+                if (youtubeAPIResult.pageInfo.totalResults !== 0) {
+                    videoobj.videoName = youtubeAPIResult.items[0].snippet.title;
+                    videoobj.videoLength = convert_youtube_time(youtubeAPIResult.items[0].contentDetails.duration);
+                    videoobj.videoID = 'YouTube';
+                }
+            } catch {
             }
         }
 
