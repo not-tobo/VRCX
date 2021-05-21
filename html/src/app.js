@@ -3704,6 +3704,9 @@ speechSynthesis.getVoices();
                 if (--this.nextFriendsRefresh <= 0) {
                     this.nextFriendsRefresh = 7200; // 1hour
                     API.refreshFriends();
+                    if (this.isGameRunning) {
+                        API.refreshPlayerModerations();
+                    }
                 }
                 AppApi.CheckGameRunning().then(([isGameRunning, isGameNoVR]) => {
                     if (isGameRunning !== this.isGameRunning) {
@@ -3951,6 +3954,49 @@ speechSynthesis.getVoices();
                         isFriend = this.friends.has(ref.id);
                         isFavorite = API.cachedFavoritesByObjectId.has(ref.id);
                         break;
+                    }
+                }
+            }
+            if ((ctx.type === 'OnPlayerJoined') ||
+                (ctx.type === 'OnPlayerLeft')) {
+                for (var ref of this.playerModerationTable.data) {
+                    if (ref.targetDisplayName === ctx.data) {
+                        if (ref.type === 'block') {
+                            var type = `Blocked${ctx.type}`;
+                        } else if (ref.type === 'mute') {
+                            var type = `Muted${ctx.type}`;
+                        } else {
+                            continue;
+                        }
+                        var displayName = ref.targetDisplayName;
+                        var userId = ref.targetUserId;
+                        var created_at = ctx.created_at;
+                        if ((wristFilter[type]) &&
+                            ((wristFilter[type] === 'Everyone') ||
+                            ((wristFilter[type] === 'Friends') && (isFriend)) ||
+                            ((wristFilter[type] === 'VIP') && (isFavorite)))) {
+                            wristArr.unshift({
+                                created_at,
+                                type,
+                                displayName,
+                                userId,
+                                isFriend,
+                                isFavorite
+                            });
+                        }
+                        if ((notyFilter[type]) &&
+                            ((notyFilter[type] === 'Everyone') ||
+                            ((notyFilter[type] === 'Friends') && (isFriend)) ||
+                            ((notyFilter[type] === 'VIP') && (isFavorite)))) {
+                            notyArr.unshift({
+                                created_at,
+                                type,
+                                displayName,
+                                userId,
+                                isFriend,
+                                isFavorite
+                            });
+                        }
                     }
                 }
             }
@@ -4303,7 +4349,7 @@ speechSynthesis.getVoices();
             imageURL = noty.details.imageUrl;
         } else if (userId) {
             imageURL = await API.getCachedUser({
-                userId: userId
+                userId
             }).catch((err) => {
                 console.error(err);
                 return false;
@@ -4399,6 +4445,18 @@ speechSynthesis.getVoices();
             case 'Event':
                 this.speak(noty.data);
                 break;
+            case 'BlockedOnPlayerJoined':
+                this.speak(`Blocked user ${noty.displayName} has joined`);
+                break;
+            case 'BlockedOnPlayerLeft':
+                this.speak(`Blocked user ${noty.displayName} has left`);
+                break;
+            case 'MutedOnPlayerJoined':
+                this.speak(`Muted user ${noty.displayName} has joined`);
+                break;
+            case 'MutedOnPlayerLeft':
+                this.speak(`Muted user ${noty.displayName} has left`);
+                break;
             default:
                 break;
         }
@@ -4461,6 +4519,18 @@ speechSynthesis.getVoices();
             case 'Event':
                 AppApi.XSNotification('VRCX', noty.data, timeout, image);
                 break;
+            case 'BlockedOnPlayerJoined':
+                AppApi.XSNotification('VRCX', `Blocked user ${noty.displayName} has joined`, timeout, image);
+                break;
+            case 'BlockedOnPlayerLeft':
+                AppApi.XSNotification('VRCX', `Blocked user ${noty.displayName} has left`, timeout, image);
+                break;
+            case 'MutedOnPlayerJoined':
+                AppApi.XSNotification('VRCX', `Muted user ${noty.displayName} has joined`, timeout, image);
+                break;
+            case 'MutedOnPlayerLeft':
+                AppApi.XSNotification('VRCX', `Muted user ${noty.displayName} has left`, timeout, image);
+                break;
             default:
                 break;
         }
@@ -4521,6 +4591,18 @@ speechSynthesis.getVoices();
                 break;
             case 'Event':
                 AppApi.DesktopNotification('Event', noty.data, image);
+                break;
+            case 'BlockedOnPlayerJoined':
+                AppApi.DesktopNotification(noty.displayName, 'blocked user has joined', image);
+                break;
+            case 'BlockedOnPlayerLeft':
+                AppApi.DesktopNotification(noty.displayName, 'blocked user has left', image);
+                break;
+            case 'MutedOnPlayerJoined':
+                AppApi.DesktopNotification(noty.displayName, 'muted user has joined', image);
+                break;
+            case 'MutedOnPlayerLeft':
+                AppApi.DesktopNotification(noty.displayName, 'muted user has left', image);
                 break;
             default:
                 break;
@@ -7160,9 +7242,12 @@ speechSynthesis.getVoices();
                 DisplayName: 'VIP',
                 TrustLevel: 'VIP',
                 PortalSpawn: 'Everyone',
-                ItemDestroy: 'Off',
                 Event: 'On',
-                VideoChange: 'On'
+                VideoChange: 'On',
+                BlockedOnPlayerJoined: 'Off',
+                BlockedOnPlayerLeft: 'Off',
+                MutedOnPlayerJoined: 'Off',
+                MutedOnPlayerLeft: 'Off'
             },
             wrist: {
                 Location: 'On',
@@ -7183,9 +7268,12 @@ speechSynthesis.getVoices();
                 DisplayName: 'Friends',
                 TrustLevel: 'Friends',
                 PortalSpawn: 'Everyone',
-                ItemDestroy: 'Everyone',
                 Event: 'On',
-                VideoChange: 'On'
+                VideoChange: 'On',
+                BlockedOnPlayerJoined: 'Off',
+                BlockedOnPlayerLeft: 'Off',
+                MutedOnPlayerJoined: 'Off',
+                MutedOnPlayerLeft: 'Off'
             }
         };
         configRepository.setString('sharedFeedFilters', JSON.stringify(sharedFeedFilters));

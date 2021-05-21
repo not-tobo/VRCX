@@ -970,6 +970,18 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     case 'Event':
                         text = noty.data;
                         break;
+                    case 'BlockedOnPlayerJoined':
+                        text = `Blocked user <strong>${noty.displayName}</strong> has joined`;
+                        break;
+                    case 'BlockedOnPlayerLeft':
+                        text = `Blocked user <strong>${noty.displayName}</strong> has left`;
+                        break;
+                    case 'MutedOnPlayerJoined':
+                        text = `Muted user <strong>${noty.displayName}</strong> has joined`;
+                        break;
+                    case 'MutedOnPlayerLeft':
+                        text = `Muted user <strong>${noty.displayName}</strong> has left`;
+                        break;
                     default:
                         break;
                 }
