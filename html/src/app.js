@@ -5912,6 +5912,7 @@ speechSynthesis.getVoices();
             if ((!$app.appInit) || (!$app.isGameRunning)) {
                 return;
             }
+            var youtubeAPIKey = '';
             if (!youtubeAPIKey) {
                 console.log('youtubeAPIKey is missing, add it to use this function');
                 return;
