@@ -5827,7 +5827,9 @@ speechSynthesis.getVoices();
         }
 
         async function youtubeAPI(videoID) {
-            var youtubeAPIKey = '';
+            if ((!$app.appInit) || (!$app.isGameRunning)) {
+                return;
+            }
             if (!youtubeAPIKey) {
                 console.log('youtubeAPIKey is missing, add it to use this function');
                 return;
