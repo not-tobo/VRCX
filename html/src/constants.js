@@ -1,1 +1,1 @@
-export var appVersion = 'VRCX.PyPyDance.Companion 2021.05.15';
+export var appVersion = 'VRCX.PyPyDance.Companion 2021.05.21';
