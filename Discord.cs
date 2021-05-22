@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2019 pypy. All rights reserved.
+// Copyright(c) 2019 pypy. All rights reserved.
 //
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT>.
@@ -126,7 +126,7 @@ namespace VRCX
             }
         }
 
-        public void SetAssets(string largeKey, string largeText, string smallKey, string smallText)
+        public void SetAssets(string largeKey, string largeText, string smallKey, string smallText, string partyId, int partySize, int partyMax)
         {
             m_Lock.EnterWriteLock();
             try
@@ -139,13 +139,16 @@ namespace VRCX
                 else
                 {
                     if (m_Presence.Assets == null)
-                    {
                         m_Presence.Assets = new Assets();
-                    }
+                    if (m_Presence.Party == null)
+                        m_Presence.Party = new Party();
                     m_Presence.Assets.LargeImageKey = largeKey;
                     m_Presence.Assets.LargeImageText = largeText;
                     m_Presence.Assets.SmallImageKey = smallKey;
                     m_Presence.Assets.SmallImageText = smallText;
+                    m_Presence.Party.ID = partyId;
+                    m_Presence.Party.Size = partySize;
+                    m_Presence.Party.Max = partyMax;
                 }
             }
             finally

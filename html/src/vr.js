@@ -1016,8 +1016,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
             var videoProgress = Math.floor((videoStartTime - currentTime) * 100) / 100;
             var L = API.parseLocation(this.lastLocation.location);
             if ((!this.isGameRunning) ||
-                ((L.worldId != 'wrld_f20326da-f1ac-45fc-a062-609723b097b1') && (L.worldId != 'wrld_42377cf1-c54f-45ed-8996-5875b0573a83'))) {
-                videoProgress = -60;
+                ((L.worldId !== 'wrld_f20326da-f1ac-45fc-a062-609723b097b1') && (L.worldId !== 'wrld_42377cf1-c54f-45ed-8996-5875b0573a83'))) {
+                videoProgress = -120;
             }
             if (videoProgress > 0) {
                 function sec2time(timeInSeconds) {
@@ -1035,8 +1035,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 if ((this.appType === '2') && (this.nowPlayingobj.videoName) && (configRepository.getBool('discordActive'))) {
                     var requestedBy = '';
                     if (this.nowPlayingobj.playerPlayer !== '') { requestedBy = 'Requested by: ' + this.nowPlayingobj.playerPlayer; }
-                    Discord.SetText('Video: ' + this.nowPlayingobj.videoName, requestedBy);
-                    Discord.SetAssets('pypy', `Instance time: ${this.lastLocationTimer}`, 'ayaya', 'https://github.com/Natsumi-sama/VRCX');
+                    Discord.SetText('Dancing to: ' + this.nowPlayingobj.videoName, requestedBy);
+                    Discord.SetAssets('pypy', `Dancing for: ${this.lastLocationTimer}`, 'ayaya', 'Powered by VRCX', L.instanceId, this.lastLocation.playerList.length, 40);
                     Discord.SetTimestamps(Date.now(), Date.parse(this.nowPlayingobj.videoChangeTime) + Number(videoLength) * 1000);
                 }
             }
@@ -1047,7 +1047,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     videoVolume: ''
                 };
             }
-            if (videoProgress <= -60) {
+            if (videoProgress <= -120) {
                 Discord.SetActive(false);
                 Discord.SetText('', '');
             }
