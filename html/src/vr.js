@@ -1015,7 +1015,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
             var videoStartTime = videoLength + Date.parse(this.newPlayingobj.videoChangeTime) / 1000;
             var videoProgress = Math.floor((videoStartTime - currentTime) * 100) / 100;
             var L = API.parseLocation(this.lastLocation.location);
-            if ((!this.isGameRunning) || (L.worldId != 'wrld_f20326da-f1ac-45fc-a062-609723b097b1')) {
+            if ((!this.isGameRunning) ||
+                ((L.worldId != 'wrld_f20326da-f1ac-45fc-a062-609723b097b1') && (L.worldId != 'wrld_42377cf1-c54f-45ed-8996-5875b0573a83'))) {
                 videoProgress = -60;
             }
             if (videoProgress > 0) {
