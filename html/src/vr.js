@@ -1133,9 +1133,12 @@ var bar = new ProgressBar.Circle(vroverlay, {
             if (user.location === 'offline') {
                 // Offline
                 style.offline = true;
+            } else if (user.state === 'active') {
+                // Active
+                style.active = true;
             } else if (user.status === 'active') {
                 // Online
-                style.active = true;
+                style.online = true;
             } else if (user.status === 'join me') {
                 // Join Me
                 style.joinme = true;
