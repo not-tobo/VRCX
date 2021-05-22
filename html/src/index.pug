@@ -1335,6 +1335,10 @@ html
                                                 timer(:epoch="user.$location_at")
                         el-tab-pane(label="Info")
                             .x-friend-list(style="max-height:none")
+                                .x-friend-item(style="width:100%;cursor:default")
+                                    .detail
+                                        span.name World ID
+                                        span.extra(v-text="worldDialog.id")
                                 .x-friend-item(style="cursor:default")
                                     .detail
                                         span.name Players
@@ -1371,7 +1375,7 @@ html
                                     .detail
                                         span.name Version
                                         span.extra(v-text="worldDialog.ref.version")
-                                .x-friend-item(style="width:100%;cursor:default")
+                                .x-friend-item(style="width:525px;cursor:default")
                                     .detail
                                         span.name Platform
                                         span.extra(v-text="worldDialogPlatform")
