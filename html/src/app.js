@@ -7162,6 +7162,7 @@ speechSynthesis.getVoices();
     $app.data.worldAutoCacheGPS = configRepository.getString('VRCX_worldAutoCacheGPS');
     $app.data.worldAutoCacheInviteFilter = configRepository.getBool('VRCX_worldAutoCacheInviteFilter');
     $app.data.worldAutoCacheGPSFilter = configRepository.getBool('VRCX_worldAutoCacheGPSFilter');
+    $app.data.autoSweepVRChatCache = configRepository.getBool('VRCX_autoSweepVRChatCache');
     var saveOpenVROption = function () {
         configRepository.setBool('openVR', this.openVR);
         configRepository.setBool('openVRAlways', this.openVRAlways);
@@ -7179,6 +7180,7 @@ speechSynthesis.getVoices();
         configRepository.setString('VRCX_worldAutoCacheGPS', this.worldAutoCacheGPS);
         configRepository.setBool('VRCX_worldAutoCacheInviteFilter', this.worldAutoCacheInviteFilter);
         configRepository.setBool('VRCX_worldAutoCacheGPSFilter', this.worldAutoCacheGPSFilter);
+        configRepository.setBool('VRCX_autoSweepVRChatCache', this.autoSweepVRChatCache);
         this.updateVRConfigVars();
     };
     $app.data.TTSvoices = speechSynthesis.getVoices();
@@ -7206,6 +7208,7 @@ speechSynthesis.getVoices();
     $app.watch.worldAutoCacheGPS = saveOpenVROption;
     $app.watch.worldAutoCacheInviteFilter = saveOpenVROption;
     $app.watch.worldAutoCacheGPSFilter = saveOpenVROption;
+    $app.watch.autoSweepVRChatCache = saveOpenVROption;
     $app.watch.notificationTTS = saveNotificationTTS;
     $app.data.isDarkMode = configRepository.getBool('isDarkMode');
     $appDarkStyle.disabled = $app.data.isDarkMode === false;
@@ -12268,6 +12271,18 @@ speechSynthesis.getVoices();
         }
         await AssetBundleCacher.DeleteAllCache(cacheDirectory);
         this.getVRChatCacheSize();
+    };
+
+    $app.methods.sweepVRChatCache = async function () {
+        await this.readVRChatConfigFile();
+        var cacheDirectory = '';
+        if (this.VRChatConfigFile.cache_directory) {
+            cacheDirectory = this.VRChatConfigFile.cache_directory;
+        }
+        await AssetBundleCacher.SweepCache(cacheDirectory);
+        if (this.VRChatConfigDialog.visible) {
+            this.getVRChatCacheSize();
+        }
     };
 
     $app.data.VRChatUsedCacheSize = '';
