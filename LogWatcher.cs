@@ -199,7 +199,8 @@ namespace VRCX
                                         ParseLogAvatarPedestalChange(fileInfo, logContext, line, offset) == true ||
                                         ParseLogVideoError(fileInfo, logContext, line, offset) == true ||
                                         ParseLogVideoChange(fileInfo, logContext, line, offset) == true ||
-                                        ParseLogVideoBeep(fileInfo, logContext, line, offset) == true)
+                                        ParseLogVideoBeep(fileInfo, logContext, line, offset) == true ||
+                                        ParseLogPlayDanceStart(fileInfo, logContext, line, offset) == true)
                                     {
                                         continue;
                                     }
@@ -521,6 +522,23 @@ namespace VRCX
                 var data = line.Substring(offset + 37);
 
                 playerRequest = playerPlayer;
+                playerPlayer = data;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool ParseLogPlayDanceStart(FileInfo fileInfo, LogContext logContext, string line, int offset)
+        {
+            // 2021.05.23 04:22:07 Log        -  [Behaviour] AudioManager_DanceMenu executing PlayDanceStart at the behest of Natsumi-sama
+
+            if (string.Compare(line, offset, "AudioManager_DanceMenu executing PlayDanceStart at the behest of ", 0, 65, StringComparison.Ordinal) == 0)
+            {
+                var data = line.Substring(offset + 65);
+
+                playerRequest = String.Empty;
                 playerPlayer = data;
 
                 return true;

@@ -17,6 +17,7 @@ namespace VRCX
         private DiscordRpcClient m_Client;
         private Timer m_Timer;
         private bool m_Active;
+        public static string DiscordAppId;
 
         static Discord()
         {
@@ -78,7 +79,7 @@ namespace VRCX
             {
                 if (m_Client == null)
                 {
-                    m_Client = new DiscordRpcClient("784094509008551956");
+                    m_Client = new DiscordRpcClient(DiscordAppId);
                     if (m_Client.Initialize() == false)
                     {
                         m_Client.Dispose();
@@ -126,7 +127,7 @@ namespace VRCX
             }
         }
 
-        public void SetAssets(string largeKey, string largeText, string smallKey, string smallText, string partyId, int partySize, int partyMax)
+        public void SetAssets(string largeKey, string largeText, string smallKey, string smallText, string partyId, int partySize, int partyMax, string appId)
         {
             m_Lock.EnterWriteLock();
             try
@@ -149,6 +150,16 @@ namespace VRCX
                     m_Presence.Party.ID = partyId;
                     m_Presence.Party.Size = partySize;
                     m_Presence.Party.Max = partyMax;
+                    if (DiscordAppId != appId)
+                    {
+                        DiscordAppId = appId;
+                        if (m_Client != null)
+                        {
+                            m_Client.Dispose();
+                            m_Client = null;
+                        }
+                        Update();
+                    }
                 }
             }
             finally

@@ -1016,7 +1016,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
             var videoProgress = Math.floor((videoStartTime - currentTime) * 100) / 100;
             var L = API.parseLocation(this.lastLocation.location);
             if ((!this.isGameRunning) ||
-                ((L.worldId !== 'wrld_f20326da-f1ac-45fc-a062-609723b097b1') && (L.worldId !== 'wrld_42377cf1-c54f-45ed-8996-5875b0573a83'))) {
+                ((L.worldId !== 'wrld_f20326da-f1ac-45fc-a062-609723b097b1') &&
+                (L.worldId !== 'wrld_42377cf1-c54f-45ed-8996-5875b0573a83'))) {
                 videoProgress = -120;
             }
             if (videoProgress > 0) {
@@ -1035,8 +1036,14 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 if ((this.appType === '2') && (this.nowPlayingobj.videoName) && (configRepository.getBool('discordActive'))) {
                     var requestedBy = '';
                     if (this.nowPlayingobj.playerPlayer !== '') { requestedBy = 'Requested by: ' + this.nowPlayingobj.playerPlayer; }
+                    if (L.worldId === 'wrld_f20326da-f1ac-45fc-a062-609723b097b1') {
+                        var discordAppId = "784094509008551956";
+                        Discord.SetAssets('pypy', `Dancing for: ${this.lastLocationTimer}`, 'ayaya', 'Powered by VRCX', L.instanceId, this.lastLocation.playerList.length, 40, discordAppId);
+                    } else if (L.worldId === 'wrld_42377cf1-c54f-45ed-8996-5875b0573a83') {
+                        var discordAppId = "846232616054030376";
+                        Discord.SetAssets('vr_dancing', `Dancing for: ${this.lastLocationTimer}`, 'marshall_bruh', 'Powered by VRCX', L.instanceId, this.lastLocation.playerList.length, 40, discordAppId);
+                    }
                     Discord.SetText('Dancing to: ' + this.nowPlayingobj.videoName, requestedBy);
-                    Discord.SetAssets('pypy', `Dancing for: ${this.lastLocationTimer}`, 'ayaya', 'Powered by VRCX', L.instanceId, this.lastLocation.playerList.length, 40);
                     Discord.SetTimestamps(Date.now(), Date.parse(this.nowPlayingobj.videoChangeTime) + Number(videoLength) * 1000);
                 }
             }
