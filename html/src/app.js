@@ -12079,7 +12079,7 @@ speechSynthesis.getVoices();
             (this.downloadCurrent.id === L.worldId)) {
             return;
         }
-        API.getCachedWorld({
+        API.getWorld({
             worldId: L.worldId
         }).then((args) => {
             var { ref } = args;
