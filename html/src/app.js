@@ -417,6 +417,9 @@ speechSynthesis.getVoices();
                 }
                 throw new Error('401: Missing Credentials');
             }
+            if ((status === 403) && (data.error.message === '403 You can\'t see another user\'s favorites') ) {
+                throw new Error('403: User\'s avatar list isn\'t public');
+            }
             if (data.error === Object(data.error)) {
                 this.$throw(
                     data.error.status_code || status,
@@ -7114,7 +7117,17 @@ speechSynthesis.getVoices();
                 order: 'descending'
             }
         },
-        layout: 'table'
+        pageSize: 100,
+        paginationProps: {
+            small: true,
+            layout: 'sizes,prev,pager,next,total',
+            pageSizes: [
+                50,
+                100,
+                250,
+                500
+            ]
+        }
     };
     $app.data.downloadHistoryTable = {
         data: [],
@@ -7902,6 +7915,7 @@ speechSynthesis.getVoices();
         worlds: [],
         avatars: [],
         isWorldsLoading: false,
+        isFavoriteWorldsLoading: false,
         isAvatarsLoading: false,
 
         worldSorting: 'update',
@@ -8148,6 +8162,12 @@ speechSynthesis.getVoices();
                         this.refreshUserDialogWorlds();
                     }
                 } else if (this.$refs.userDialogTabs.currentName === '2') {
+                    this.userDialogLastActiveTab = 'Favorite Worlds';
+                    if (this.userDialogLastFavoriteWorld !== userId) {
+                        this.userDialogLastFavoriteWorld = userId;
+                        this.getUserFavoriteWorlds(userId);
+                    }
+                } else if (this.$refs.userDialogTabs.currentName === '3') {
                     this.userDialogLastActiveTab = 'Avatars';
                     this.setUserDialogAvatars(userId);
                     if (this.userDialogLastAvatar !== userId) {
@@ -8163,8 +8183,9 @@ speechSynthesis.getVoices();
                             }
                         }
                     }
-                } else if (this.$refs.userDialogTabs.currentName === '3') {
+                } else if (this.$refs.userDialogTabs.currentName === '4') {
                     this.userDialogLastActiveTab = 'JSON';
+                    this.refreshUserDialogTreeData();
                 }
                 API.getFriendStatus({
                     userId: D.id
@@ -11786,6 +11807,7 @@ speechSynthesis.getVoices();
     $app.data.userDialogLastActiveTab = '';
     $app.data.userDialogLastAvatar = '';
     $app.data.userDialogLastWorld = '';
+    $app.data.userDialogLastFavoriteWorld = '';
 
     $app.methods.userDialogTabClick = function (obj) {
         var userId = this.userDialog.id;
@@ -11813,6 +11835,13 @@ speechSynthesis.getVoices();
                 this.userDialogLastWorld = userId;
                 this.refreshUserDialogWorlds();
             }
+        } else if (obj.label === 'Favorite Worlds') {
+            if (this.userDialogLastFavoriteWorld !== userId) {
+                this.userDialogLastFavoriteWorld = userId;
+                this.getUserFavoriteWorlds(userId);
+            }
+        } else if (obj.label === 'JSON') {
+            this.refreshUserDialogTreeData();
         }
         this.userDialogLastActiveTab = obj.label;
     };
@@ -12317,11 +12346,40 @@ speechSynthesis.getVoices();
     });
 
     // Parse location URL
+
     $app.methods.parseLocationUrl = function (url) {
         var urlParams = new URLSearchParams(url.search);
         var worldId = urlParams.get('worldId');
         var instanceId = urlParams.get('instanceId');
         return `${worldId}:${instanceId}`;
+    };
+
+    // userDialog Favorite Worlds
+
+    $app.data.userFavoriteWorlds = [];
+
+    $app.methods.getUserFavoriteWorlds = async function (userId) {
+        this.userDialog.isFavoriteWorldsLoading = true;
+        this.userFavoriteWorlds = [];
+        var worldListCount = 4;
+        var worldLists = [];
+        for (var i = 0; i < worldListCount; ++i) {
+            worldLists[i] = [];
+            var params = {
+                n: 50,
+                offset: 0,
+                userId,
+                tag: `worlds${i + 1}`
+            };
+            try {
+                var args = await API.getFavoriteWorlds(params);
+                worldLists[i] = args.json;
+            } catch (err) {
+                worldLists[i] = null;
+            }
+        }
+        this.userFavoriteWorlds = worldLists;
+        this.userDialog.isFavoriteWorldsLoading = false;
     };
 
     $app = new Vue($app);
