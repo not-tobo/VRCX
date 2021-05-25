@@ -15,7 +15,6 @@ Vue.component('v-swatches', VSwatches);
 import '../node_modules/vue-swatches/dist/vue-swatches.css';
 import ElementUI from 'element-ui';
 import locale from 'element-ui/lib/locale/lang/en';
-import copy from 'copy-to-clipboard';
 import PyPyVideos from './PyPyVideos.json';
 var PyPyVideosTable = JSON.parse(atob(PyPyVideos.json));
 
@@ -9837,35 +9836,44 @@ speechSynthesis.getVoices();
         D.visible = false;
     };
 
-    $app.methods.copyInstanceUrl = function (URL) {
-        copy(URL);
+    $app.methods.copyToClipboard = function (text) {
+        var textArea = document.createElement("textarea");
+        textArea.id = 'copy_to_clipboard';
+        textArea.value = text;
+        textArea.style.top = '0';
+        textArea.style.left = '0';
+        textArea.style.position = 'fixed';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.getElementById('copy_to_clipboard').remove();
+    };
+
+    $app.methods.copyInstanceUrl = function (url) {
+        this.copyToClipboard(url);
         this.$message({
-            message: 'URL copied to Clipboard',
+            message: 'URL copied to clipboard',
             type: 'success'
         });
         this.launchDialog.visible = false;
         this.newInstanceDialog.visible = false;
     };
 
-    $app.methods.copyUrl = function (URL) {
-        var L = API.parseLocation(URL);
-        if (L.instanceId) {
-            var urlOut = `https://vrchat.com/home/launch?worldId=${encodeURIComponent(L.worldId)}&instanceId=${encodeURIComponent(L.instanceId)}`;
-        } else {
-            var urlOut = `https://vrchat.com/home/launch?worldId=${encodeURIComponent(L.worldId)}`;
-        }
-        copy(urlOut);
-        new Noty({
-            type: 'success',
-            text: 'instance URL copied to clipboard'
-        }).show();
+    $app.methods.copyLocation = function (location) {
+        var L = API.parseLocation(location);
+        var url = getLaunchURL(L.worldId, L.instanceId);
+        this.copyToClipboard(url);
+        this.$message({
+            message: 'Instance URL copied to clipboard',
+            type: 'success'
+        });
     };
 
-    $app.methods.copyUrlInstanceCheck = function (URL) {
-        var L = API.parseLocation(URL);
-        if (L.isOffline ||
-            L.isPrivate ||
-            L.worldId === '') {
+    $app.methods.copyLocationCheck = function (location) {
+        if ((location === '') ||
+            (location === 'offline') ||
+            (location === 'private')) {
             return false;
         }
         return true;
