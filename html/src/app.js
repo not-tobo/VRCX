@@ -9844,6 +9844,8 @@ speechSynthesis.getVoices();
         D.visible = false;
     };
 
+    // App: Copy To Clipboard
+
     $app.methods.copyToClipboard = function (text) {
         var textArea = document.createElement("textarea");
         textArea.id = 'copy_to_clipboard';
