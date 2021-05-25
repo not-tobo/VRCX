@@ -70,27 +70,27 @@ html
                                 .detail
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
-                                        | 📨 #[span.name(v-text="feed.senderUsername")] #[location(:location="feed.details.worldId")] #[span(v-text="feed.details.inviteMessage")]
+                                        | 📨 #[span.name(v-text="feed.senderDisplayName")] #[location(:location="feed.details.worldId")] #[span(v-text="feed.details.inviteMessage")]
                             div(v-else-if="feed.type === 'requestInvite'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
                                 .detail
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
-                                        | 📩 #[span.name(v-text="feed.senderUsername")] #[span(v-text="feed.details.requestMessage")]
+                                        | 📩 #[span.name(v-text="feed.senderDisplayName")] #[span(v-text="feed.details.requestMessage")]
                             div(v-else-if="feed.type === 'inviteResponse'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
                                 .detail
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
-                                        | 💬 #[span.name(v-text="feed.senderUsername")] #[span(v-text="feed.details.responseMessage")]
+                                        | 💬 #[span.name(v-text="feed.senderDisplayName")] #[span(v-text="feed.details.responseMessage")]
                             div(v-else-if="feed.type === 'requestInviteResponse'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
                                 .detail
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
-                                        | 💬 #[span.name(v-text="feed.senderUsername")] #[span(v-text="feed.details.responseMessage")]
+                                        | 💬 #[span.name(v-text="feed.senderDisplayName")] #[span(v-text="feed.details.responseMessage")]
                             div(v-else-if="feed.type === 'friendRequest'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
                                 .detail
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
-                                        | 💚 #[span.name(v-text="feed.senderUsername")]
+                                        | 💚 #[span.name(v-text="feed.senderDisplayName")]
                             div(v-else-if="feed.type === 'Friend'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
                                 .detail
                                     span.extra
@@ -141,12 +141,6 @@ html
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
                                         | ◀️ 🔇 #[span.name(v-text="feed.displayName")]
-                            div(v-else class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
-                                .detail
-                                    span.extra
-                                        span.time {{ feed.created_at | formatDate('HH:MI') }}
-                                        | test: #[span(v-text="feed.type")]
-                                        | #[span(v-text="feed.senderUsername")]
                     template(v-else)
                         template(v-for="feed in wristFeed")
                             .x-friend-item(v-if="feed.type === 'GPS'" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
