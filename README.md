@@ -1,4 +1,4 @@
-# VRCX Beta
+# VRCX Beta/Dance Companion
 
 [Download](https://github.com/Natsumi-sama/VRCX/releases/)
 
