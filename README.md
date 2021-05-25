@@ -1,16 +1,17 @@
-# VRCX PyPyDance Companion
+# VRCX Beta
 
 [Download](https://github.com/Natsumi-sama/VRCX/releases/)
 
-Requires `--enable-sdk-log-levels` VRChat launch parameter for logging of user requesting video.
+### PyPyDance/VRDancing
 
-**PyPyDance Discord rich presence:**
+**Discord rich presence:**
 
 ![image](https://user-images.githubusercontent.com/11171153/101809013-ec83aa00-3b7b-11eb-9167-007825807252.png)
+![image](https://user-images.githubusercontent.com/11171153/119479848-2ac8fa80-bda5-11eb-8ba0-d6cefe8287f5.png)
 
-In order to use this you need to disable VRChat's built in [RPC](https://docs.vrchat.com/docs/configuration-file#rich-presence) this can be done wtih `{ "disableRichPresence": true }` inside of `%AppData%\..\LocalLow\VRChat\vrchat\config.json`
+Requires `--enable-sdk-log-levels` VRChat launch parameter to display user requesting video.
 
-**Extra features:**
+**Extra options:**
 
 ![image](https://user-images.githubusercontent.com/11171153/97168742-d600d980-17ed-11eb-844f-57273d5e590d.png)
 
@@ -23,10 +24,6 @@ In order to use this you need to disable VRChat's built in [RPC](https://docs.vr
 ![image](https://user-images.githubusercontent.com/11171153/97169618-347a8780-17ef-11eb-924a-06c2407f479d.png)
 
 Comes with [nircmd](https://www.nirsoft.net/utils/nircmd.html) for automatically adjusting Windows volume mixer to normalize volume of videos.
-
-
-
-
 
 
 # VRCX
