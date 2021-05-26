@@ -2122,6 +2122,7 @@ speechSynthesis.getVoices();
         this.getNotifications({ n: 100 }).then(() => {
             this.deleteExpiredNotifcations();
             this.isNotificationsLoading = false;
+            $app.unseenNotifications = [];
         });
         // this.bulk({
         //     fn: 'getNotifications',
@@ -3226,9 +3227,14 @@ speechSynthesis.getVoices();
                         notificationId: content.id
                     }
                 });
-                if (content.type === 'invite') {
-                    $app.inviteDownloadWorldCache(content);
-                }
+                break;
+
+            case 'notification-see':
+                this.$emit('NOTIFICATION:SEE', {
+                    params: {
+                        notificationId: content.notificationId
+                    }
+                });
                 break;
 
             case 'friend-add':
@@ -4706,6 +4712,9 @@ speechSynthesis.getVoices();
         var item = this.$refs.menu.items[index];
         if (item) {
             item.$el.classList.remove('notify');
+        }
+        if (index === 'notification') {
+            this.unseenNotifications = [];
         }
     };
 
@@ -7008,6 +7017,8 @@ speechSynthesis.getVoices();
         $app.notificationTable.data = [];
     });
 
+    $app.data.unseenNotifications = [];
+
     API.$on('NOTIFICATION', function (args) {
         var { ref } = args;
         var array = $app.notificationTable.data;
@@ -7024,9 +7035,20 @@ speechSynthesis.getVoices();
         }
         if (ref.$isDeleted === false) {
             $app.notificationTable.data.push(ref);
-            $app.notifyMenu('notification');
+            if (ref.senderUserId !== this.currentUser.id) {
+                $app.notifyMenu('notification');
+                $app.unseenNotifications.push(ref.id);
+            }
         }
         $app.updateSharedFeed(true);
+    });
+
+    API.$on('NOTIFICATION:SEE', function (args) {
+        var { notificationId } = args.params;
+        removeFromArray($app.unseenNotifications, notificationId);
+        if ($app.unseenNotifications.length === 0) {
+            $app.selectMenu('notification');
+        }
     });
 
     API.$on('NOTIFICATION:@DELETE', function (args) {
