@@ -7576,6 +7576,7 @@ speechSynthesis.getVoices();
         } else {
             API.currentUser.$online_for = '';
             API.currentUser.$offline_for = Date.now();
+            this.autoVRChatCacheManagement();
         }
     };
     $app.watch.isGameRunning = isGameRunningStateChange;
@@ -12015,7 +12016,8 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.checkVRChatCache = async function (ref) {
-        return await AssetBundleCacher.CheckVRChatCache(ref.id, ref.version, await this.getVRChatCacheDir());
+        var cacheDir = await this.getVRChatCacheDir();
+        return await AssetBundleCacher.CheckVRChatCache(ref.id, ref.version, cacheDir);
     };
 
     $app.methods.queueCacheDownload = function (ref, type) {
@@ -12346,12 +12348,8 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.deleteVRChatCache = async function (ref) {
-        await this.readVRChatConfigFile();
-        var cacheDirectory = '';
-        if (this.VRChatConfigFile.cache_directory) {
-            cacheDirectory = this.VRChatConfigFile.cache_directory;
-        }
-        await AssetBundleCacher.DeleteCache(cacheDirectory, ref.id, ref.version);
+        var cacheDir = await this.getVRChatCacheDir();
+        await AssetBundleCacher.DeleteCache(cacheDir, ref.id, ref.version);
         this.getVRChatCacheSize();
         this.updateVRChatCache();
     };
@@ -12370,22 +12368,20 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.deleteAllVRChatCache = async function () {
-        await this.readVRChatConfigFile();
-        var cacheDirectory = '';
-        if (this.VRChatConfigFile.cache_directory) {
-            cacheDirectory = this.VRChatConfigFile.cache_directory;
-        }
-        await AssetBundleCacher.DeleteAllCache(cacheDirectory);
+        var cacheDir = await this.getVRChatCacheDir();
+        await AssetBundleCacher.DeleteAllCache(cacheDir);
         this.getVRChatCacheSize();
     };
 
-    $app.methods.sweepVRChatCache = async function () {
-        await this.readVRChatConfigFile();
-        var cacheDirectory = '';
-        if (this.VRChatConfigFile.cache_directory) {
-            cacheDirectory = this.VRChatConfigFile.cache_directory;
+    $app.methods.autoVRChatCacheManagement = function () {
+        if (this.autoSweepVRChatCache) {
+            this.sweepVRChatCache();
         }
-        await AssetBundleCacher.SweepCache(cacheDirectory);
+    };
+
+    $app.methods.sweepVRChatCache = async function () {
+        var cacheDir = await this.getVRChatCacheDir();
+        await AssetBundleCacher.SweepCache(cacheDir);
         if (this.VRChatConfigDialog.visible) {
             this.getVRChatCacheSize();
         }
@@ -12397,17 +12393,13 @@ speechSynthesis.getVoices();
 
     $app.methods.getVRChatCacheSize = async function () {
         this.VRChatCacheSizeLoading = true;
-        await this.readVRChatConfigFile();
-        var cacheDirectory = '';
-        if (this.VRChatConfigFile.cache_directory) {
-            cacheDirectory = this.VRChatConfigFile.cache_directory;
-        }
+        var cacheDir = await this.getVRChatCacheDir();
         var totalCacheSize = 20;
         if (this.VRChatConfigFile.cache_size) {
             totalCacheSize = this.VRChatConfigFile.cache_size;
         }
         this.VRChatTotalCacheSize = totalCacheSize;
-        var usedCacheSize = await AssetBundleCacher.GetCacheSize(cacheDirectory);
+        var usedCacheSize = await AssetBundleCacher.GetCacheSize(cacheDir);
         this.VRChatUsedCacheSize = (usedCacheSize / 1073741824).toFixed(2);
         this.VRChatCacheSizeLoading = false;
     };
