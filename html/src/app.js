@@ -2884,7 +2884,7 @@ speechSynthesis.getVoices();
     };
 
     API.buildFavoriteGroups = function () {
-        // 96 = ['group_0', 'group_1', 'group_2'] x 32
+        // 192 = ['group_0', 'group_1', 'group_2'] x 64
         this.favoriteFriendGroups = [];
         for (var i = 0; i < 3; ++i) {
             this.favoriteFriendGroups.push({
@@ -2893,12 +2893,12 @@ speechSynthesis.getVoices();
                 type: 'friend',
                 name: `group_${i}`,
                 displayName: `Group ${i + 1}`,
-                capacity: 32,
+                capacity: 64,
                 count: 0,
                 visibility: 'private'
             });
         }
-        // 128 = ['worlds1', 'worlds2', 'worlds3', 'worlds4'] x 32
+        // 256 = ['worlds1', 'worlds2', 'worlds3', 'worlds4'] x 64
         this.favoriteWorldGroups = [];
         for (var i = 0; i < 4; ++i) {
             this.favoriteWorldGroups.push({
@@ -2907,7 +2907,7 @@ speechSynthesis.getVoices();
                 type: 'world',
                 name: `worlds${i + 1}`,
                 displayName: `Group ${i + 1}`,
-                capacity: 32,
+                capacity: 64,
                 count: 0,
                 visibility: 'private'
             });
@@ -12438,7 +12438,7 @@ speechSynthesis.getVoices();
                 continue;
             }
             var params = {
-                n: 50,
+                n: 100,
                 offset: 0,
                 userId,
                 tag: list.name
