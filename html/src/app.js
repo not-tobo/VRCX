@@ -416,9 +416,6 @@ speechSynthesis.getVoices();
                 }
                 throw new Error('401: Missing Credentials');
             }
-            if ((status === 403) && (data.error.message === '403 You can\'t see another user\'s favorites') ) {
-                throw new Error('403: User\'s avatar list isn\'t public');
-            }
             if (data.error === Object(data.error)) {
                 this.$throw(
                     data.error.status_code || status,
@@ -5291,11 +5288,17 @@ speechSynthesis.getVoices();
         }
     };
 
+    $app.data.updateFriendInProgress = new Set();
+
     $app.methods.updateFriend = async function (id, state, origin) {
         var ctx = this.friends.get(id);
         if (typeof ctx === 'undefined') {
             return;
         }
+        if (this.updateFriendInProgress.has(id)) {
+            return;
+        }
+        this.updateFriendInProgress.add(id);
         var ref = API.cachedUsers.get(id);
         var isVIP = API.cachedFavoritesByObjectId.has(id);
         if (typeof state === 'undefined' ||
@@ -5369,10 +5372,13 @@ speechSynthesis.getVoices();
                 ref.location !== 'private') {
                 API.getUser({
                     userId: id
+                }).catch((err) => {
+                    this.updateFriendInProgress.remove(id);
                 });
             }
         } else {
             if (ctx.state === 'online' && state === 'active') {
+                this.updateFriendInProgress.delete(id);
                 await new Promise(resolve => setTimeout(resolve, 50000));
                 if (this.APILastOnline.has(id)) {
                     var date = this.APILastOnline.get(id);
@@ -5396,9 +5402,16 @@ speechSynthesis.getVoices();
                 removeFromArray(this.friendsGroup3_, ctx);
                 removeFromArray(this.friendsGroupD_, ctx);
             }
-            var { location, $location_at } = ref;
+            var location = '';
+            var $location_at = '';
+            if ((typeof ref !== 'undefined') &&
+                (typeof ref.location !== 'undefined')) {
+                var { location, $location_at } = ref;
+            }
             var args = await API.getUser({
                 userId: id
+            }).catch((err) => {
+                this.updateFriendInProgress.remove(id);
             });
             if ((typeof args !== 'undefined') &&
                 (typeof args.ref !== 'undefined')) {
@@ -5463,6 +5476,7 @@ speechSynthesis.getVoices();
                 this.friendsGroupD_.unshift(ctx);
             }
         }
+        this.updateFriendInProgress.delete(id);
     };
 
     // ascending
