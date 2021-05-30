@@ -4435,7 +4435,9 @@ speechSynthesis.getVoices();
                 console.error(err);
                 return false;
             }).then((args) => {
-                if ((this.displayVRCPlusIconsAsAvatar) && (args.json.userIcon)) {
+                if ((this.displayProfilePicOverrideAsAvatar) && (args.json.profilePicOverride)) {
+                    return args.json.profilePicOverride;
+                } else if ((this.displayVRCPlusIconsAsAvatar) && (args.json.userIcon)) {
                     return args.json.userIcon;
                 }
                 return args.json.currentAvatarThumbnailImageUrl;
@@ -7271,6 +7273,7 @@ speechSynthesis.getVoices();
     $app.data.desktopToast = configRepository.getString('VRCX_desktopToast');
     $app.data.minimalFeed = configRepository.getBool('VRCX_minimalFeed');
     $app.data.displayVRCPlusIconsAsAvatar = configRepository.getBool('displayVRCPlusIconsAsAvatar');
+    $app.data.displayProfilePicOverrideAsAvatar = configRepository.getBool('VRCX_displayProfilePicOverrideAsAvatar');
     $app.data.notificationTTS = configRepository.getString('VRCX_notificationTTS');
     $app.data.notificationTTSVoice = configRepository.getString('VRCX_notificationTTSVoice');
     $app.data.notificationTimeout = configRepository.getString('VRCX_notificationTimeout');
@@ -7291,6 +7294,7 @@ speechSynthesis.getVoices();
         configRepository.setString('VRCX_desktopToast', this.desktopToast);
         configRepository.setBool('VRCX_minimalFeed', this.minimalFeed);
         configRepository.setBool('displayVRCPlusIconsAsAvatar', this.displayVRCPlusIconsAsAvatar);
+        configRepository.setBool('VRCX_displayProfilePicOverrideAsAvatar', this.displayProfilePicOverrideAsAvatar);
         configRepository.setString('VRCX_worldAutoCacheInvite', this.worldAutoCacheInvite);
         configRepository.setString('VRCX_worldAutoCacheGPS', this.worldAutoCacheGPS);
         configRepository.setBool('VRCX_worldAutoCacheInviteFilter', this.worldAutoCacheInviteFilter);
@@ -7318,6 +7322,7 @@ speechSynthesis.getVoices();
     $app.watch.desktopToast = saveOpenVROption;
     $app.watch.minimalFeed = saveOpenVROption;
     $app.watch.displayVRCPlusIconsAsAvatar = saveOpenVROption;
+    $app.watch.displayProfilePicOverrideAsAvatar = saveOpenVROption;
     $app.watch.worldAutoCacheInvite = saveOpenVROption;
     $app.watch.worldAutoCacheGPS = saveOpenVROption;
     $app.watch.worldAutoCacheInviteFilter = saveOpenVROption;
@@ -7348,10 +7353,6 @@ speechSynthesis.getVoices();
     $app.watch.isAutoLogin = saveVRCXWindowOption;
 
     // setting defaults
-    if (configRepository.getBool('displayVRCPlusIconsAsAvatar') === null) {
-        $app.data.displayVRCPlusIconsAsAvatar = true;
-        configRepository.setBool('displayVRCPlusIconsAsAvatar', $app.data.displayVRCPlusIconsAsAvatar);
-    }
     if (!configRepository.getString('VRCX_notificationPosition')) {
         $app.data.notificationPosition = 'topCenter';
         configRepository.setString('VRCX_notificationPosition', $app.data.notificationPosition);
@@ -7641,7 +7642,6 @@ speechSynthesis.getVoices();
             xsNotifications: this.xsNotifications,
             hideDevicesFromFeed: this.hideDevicesFromFeed,
             minimalFeed: this.minimalFeed,
-            displayVRCPlusIconsAsAvatar: this.displayVRCPlusIconsAsAvatar,
             notificationPosition: this.notificationPosition,
             notificationTimeout: this.notificationTimeout,
             notificationTheme
