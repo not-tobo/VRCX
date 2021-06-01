@@ -5512,7 +5512,6 @@ speechSynthesis.getVoices();
         }
         var ctx = this.friends.get(userId);
         if ((typeof ctx.ref !== 'undefined') &&
-            (ctx.ref.location !== 'private') &&
             (ctx.state === 'online')) {
             if (ctx.isVIP) {
                 removeFromArray(this.friendsGroupA_, ctx);
@@ -8444,13 +8443,19 @@ speechSynthesis.getVoices();
         }
         users.sort(compareByLocationAt);
         D.users = users;
-        if (!L.worldId) {
-            return;
-        }
-        if (this.lastLocation.location === L.tag) {
+        if ((L.worldId) &&
+            (this.lastLocation.location === D.ref.location)) {
             D.instance = {
-                id: L.tag,
+                id: D.ref.location,
                 occupants: this.lastLocation.playerList.length
+            };
+        }
+        if ((L.isOffline) ||
+            (L.isPrivate) ||
+            (L.worldId === '')) {
+            D.instance = {
+                id: D.ref.location,
+                occupants: 0
             };
         }
     };
@@ -8989,16 +8994,13 @@ speechSynthesis.getVoices();
         }
         var lastLocation$ = API.parseLocation(this.lastLocation.location);
         var playersInInstance = this.lastLocation.playerList;
-        if ((lastLocation$.worldId === D.id) && (playersInInstance.length > 0)) {
-            var instance = instances[lastLocation$.instanceId];
-            if (typeof instance === 'undefined') {
-                instance = {
-                    id: lastLocation$.instanceId,
-                    occupants: playersInInstance.length,
-                    users: []
-                };
-                instances[instance.id] = instance;
-            }
+        if (lastLocation$.worldId === D.id) {
+            instance = {
+                id: lastLocation$.instanceId,
+                occupants: playersInInstance.length,
+                users: []
+            };
+            instances[instance.id] = instance;
             var ref = API.cachedUsers.get(API.currentUser.id);
             if (typeof ref === 'undefined') {
                 ref = API.currentUser;
