@@ -6055,7 +6055,7 @@ speechSynthesis.getVoices();
         }
 
         async function youtubeAPI(videoID) {
-            if ((!$app.appInit) || (!$app.isGameRunning)) {
+            if ((!this.youtubeAPI) || (!this.appInit) || (!this.isGameRunning)) {
                 return;
             }
             var youtubeAPIKey = '';
@@ -6140,18 +6140,33 @@ speechSynthesis.getVoices();
                     break;
 
                 case 'video-change':
-                    var videoobj = {};
-                    videoobj.videoURL = gameLog.videoURL;
-                    videoobj.playerRequest = gameLog.playerRequest;
-                    videoobj.playerPlayer = gameLog.playerPlayer;
-                    videoobj.videoName = videoobj.videoURL;
-                    videoobj.videoID = '';
-                    videoobj.playerYeet = '';
-                    videoobj.videoVolume = '';
-                    if (videoobj.videoURL.substring(0, 23) === "http://storage.llss.io/") {
-                        videoobj.fileName = videoobj.videoURL.substring(23);
+                    var videoobj = {
+                        videoURL: gameLog.videoURL,
+                        playerRequest: gameLog.playerRequest,
+                        playerPlayer: gameLog.playerPlayer,
+                        videoName: gameLog.videoURL,
+                        videoID: '',
+                        playerYeet: '',
+                        videoVolume: ''
+                    };
+                    var videoID = '';
+                    if ((videoobj.playerPlayer != '') && (videoobj.playerRequest != '') && (videoobj.playerPlayer != videoobj.playerRequest) &&
+                        (videoobj.videoURL.substring(0, 23) === "http://storage.llss.io/")) {
+                        videoobj.playerYeet = videoobj.playerPlayer;
+                        videoobj.playerPlayer = videoobj.playerRequest;
+                    }
+                    if (videoobj.videoURL.substring(0, 29) === "https://www.youtube.com/watch") {
+                        var videoParams = videoobj.videoURL.substring(29);
+                        var urlParams = new URLSearchParams(videoParams);
+                        videoID = urlParams.get('v');
+                    } else if (videoobj.videoURL.substring(0, 17) === "https://youtu.be/") {
+                        videoID = videoobj.videoURL.substring(17, 28);
+                    } else if (videoobj.videoURL.substring(0, 23) === "http://storage.llss.io/") {
+                        videoID = videoobj.videoURL.substring(23).slice(0, -4);
+                    }
+                    if (videoID) {
                         for (var video of PyPyVideosTable) {
-                            if (video.File_Name === videoobj.fileName) {
+                            if (video.File_Name === `${videoID}.mp4`) {
                                 videoobj.videoName = video.Video_Name;
                                 videoobj.videoID = video.Video_ID;
                                 videoobj.videoLength = video.Video_Length;
@@ -6159,25 +6174,9 @@ speechSynthesis.getVoices();
                                 break;
                             }
                         }
-                        if (videoobj.videoID == '') {
-                            var videoID = videoobj.videoURL.substring(23, 34);
+                        if (!videoobj.videoID) {
                             await youtubeAPI(videoID);
                         }
-                    }
-                    else if ((videoobj.videoURL.substring(0, 29) === "https://www.youtube.com/watch") && (this.youtubeAPI)) {
-                        var videoParams = videoobj.videoURL.substring(29);
-                        var urlParams = new URLSearchParams(videoParams);
-                        var videoID = urlParams.get('v');
-                        await youtubeAPI(videoID);
-                    }
-                    else if ((videoobj.videoURL.substring(0, 17) === "https://youtu.be/") && (this.youtubeAPI)) {
-                        var videoID = videoobj.videoURL.substring(17, 28);
-                        await youtubeAPI(videoID);
-                    }
-                    if ((videoobj.playerPlayer != '') && (videoobj.playerRequest != '') && (videoobj.playerPlayer != videoobj.playerRequest) &&
-                        (videoobj.videoURL.substring(0, 23) === "http://storage.llss.io/")) {
-                        videoobj.playerYeet = videoobj.playerPlayer;
-                        videoobj.playerPlayer = videoobj.playerRequest;
                     }
                     tableData = {
                         created_at: gameLog.dt,
