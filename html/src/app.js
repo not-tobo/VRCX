@@ -5112,16 +5112,24 @@ speechSynthesis.getVoices();
     $app.data.orderFriendsGroup1 = configRepository.getBool('orderFriendGroup1');
     $app.data.orderFriendsGroup2 = configRepository.getBool('orderFriendGroup2');
     $app.data.orderFriendsGroup3 = configRepository.getBool('orderFriendGroup3');
+    $app.data.orderFriendsGroupPrivate = configRepository.getBool('orderFriendGroupPrivate');
+    $app.data.orderFriendsGroupGPS = configRepository.getBool('orderFriendGroupGPS');
     var saveOrderFriendGroup = function () {
         configRepository.setBool('orderFriendGroup0', this.orderFriendsGroup0);
         configRepository.setBool('orderFriendGroup1', this.orderFriendsGroup1);
         configRepository.setBool('orderFriendGroup2', this.orderFriendsGroup2);
         configRepository.setBool('orderFriendGroup3', this.orderFriendsGroup3);
+        configRepository.setBool('orderFriendGroupPrivate', this.orderFriendsGroupPrivate);
+        configRepository.setBool('orderFriendGroupGPS', this.orderFriendsGroupGPS);
+        this.sortFriendsGroup0 = true;
+        this.sortFriendsGroup1 = true;
     };
     $app.watch.orderFriendsGroup0 = saveOrderFriendGroup;
     $app.watch.orderFriendsGroup1 = saveOrderFriendGroup;
     $app.watch.orderFriendsGroup2 = saveOrderFriendGroup;
     $app.watch.orderFriendsGroup3 = saveOrderFriendGroup;
+    $app.watch.orderFriendsGroupPrivate = saveOrderFriendGroup;
+    $app.watch.orderFriendsGroupGPS = saveOrderFriendGroup;
 
     $app.methods.fetchActiveFriend = function (userId) {
         this.pendingActiveFriends.add(userId);
@@ -5499,6 +5507,9 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.updateFriendGPS = function (userId) {
+        if (!this.orderFriendsGroupGPS) {
+            return;
+        }
         var ctx = this.friends.get(userId);
         if ((typeof ctx.ref !== 'undefined') &&
             (ctx.ref.location !== 'private') &&
@@ -5552,14 +5563,46 @@ speechSynthesis.getVoices();
         return 0;
     };
 
+    // private
+    var compareByPrivate = function (a, b) {
+        if ((typeof a.ref === 'undefined') || (typeof b.ref === 'undefined')) {
+            return 0;
+        }
+        if ((a.ref.location === 'private') && (b.ref.location === 'private')) {
+            return 0;
+        } else if (a.ref.location === 'private') {
+            return 1;
+        } else if (b.ref.location === 'private') {
+            return -1;
+        }
+        return 0;
+    };
+
+    // location at
+    var compareByLocationAt = function (a, b) {
+        if (a.$location_at < b.$location_at) {
+            return -1;
+        }
+        if (a.$location_at > b.$location_at) {
+            return 1;
+        }
+        return 0;
+    };
+
     // VIP friends
     $app.computed.friendsGroup0 = function () {
         if (this.orderFriendsGroup0) {
+            if (this.orderFriendsGroupPrivate) {
+                this.friendsGroupA_.sort(compareByPrivate);
+            }
             return this.friendsGroupA_;
         }
         if (this.sortFriendsGroup0) {
             this.sortFriendsGroup0 = false;
             this.friendsGroup0_.sort(compareByName);
+            if (this.orderFriendsGroupPrivate) {
+                this.friendsGroup0_.sort(compareByPrivate);
+            }
         }
         return this.friendsGroup0_;
     };
@@ -5567,11 +5610,17 @@ speechSynthesis.getVoices();
     // Online friends
     $app.computed.friendsGroup1 = function () {
         if (this.orderFriendsGroup1) {
+            if (this.orderFriendsGroupPrivate) {
+                this.friendsGroupB_.sort(compareByPrivate);
+            }
             return this.friendsGroupB_;
         }
         if (this.sortFriendsGroup1) {
             this.sortFriendsGroup1 = false;
             this.friendsGroup1_.sort(compareByName);
+            if (this.orderFriendsGroupPrivate) {
+                this.friendsGroup1_.sort(compareByPrivate);
+            }
         }
         return this.friendsGroup1_;
     };
@@ -8393,7 +8442,7 @@ speechSynthesis.getVoices();
                 }
             }
         }
-        users.sort(compareByDisplayName);
+        users.sort(compareByLocationAt);
         D.users = users;
         if (!L.worldId) {
             return;
@@ -9017,8 +9066,19 @@ speechSynthesis.getVoices();
                     L.user = ref;
                 }
             }
-            instance.users.sort(compareByDisplayName);
+            instance.users.sort(compareByLocationAt);
             rooms.push(instance);
+        }
+        // reuse instance occupants from getInstance
+        for (var room of rooms) {
+            if (room.occupants === 0) {
+                for (var instance of D.rooms) {
+                    if (instance.id === room.id) {
+                        room.occupants = instance.occupants;
+                        break;
+                    }
+                }
+            }
         }
         // sort by more friends, occupants
         rooms.sort(function (a, b) {
