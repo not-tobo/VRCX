@@ -1034,7 +1034,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 this.nowPlayingobj.videoProgressText = sec2time(videoProgress);
                 percentage = Math.floor((((videoLength - videoProgress) * 100) / videoLength) * 100) / 100;
                 if ((this.appType === '2') && (this.nowPlayingobj.videoName) && (configRepository.getBool('discordActive'))) {
-                    var requestedBy = '';
+                    var requestedBy = 'Players: ';
                     if (this.nowPlayingobj.playerPlayer !== '') { requestedBy = 'Requested by: ' + this.nowPlayingobj.playerPlayer; }
                     if (L.worldId === 'wrld_f20326da-f1ac-45fc-a062-609723b097b1') {
                         var discordAppId = "784094509008551956";

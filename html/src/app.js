@@ -6104,7 +6104,7 @@ speechSynthesis.getVoices();
         }
 
         async function youtubeAPI(videoID) {
-            if ((!this.youtubeAPI) || (!this.appInit) || (!this.isGameRunning)) {
+            if ((!$app.youtubeAPI) || (!$app.appInit) || (!$app.isGameRunning)) {
                 return;
             }
             var youtubeAPIKey = '';
