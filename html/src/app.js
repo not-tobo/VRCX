@@ -7236,8 +7236,8 @@ speechSynthesis.getVoices();
         },
         layout: 'table'
     };
-    $app.data.VRCPlusIconsTable = {};
-    $app.data.galleryTable = {};
+    $app.data.VRCPlusIconsTable = [];
+    $app.data.galleryTable = [];
     $app.data.inviteMessageTable = {
         visible: false,
         data: [],
@@ -10161,7 +10161,7 @@ speechSynthesis.getVoices();
     };
 
     API.$on('LOGIN', function () {
-        $app.VRCPlusIconsTable = {};
+        $app.VRCPlusIconsTable = [];
     });
 
     $app.methods.refreshVRCPlusIconsTable = function () {
@@ -10189,7 +10189,7 @@ speechSynthesis.getVoices();
 
     API.$on('FILES:LIST', function (args) {
         if (args.params.tag === 'icon') {
-            $app.VRCPlusIconsTable = args.json;
+            $app.VRCPlusIconsTable = args.json.reverse();
             $app.galleryDialogIconsLoading = false;
         }
     });
@@ -13037,7 +13037,7 @@ speechSynthesis.getVoices();
     $app.data.galleryDialogIconsLoading = false;
 
     API.$on('LOGIN', function () {
-        $app.galleryTable = {};
+        $app.galleryTable = [];
     });
 
     $app.methods.showGalleryDialog = function () {
@@ -13057,7 +13057,7 @@ speechSynthesis.getVoices();
 
     API.$on('FILES:LIST', function (args) {
         if (args.params.tag === 'gallery') {
-            $app.galleryTable = args.json;
+            $app.galleryTable = args.json.reverse();
             $app.galleryDialogGalleryLoading = false;
         }
     });
