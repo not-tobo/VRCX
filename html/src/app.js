@@ -5403,7 +5403,7 @@ speechSynthesis.getVoices();
                 API.getUser({
                     userId: id
                 }).catch((err) => {
-                    this.updateFriendInProgress.remove(id);
+                    this.updateFriendInProgress.delete(id);
                 });
             }
         } else {
@@ -5426,7 +5426,7 @@ speechSynthesis.getVoices();
             var args = await API.getUser({
                 userId: id
             }).catch((err) => {
-                this.updateFriendInProgress.remove(id);
+                this.updateFriendInProgress.delete(id);
             });
             if ((typeof args !== 'undefined') &&
                 (typeof args.ref !== 'undefined')) {
@@ -9924,6 +9924,7 @@ speechSynthesis.getVoices();
                 worldId: L.tag,
                 worldName: args.ref.name
             }, API.currentUser.id).finally(() => {
+                this.newInstanceDialog.visible = false;
                 this.$message({
                     message: 'Invite sent to yourself',
                     type: 'success'
