@@ -1241,9 +1241,6 @@ speechSynthesis.getVoices();
             if (ref.location !== ref.$location.tag) {
                 ref.$location = this.parseLocation(ref.location);
             }
-            if (ref.statusDescription) {
-                ref.statusDescription = ref.statusDescription.substring(0, 32);
-            }
             ref.$isVRCPlus = ref.tags.includes('system_supporter');
             this.applyUserTrustLevel(ref);
             this.applyUserLanguage(ref);
@@ -5407,7 +5404,8 @@ speechSynthesis.getVoices();
                 });
             }
         } else {
-            if (ctx.state === 'online' && newState === 'active') {
+            //prevent status flapping
+            if ((ctx.state === 'online') && ((newState === 'active') || (newState === 'offline'))) {
                 this.updateFriendInProgress.delete(id);
                 await new Promise(resolve => setTimeout(resolve, 50000));
                 if (this.APILastOnline.has(id)) {
@@ -11789,12 +11787,13 @@ speechSynthesis.getVoices();
     $app.methods.displayPreviousImages = function (type, command) {
         this.previousImagesTableFileId = '';
         this.previousImagesTable = '';
+        var imageUrl = '';
         if (type === 'Avatar') {
             var { imageUrl } = this.avatarDialog.ref;
         } else if (type === 'World') {
             var { imageUrl } = this.worldDialog.ref;
         } else if (type === 'User') {
-            var imageUrl = this.userDialog.ref.currentAvatarImageUrl;
+            imageUrl = this.userDialog.ref.currentAvatarImageUrl;
         }
         var fileId = extractFileId(imageUrl);
         if (!fileId) {
@@ -11814,7 +11813,7 @@ speechSynthesis.getVoices();
             }
             API.getAvatarImages(params).then((args) => {
                 this.previousImagesTableFileId = args.json.id;
-                var images = args.json.versions;
+                var images = args.json.versions.reverse();
                 this.checkPreviousImageAvailable(images, command);
             });
         } else if (type === 'World') {
@@ -11824,13 +11823,13 @@ speechSynthesis.getVoices();
             }
             API.getWorldImages(params).then((args) => {
                 this.previousImagesTableFileId = args.json.id;
-                var images = args.json.versions;
+                var images = args.json.versions.reverse();
                 this.checkPreviousImageAvailable(images, command);
             });
         } else if (type === 'User') {
             API.getAvatarImages(params).then((args) => {
                 this.previousImagesTableFileId = args.json.id;
-                var images = args.json.versions;
+                var images = args.json.versions.reverse();
                 this.checkPreviousImageAvailable(images, command);
             });
         }
@@ -12726,6 +12725,11 @@ speechSynthesis.getVoices();
     $app.data.downloadIsProcessing = false;
     $app.data.downloadQueue = new Map();
     $app.data.downloadCurrent = {};
+
+    var downloadProgressUpdateWrist = function () {
+        sharedRepository.setInt('downloadProgress', this.downloadProgress);
+    };
+    $app.watch.downloadProgress = downloadProgressUpdateWrist;
 
     $app.methods.downloadVRChatCacheProgress = async function () {
         var downloadProgress = await AssetBundleCacher.CheckDownloadProgress();
