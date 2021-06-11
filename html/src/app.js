@@ -266,7 +266,14 @@ speechSynthesis.getVoices();
         hun: 'Magyar',
         ces: 'Čeština',
         tur: 'Türkçe',
-        ara: 'العربية'
+        ara: 'العربية',
+        ron: 'Română',
+        vie: 'Tiếng Việt',
+        ase: 'American Sign Language',
+        bfi: 'British Sign Language',
+        dse: 'Dutch Sign Language',
+        fsl: 'French Sign Language',
+        kvk: 'Korean Sign Language'
     };
 
     // vrchat to famfamfam
@@ -291,7 +298,9 @@ speechSynthesis.getVoices();
         hun: 'hu',
         ces: 'cz',
         tur: 'tr',
-        ara: 'ae'
+        ara: 'ae',
+        ron: 'ro',
+        vie: 'vn'
     };
 
     //
