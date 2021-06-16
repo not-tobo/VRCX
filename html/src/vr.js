@@ -395,6 +395,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             instanceId: '',
             instanceName: '',
             accessType: '',
+            region: '',
             userId: null,
             hiddenId: null,
             privateId: null,
@@ -430,6 +431,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
                             ctx.friendsId = value;
                         } else if (key === 'canRequestInvite') {
                             ctx.canRequestInvite = true;
+                        } else if (key === 'region') {
+                            ctx.region = value;
                         }
                     } else {
                         ctx.instanceName = s;
