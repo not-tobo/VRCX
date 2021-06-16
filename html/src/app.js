@@ -7568,6 +7568,8 @@ speechSynthesis.getVoices();
         configRepository.setString('sharedFeedFilters', JSON.stringify(sharedFeedFilters));
     }
     $app.data.sharedFeedFilters = JSON.parse(configRepository.getString('sharedFeedFilters'));
+    $app.data.sharedFeedFilters.noty.VideoChange = 'On';
+    $app.data.sharedFeedFilters.wrist.VideoChange = 'On';
 
     var toggleSwitchLayout = {
         backgroundColor: 'white',
