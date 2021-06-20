@@ -465,7 +465,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
     };
 
     Vue.component('location', {
-        template: '<span>{{ text }}<slot></slot></span>',
+        template: '<span>{{ text }}<slot></slot><span class="famfamfam-flags" :class="region" style="display:inline-block;margin-left:5px"></span></span>',
         props: {
             location: String,
             hint: {
@@ -475,7 +475,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
         },
         data() {
             return {
-                text: this.location
+                text: this.location,
+                region: this.region
             };
         },
         methods: {
@@ -510,6 +511,16 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         this.text = `${ref.name} #${L.instanceName} ${L.accessType}`;
                     } else {
                         this.text = ref.name;
+                    }
+                }
+                this.region = '';
+                if ((this.location !== '') && (!L.isOffline) && (!L.isPrivate)) {
+                    if (L.region === 'eu') {
+                        this.region = 'europeanunion';
+                    } else if (L.region === 'jp') {
+                        this.region = 'jp';
+                    } else {
+                        this.region = 'us';
                     }
                 }
             }
