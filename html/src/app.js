@@ -788,6 +788,7 @@ speechSynthesis.getVoices();
         },
         methods: {
             parse() {
+                this.text = this.location;
                 var L = API.parseLocation(this.location);
                 if (L.isOffline) {
                     this.text = 'Offline';
@@ -6032,7 +6033,8 @@ speechSynthesis.getVoices();
         if ((props.location) &&
             (props.location[0] !== 'offline') &&
             (props.location[0] !== '') &&
-            ((props.location[1] !== 'offline') && (props.location[0] !== 'private'))) {
+            (props.location[1] !== 'offline') &&
+            (props.location[1] !== '')) {
             $app.addFeed('GPS', ref, {
                 location: [
                     props.location[0],
