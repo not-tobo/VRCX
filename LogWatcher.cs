@@ -186,33 +186,30 @@ namespace VRCX
                                 continue;
                             }
 
-                            if (line[34] == '[')
+                            var offset = 34;
+                            if (line[offset] == '[')
                             {
-                                var offset = line.IndexOf("] ", 35, StringComparison.Ordinal);
-                                if (offset >= 35)
+                                if (ParseLogOnPlayerJoinedOrLeft(fileInfo, logContext, line, offset) == true ||
+                                    ParseLogLocation(fileInfo, logContext, line, offset) == true ||
+                                    ParseLogPortalSpawn(fileInfo, logContext, line, offset) == true ||
+                                    ParseLogNotification(fileInfo, logContext, line, offset) == true ||
+                                    ParseLogJoinBlocked(fileInfo, logContext, line, offset) == true ||
+                                    ParseLogAvatarPedestalChange(fileInfo, logContext, line, offset) == true ||
+                                    ParseLogVideoError(fileInfo, logContext, line, offset) == true ||
+                                    ParseLogVideoChange(fileInfo, logContext, line, offset) == true ||
+                                    ParseLogVideoBeep(fileInfo, logContext, line, offset) == true ||
+                                    ParseLogPlayDanceStart(fileInfo, logContext, line, offset) == true)
                                 {
-                                    offset += 2;
-                                    if (ParseLogOnPlayerJoinedOrLeft(fileInfo, logContext, line, offset) == true ||
-                                        ParseLogLocation(fileInfo, logContext, line, offset) == true ||
-                                        ParseLogPortalSpawn(fileInfo, logContext, line, offset) == true ||
-                                        ParseLogNotification(fileInfo, logContext, line, offset) == true ||
-                                        ParseLogJoinBlocked(fileInfo, logContext, line, offset) == true ||
-                                        ParseLogAvatarPedestalChange(fileInfo, logContext, line, offset) == true ||
-                                        ParseLogVideoError(fileInfo, logContext, line, offset) == true ||
-                                        ParseLogVideoChange(fileInfo, logContext, line, offset) == true ||
-                                        ParseLogVideoBeep(fileInfo, logContext, line, offset) == true ||
-                                        ParseLogPlayDanceStart(fileInfo, logContext, line, offset) == true)
-                                    {
-                                        continue;
-                                    }
+                                    continue;
                                 }
-                                continue;
                             }
-
-                            if (ParseLogShaderKeywordsLimit(fileInfo, logContext, line, 34) == true ||
-                                ParseLogSDK2VideoPlay(fileInfo, logContext, line, 34) == true)
+                            else
                             {
-                                continue;
+                                if (ParseLogShaderKeywordsLimit(fileInfo, logContext, line, offset) == true ||
+                                    ParseLogSDK2VideoPlay(fileInfo, logContext, line, offset) == true)
+                                {
+                                    continue;
+                                }
                             }
                         }
                     }
@@ -263,17 +260,18 @@ namespace VRCX
             // 2020.10.31 23:36:31 Log        -  [RoomManager] Joining or Creating Room: VRChat Home
             // 2020.10.31 23:36:31 Log        -  [RoomManager] Successfully joined room
             // 2021.02.03 10:18:58 Log        -  [ǄǄǅǅǅǄǄǅǅǄǅǅǅǅǄǄǄǅǅǄǄǅǅǅǅǄǅǅǅǅǄǄǄǄǄǅǄǅǄǄǄǅǅǄǅǅǅ] Destination fetching: wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd
+            // 2021.06.23 12:02:56 Log        -  [Behaviour] Entering Room: VRChat Home
 
-            if (string.Compare(line, offset, "Entering Room: ", 0, 15, StringComparison.Ordinal) == 0)
+            if (string.Compare(line, offset, "[Behaviour] Entering Room: ", 0, 27, StringComparison.Ordinal) == 0)
             {
-                var worldName = line.Substring(offset + 15);
+                var worldName = line.Substring(offset + 27);
                 logContext.RecentWorldName = worldName;
                 return true;
             }
 
-            if (string.Compare(line, offset, "Joining wrld_", 0, 13, StringComparison.Ordinal) == 0)
+            if (string.Compare(line, offset, "[Behaviour] Joining wrld_", 0, 25, StringComparison.Ordinal) == 0)
             {
-                var location = line.Substring(offset + 8);
+                var location = line.Substring(offset + 20);
 
                 AppendLog(new[]
                 {
@@ -303,7 +301,9 @@ namespace VRCX
             // 2020.11.01 00:07:01 Log        -  [PlayerManager] Removed player 2 / Rize♡
             // 2020.11.01 00:07:02 Log        -  [Player] Unregistering Rize♡
 
-            if (string.Compare(line, offset, "Initialized PlayerAPI \"", 0, 23, StringComparison.Ordinal) == 0)
+            // 2021.06.23 11:41:16 Log        -  [Behaviour] Initialized PlayerAPI "Natsumi-sama" is local
+
+            if (string.Compare(line, offset, "[Behaviour] Initialized PlayerAPI \"", 0, 35, StringComparison.Ordinal) == 0)
             {
                 var pos = line.LastIndexOf("\" is ");
                 if (pos < 0)
@@ -311,7 +311,7 @@ namespace VRCX
                     return false;
                 }
 
-                var userDisplayName = line.Substring(offset + 23, pos - (offset + 23));
+                var userDisplayName = line.Substring(offset + 35, pos - (offset + 35));
                 var userType = line.Substring(pos + 5);
 
                 AppendLog(new[]
@@ -342,9 +342,9 @@ namespace VRCX
                 return true;
             }*/
 
-            if (string.Compare(line, offset, "OnPlayerLeft ", 0, 13, StringComparison.Ordinal) == 0)
+            if (string.Compare(line, offset, "[Behaviour] OnPlayerLeft ", 0, 25, StringComparison.Ordinal) == 0)
             {
-                var userDisplayName = line.Substring(offset + 13);
+                var userDisplayName = line.Substring(offset + 25);
 
                 AppendLog(new[]
                 {
@@ -364,7 +364,7 @@ namespace VRCX
         {
             // 2021.04.06 11:25:45 Log        -  [Network Processing] RPC invoked ConfigurePortal on (Clone [1600004] Portals/PortalInternalDynamic) for Natsumi-sama
 
-            if (string.Compare(line, offset, "RPC invoked ConfigurePortal on (Clone [", 0, 39, StringComparison.Ordinal) != 0)
+            if (string.Compare(line, offset, "[Network Processing] RPC invoked ConfigurePortal on (Clone [", 0, 60, StringComparison.Ordinal) != 0)
             {
                 return false;
             }
@@ -419,7 +419,7 @@ namespace VRCX
         {
             // 2021.04.07 09:34:37 Error      -  [Behaviour] Master is not sending any events! Moving to a new instance.
 
-            if (string.Compare(line, offset, "Master is not sending any events! Moving to a new instance.", 0, 59, StringComparison.Ordinal) != 0)
+            if (string.Compare(line, offset, "[Behaviour] Master is not sending any events! Moving to a new instance.", 0, 71, StringComparison.Ordinal) != 0)
             {
                 return false;
             }
@@ -439,12 +439,12 @@ namespace VRCX
         {
             // 2021.05.07 10:48:19 Log        -  [Network Processing] RPC invoked SwitchAvatar on AvatarPedestal for User
 
-            if (string.Compare(line, offset, "RPC invoked SwitchAvatar on AvatarPedestal for ", 0, 47, StringComparison.Ordinal) != 0)
+            if (string.Compare(line, offset, "[Network Processing] RPC invoked SwitchAvatar on AvatarPedestal for ", 0, 68, StringComparison.Ordinal) != 0)
             {
                 return false;
             }
 
-            var data = line.Substring(offset + 47);
+            var data = line.Substring(offset + 68);
 
             AppendLog(new[]
             {
@@ -462,12 +462,12 @@ namespace VRCX
             // 2021.04.08 06:37:45 Error -  [Video Playback] ERROR: Video unavailable
             // 2021.04.08 06:40:07 Error -  [Video Playback] ERROR: Private video
 
-            if (string.Compare(line, offset, "ERROR: ", 0, 7, StringComparison.Ordinal) != 0)
+            if (string.Compare(line, offset, "[Video Playback] ERROR: ", 0, 24, StringComparison.Ordinal) != 0)
             {
                 return false;
             }
 
-            var data = line.Substring(offset + 7);
+            var data = line.Substring(offset + 24);
 
             AppendLog(new[]
             {
@@ -484,7 +484,7 @@ namespace VRCX
         {
             // 2020.10.16 14:42:33 Log        -  [Video Playback] Attempting to resolve URL 'http://storage.llss.io/yUKvv_nCpj0.mp4'
 
-            if (string.Compare(line, offset, "Attempting to resolve URL '", 0, 27, StringComparison.Ordinal) != 0)
+            if (string.Compare(line, offset, "[Video Playback] Attempting to resolve URL '", 0, 44, StringComparison.Ordinal) != 0)
             {
                 return false;
             }
@@ -494,7 +494,7 @@ namespace VRCX
             {
                 return false;
             }
-            var data = line.Substring(78);
+            var data = line.Substring(offset + 44);
             data = data.Remove(data.Length - 1);
 
             AppendLog(new[]
@@ -516,10 +516,11 @@ namespace VRCX
         {
             // 2020.10.16 14:42:31 Log        -  [UdonSync] vrcw executing Beep at the behest of Natsumi-sama
             // 2021.02.04 02:16:58 Log        -  [ǄǄǅǅǄǄǄǄǄǄǄǅǅǅǄǅǄǄǅǄǄǄǅǄǄǅǅǅǄǄǅǅǄǄǅǅǅǄǄǅǄǄǅǅǅǅǅ] vrcw executing Beep at the behest of Natsumi-sama
+            // 2021.06.21 03:01:59 Log        -  [Behaviour] vrcw executing Beep at the behest of Natsumi-sama
 
-            if (string.Compare(line, offset, "vrcw executing Beep at the behest of ", 0, 37, StringComparison.Ordinal) == 0)
+            if (string.Compare(line, offset, "[Behaviour] vrcw executing Beep at the behest of ", 0, 49, StringComparison.Ordinal) == 0)
             {
-                var data = line.Substring(offset + 37);
+                var data = line.Substring(offset + 49);
 
                 playerRequest = playerPlayer;
                 playerPlayer = data;
@@ -534,9 +535,9 @@ namespace VRCX
         {
             // 2021.05.23 04:22:07 Log        -  [Behaviour] AudioManager_DanceMenu executing PlayDanceStart at the behest of Natsumi-sama
 
-            if (string.Compare(line, offset, "AudioManager_DanceMenu executing PlayDanceStart at the behest of ", 0, 65, StringComparison.Ordinal) == 0)
+            if (string.Compare(line, offset, "[Behaviour] AudioManager_DanceMenu executing PlayDanceStart at the behest of ", 0, 77, StringComparison.Ordinal) == 0)
             {
-                var data = line.Substring(offset + 65);
+                var data = line.Substring(offset + 77);
 
                 playerRequest = String.Empty;
                 playerPlayer = data;
@@ -587,7 +588,7 @@ namespace VRCX
         {
             // 2021.01.03 05:48:58 Log        -  [API] Received Notification: < Notification from username:pypy, sender user id:usr_4f76a584-9d4b-46f6-8209-8305eb683661 to of type: friendRequest, id: not_3a8f66eb-613c-4351-bee3-9980e6b5652c, created at: 01/14/2021 15:38:40 UTC, details: {{}}, type:friendRequest, m seen:False, message: ""> received at 01/02/2021 16:48:58 UTC
 
-            if (string.Compare(line, offset, "Received Notification: <", 0, 24, StringComparison.Ordinal) != 0)
+            if (string.Compare(line, offset, "[API] Received Notification: <", 0, 30, StringComparison.Ordinal) != 0)
             {
                 return false;
             }
@@ -598,7 +599,7 @@ namespace VRCX
                 return false;
             }
 
-            var data = line.Substring(offset + 24, pos - (offset + 24));
+            var data = line.Substring(offset + 30, pos - (offset + 30));
 
             AppendLog(new[]
             {
