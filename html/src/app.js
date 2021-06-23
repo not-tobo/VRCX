@@ -848,6 +848,51 @@ speechSynthesis.getVoices();
         }
     });
 
+    Vue.component('avatar-info', {
+        template: '<div @click="confirm" style="cursor:pointer;width:fit-content;display:inline-block;vertical-align:top"><span style="display:inline-block;margin-right:5px">{{ avatarName }}</span><span :class="color">{{ avatarType }}</span></div>',
+        props: {
+            imageurl: String,
+            userid: String
+        },
+        data() {
+            return {
+                avatarName: this.avatarName,
+                avatarType: this.avatarType,
+                color: this.color
+            };
+        },
+        methods: {
+            async parse() {
+                this.avatarName = '';
+                this.avatarType = '';
+                this.color = '';
+                var avatarInfo = await $app.getAvatarName(this.imageurl);
+                this.avatarName = avatarInfo.avatarName;
+                if ((typeof this.userid === 'undefined') || (!avatarInfo.ownerId)) {
+                    this.color = 'avatar-info-unknown';
+                    this.avatarType = '(unknown)';
+                } else if (avatarInfo.ownerId === this.userid) {
+                    this.color = 'avatar-info-own';
+                    this.avatarType = '(own)';
+                } else {
+                    this.color = 'avatar-info-public';
+                    this.avatarType = '(public)';
+                }
+            },
+            confirm() {
+                $app.showAvatarAuthorDialog(this.userid, this.imageurl);
+            }
+        },
+        watch: {
+            imageurl() {
+                this.parse();
+            }
+        },
+        mounted() {
+            this.parse();
+        }
+    });
+
     // API: User
 
     // changeUserName: PUT users/${userId} {displayName: string, currentPassword: string}
@@ -8381,7 +8426,6 @@ speechSynthesis.getVoices();
         }
         D.ref = ref;
         $app.applyUserDialogLocation();
-        $app.getAvatarName(ref.currentAvatarImageUrl);
     });
 
     API.$on('WORLD', function (args) {
@@ -8618,7 +8662,6 @@ speechSynthesis.getVoices();
                 if (args.cache) {
                     API.getUser(args.params);
                 }
-                this.getAvatarName(args.ref.currentAvatarImageUrl);
                 var L = API.parseLocation(D.ref.location);
                 if ((L.worldId) &&
                     (this.lastLocation.location !== L.tag)) {
@@ -8981,7 +9024,6 @@ speechSynthesis.getVoices();
                     API.getFriendStatus({
                         userId: D.id
                     });
-                    this.getAvatarName(args.ref.currentAvatarImageUrl);
                     var L = API.parseLocation(D.ref.location);
                     if ((L.worldId) &&
                         (this.lastLocation.location !== L.tag)) {
@@ -9041,7 +9083,7 @@ speechSynthesis.getVoices();
             });
         } else if (command === 'Show Avatar Author') {
             var { currentAvatarImageUrl } = D.ref;
-            this.showAvatarAuthorDialog(D.id, currentAvatarImageUrl)
+            this.showAvatarAuthorDialog(D.id, currentAvatarImageUrl);
         } else if (command === 'Show Fallback Avatar Details') {
             var { fallbackAvatar } = D.ref;
             if (fallbackAvatar) {
@@ -12219,30 +12261,19 @@ speechSynthesis.getVoices();
 
     API.cachedAvatarNames = new Map();
 
-    $app.methods.getAvatarName = function (imageUrl) {
-        var D = this.userDialog;
-        D.$avatarInfo = {
-            ownerId: '',
-            avatarName: '-'
-        };
-        if (!D.visible) {
-            return;
-        }
+    $app.methods.getAvatarName = async function (imageUrl) {
         var fileId = extractFileId(imageUrl);
         if (!fileId) {
-            return;
+            return {
+                ownerId: '',
+                avatarName: '-'
+            };
         }
         if (API.cachedAvatarNames.has(fileId)) {
-            D.$avatarInfo = API.cachedAvatarNames.get(fileId);
-            return;
+            return API.cachedAvatarNames.get(fileId);
         }
-        var params = {
-            fileId
-        };
-        API.getAvatarImages(params).then((args) => {
-            var avatarInfo = this.storeAvatarImage(args);
-            this.userDialog.$avatarInfo = avatarInfo;
-        });
+        var args = await API.getAvatarImages({fileId});
+        return this.storeAvatarImage(args);
     };
 
     $app.data.discordNamesDialogVisible = false;
