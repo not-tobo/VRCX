@@ -6456,7 +6456,7 @@ speechSynthesis.getVoices();
         }
 
         async function youtubeAPI(videoID) {
-            if ((!$app.youtubeAPI) || (!$app.appInit) || (!$app.isGameRunning)) {
+            if (!$app.youtubeAPI) {
                 return;
             }
             var youtubeAPIKey = '';
@@ -6477,6 +6477,7 @@ speechSynthesis.getVoices();
                     videoobj.videoID = 'YouTube';
                 }
             } catch {
+                console.log('YouTube video lookup failed');
             }
         }
 
@@ -6564,8 +6565,10 @@ speechSynthesis.getVoices();
                         videoID = videoobj.videoURL.substring(17, 28);
                     } else if (videoobj.videoURL.substring(0, 23) === "http://storage.llss.io/") {
                         videoID = videoobj.videoURL.substring(23).slice(0, -4);
+                    } else if (videoobj.videoURL.substring(0, 34) === "https://jd.pypy.moe/api/v1/videos/") {
+                        videoID = videoobj.videoURL.substring(34).slice(0, -4);
                     }
-                    if (videoID) {
+                    if ((this.appInit) && (this.isGameRunning) && (videoID)) {
                         for (var video of PyPyVideosTable) {
                             if (video.File_Name === `${videoID}.mp4`) {
                                 videoobj.videoName = video.Video_Name;
