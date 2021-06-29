@@ -6233,7 +6233,7 @@ speechSynthesis.getVoices();
                 if (props.status[1]) {
                     previousStatus = props.status[1];
                 }
-            } else {
+            } else if (ref.status) {
                 status = ref.status;
                 previousStatus = ref.status;
             }
@@ -6244,7 +6244,7 @@ speechSynthesis.getVoices();
                 if (props.statusDescription[1]) {
                     previousStatusDescription = props.statusDescription[1];
                 }
-            } else {
+            } else if (ref.statusDescription) {
                 statusDescription = ref.statusDescription;
                 previousStatusDescription = ref.statusDescription;
             }
