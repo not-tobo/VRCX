@@ -15,6 +15,7 @@ Vue.component('v-swatches', VSwatches);
 import '../node_modules/vue-swatches/dist/vue-swatches.css';
 import ElementUI from 'element-ui';
 import locale from 'element-ui/lib/locale/lang/en';
+import { v4 as uuidv4 } from 'uuid';
 import PyPyVideos from './PyPyVideos.json';
 var PyPyVideosTable = JSON.parse(atob(PyPyVideos.json));
 
@@ -228,14 +229,6 @@ speechSynthesis.getVoices();
     });
 
     Vue.use(DataTables);
-
-    var uuidv4 = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-        var v = Math.random() * 16 | 0;
-        if (c !== 'x') {
-            v |= 8;
-        }
-        return v.toString(16);
-    });
 
     var $appDarkStyle = document.createElement('link');
     $appDarkStyle.disabled = true;
