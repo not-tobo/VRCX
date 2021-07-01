@@ -1023,6 +1023,9 @@ var bar = new ProgressBar.Circle(vroverlay, {
         var L = API.parseLocation(this.lastLocation.location);
         if ((L.worldId === 'wrld_f20326da-f1ac-45fc-a062-609723b097b1') || (L.worldId === 'wrld_42377cf1-c54f-45ed-8996-5875b0573a83')) {
             isDanceWorld = true;
+        } else {
+            Discord.SetActive(false);
+            Discord.SetText('', '');
         }
         var percentage = 0;
         if (this.newPlayingobj.videoURL != '') {
@@ -1070,6 +1073,9 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 Discord.SetActive(false);
                 Discord.SetText('', '');
             }
+        } else {
+            Discord.SetActive(false);
+            Discord.SetText('', '');
         }
         if (this.nowPlayingobj.videoURL !== this.newPlayingobj.videoURL) {
             this.nowPlayingobj = this.newPlayingobj;
