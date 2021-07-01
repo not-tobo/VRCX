@@ -767,7 +767,7 @@ html
                                     span.color-picker(slot="trigger") #[i.el-icon-s-open] Veteran User
                             div
                                 v-swatches(v-model="trustColor.legendary" show-fallback fallback-input-type="color" popover-x="right" :swatches="trustColorSwatches" class="x-tag-legendary")
-                                    span.color-picker(slot="trigger") #[i.el-icon-s-open] Early User
+                                    span.color-picker(slot="trigger") #[i.el-icon-s-open] Legend
                             div
                                 v-swatches(v-model="trustColor.vip" show-fallback fallback-input-type="color" popover-x="right" :swatches="trustColorSwatches" class="x-tag-vip")
                                     span.color-picker(slot="trigger") #[i.el-icon-s-open] VRChat Team
@@ -1074,7 +1074,7 @@ html
                                 div(style="margin-top:5px")
                                     el-tag.name(type="info" effect="plain" size="mini" :class="userDialog.ref.$trustClass" v-text="userDialog.ref.$trustLevel")
                                     el-tag.x-tag-friend(v-if="userDialog.isFriend && userDialog.friend" type="info" effect="plain" size="mini" style="margin-left:5px") Friend No.{{userDialog.friend.no}}
-                                    el-tag.x-tag-legendary(v-if="userDialog.ref.$isLegend" type="info" effect="plain" size="mini" style="margin-left:5px") Early User
+                                    el-tag.x-tag-legendary(v-if="userDialog.ref.$isLegend" type="info" effect="plain" size="mini" style="margin-left:5px") Legend
                                     el-tag.x-tag-vip(v-if="userDialog.ref.$isModerator" type="info" effect="plain" size="mini" style="margin-left:5px") VRChat Team
                                     el-tag.x-tag-vrcplus(v-if="userDialog.ref.$isVRCPlus" type="info" effect="plain" size="mini" style="margin-left:5px") VRC+
                                     el-tag.x-tag-platform-pc(v-if="userDialog.ref.last_platform === 'standalonewindows'" type="info" effect="plain" size="mini" style="margin-left:5px") PC
