@@ -5695,9 +5695,6 @@ speechSynthesis.getVoices();
                     if (ctx.state === 'online') {
                         var ts = Date.now();
                         var time = ts - $location_at;
-                        if (location === 'offline') {
-                            location = '';
-                        }
                         var worldName = await this.getWorldName(location);
                         var feed = {
                             created_at: new Date().toJSON(),
@@ -5780,15 +5777,17 @@ speechSynthesis.getVoices();
 
     $app.methods.getWorldName = async function (location) {
         var worldName = '';
-        try {
-            var L = API.parseLocation(location);
-            if (L.worldId) {
+        if (location !== 'offline') {
+            try {
+                var L = API.parseLocation(location);
+                if (L.worldId) {
                 var args = await API.getCachedWorld({
                     worldId: L.worldId
                 });
                 worldName = args.ref.name;
+                }
+            } catch (err) {
             }
-        } catch (err) {
         }
         return worldName;
     };
@@ -7278,14 +7277,15 @@ speechSynthesis.getVoices();
             };
             this.friendLogTable.data.push(friendLogHistory);
             database.addFriendLogHistory(friendLogHistory);
+
+            var friendLogCurrent = {
+                userId: id,
+                displayName: ctx.displayName,
+                trustLevel: ctx.trustLevel
+            };
+            this.friendLog.set(id, friendLogCurrent);
+            database.setFriendLogCurrent(friendLogCurrent);
         }
-        var friendLogCurrent = {
-            userId: id,
-            displayName: ctx.displayName,
-            trustLevel: ctx.trustLevel
-        };
-        this.friendLog.set(id, friendLogCurrent);
-        database.setFriendLogCurrent(friendLogCurrent);
         this.notifyMenu('friendLog');
     };
 
@@ -7345,6 +7345,13 @@ speechSynthesis.getVoices();
                 };
                 this.friendLogTable.data.push(friendLogHistory);
                 database.addFriendLogHistory(friendLogHistory);
+                var friendLogCurrent = {
+                    userId: ref.id,
+                    displayName: ref.displayName,
+                    trustLevel: ref.$trustLevel
+                };
+                this.friendLog.set(ref.id, friendLogCurrent);
+                database.setFriendLogCurrent(friendLogCurrent);
             }
             ctx.displayName = ref.displayName;
             this.notifyMenu('friendLog');
@@ -7363,24 +7370,20 @@ speechSynthesis.getVoices();
                 };
                 this.friendLogTable.data.push(friendLogHistory);
                 database.addFriendLogHistory(friendLogHistory);
+                var friendLogCurrent = {
+                    userId: ref.id,
+                    displayName: ref.displayName,
+                    trustLevel: ref.$trustLevel
+                };
+                this.friendLog.set(ref.id, friendLogCurrent);
+                database.setFriendLogCurrent(friendLogCurrent);
             }
             ctx.trustLevel = ref.$trustLevel;
             this.notifyMenu('friendLog');
         }
-        if ((ctx.displayName !== ref.displayName) ||
-            ((ref.$trustLevel) && (ctx.trustLevel !== ref.$trustLevel))) {
-            var friendLogCurrent = {
-                userId: ref.id,
-                displayName: ref.displayName,
-                trustLevel: ref.trustLevel
-            };
-            this.friendLog.set(ref.id, friendLogCurrent);
-            database.setFriendLogCurrent(friendLogCurrent);
-        }
     };
 
     $app.methods.deleteFriendLog = function (row) {
-        console.log('delrow', row);
         // FIXME: 메시지 수정
         this.$confirm('Continue? Delete Log', 'Confirm', {
             confirmButtonText: 'Confirm',
