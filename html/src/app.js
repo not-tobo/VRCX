@@ -3966,8 +3966,9 @@ speechSynthesis.getVoices();
         var notyFeed = [];
         notyFeed = notyFeed.concat(feeds.gameLog.noty, feeds.feedTable.noty, feeds.notificationTable.noty, feeds.friendLogTable.noty);
         // OnPlayerJoining
+        var L = API.parseLocation(this.lastLocation.location); //WebSocket dosen't update friend only instances
         var locationBias = Date.now() - 30000; //30 seconds
-        if ((this.isGameRunning) && (this.lastLocation.date < locationBias) &&
+        if ((this.isGameRunning) && (L.accessType !== 'friends') &&(this.lastLocation.date < locationBias) &&
             ((this.sharedFeedFilters.wrist.OnPlayerJoining === 'Friends') || (this.sharedFeedFilters.wrist.OnPlayerJoining === 'VIP') ||
                 (this.sharedFeedFilters.noty.OnPlayerJoining === 'Friends') || (this.sharedFeedFilters.noty.OnPlayerJoining === 'VIP'))) {
             var joiningMap = [];
@@ -5701,7 +5702,7 @@ speechSynthesis.getVoices();
                             type: 'Offline',
                             userId: ctx.ref.id,
                             displayName: ctx.ref.displayName,
-                            location,
+                            location: (location === 'offline') ? '' : location,
                             worldName,
                             time
                         };
@@ -5718,7 +5719,7 @@ speechSynthesis.getVoices();
                         type: 'Online',
                         userId: ctx.ref.id,
                         displayName: ctx.ref.displayName,
-                        location,
+                        location: (location === 'offline') ? '' : location,
                         worldName,
                         time: ''
                     };
