@@ -6535,7 +6535,7 @@ speechSynthesis.getVoices();
                     };
                     var videoID = '';
                     if ((videoobj.playerPlayer != '') && (videoobj.playerRequest != '') && (videoobj.playerPlayer != videoobj.playerRequest) &&
-                        (videoobj.videoURL.substring(0, 23) === "http://storage.llss.io/")) {
+                        (videoobj.videoURL.substring(0, 34) === "https://jd.pypy.moe/api/v1/videos/")) {
                         videoobj.playerYeet = videoobj.playerPlayer;
                         videoobj.playerPlayer = videoobj.playerRequest;
                     }
@@ -10020,33 +10020,30 @@ speechSynthesis.getVoices();
                 return;
             }
         }
-        if (API.cachedAvatarNames.has(fileId)) {
-            var { ownerId } = API.cachedAvatarNames.get(fileId);
-            if (ownerId === API.currentUser.id) {
+        this.getAvatarName(currentAvatarImageUrl).then((avatarInfo) => {
+            if (avatarInfo.ownerId === API.currentUser.id) {
                 this.refreshUserDialogAvatars(fileId);
                 return;
             }
-            if (ownerId === refUserId) {
+            if ((this.localAvatarDatabaseEnable) && (this.localAvatarDatabaseAuthorCache)) {
+                this.getLocalAvatarCacheFromAuthor(avatarInfo.ownerId).then(() => {
+                    for (var ref of API.cachedAvatars.values()) {
+                        if (extractFileId(ref.imageUrl) === fileId) {
+                            this.showAvatarDialog(ref.id);
+                            return;
+                        }
+                    }
+                });
+            }
+            if (avatarInfo.ownerId === refUserId) {
                 this.$message({
                     message: 'It\'s personal (own) avatar',
                     type: 'warning'
                 });
-                return;
+            } else {
+                this.showUserDialog(avatarInfo.ownerId);
             }
-            this.showUserDialog(ownerId);
-        } else {
-            API.getAvatarImages({fileId}).then((args) => {
-                var ownerId = args.json.ownerId;
-                if (ownerId === refUserId) {
-                    this.$message({
-                        message: 'It\'s personal (own) avatar',
-                        type: 'warning'
-                    });
-                    return;
-                }
-                this.showUserDialog(ownerId);
-            });
-        }
+        });
     };
 
     $app.methods.refreshAvatarDialogTreeData = function () {
