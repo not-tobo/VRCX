@@ -8324,11 +8324,10 @@ speechSynthesis.getVoices();
             callback: (action, instance) => {
                 if (action === 'confirm' &&
                     instance.inputValue) {
-                    var avatarId = instance.inputValue;
                     var testUrl = instance.inputValue.substring(0, 15);
                     if (testUrl === 'https://vrchat.') {
-                        var urlAvatarId = this.parseAvatarUrl(instance.inputValue);
-                        if (urlAvatarId) {
+                        var avatarId = this.parseAvatarUrl(instance.inputValue);
+                        if (avatarId) {
                             this.showAvatarDialog(avatarId);
                         } else {
                             this.$message({
@@ -8338,7 +8337,7 @@ speechSynthesis.getVoices();
                             return;
                         }
                     } else {
-                        this.showAvatarDialog('avatar', instance.inputValue);
+                        this.showAvatarDialog(instance.inputValue);
                     }
                 }
             }
@@ -9854,7 +9853,6 @@ speechSynthesis.getVoices();
                                         objectId: D.id
                                     });
                                 }
-                                this.removeLocalAllAvatarFavorite(D.id);
                                 break;
                             case 'Select Avatar':
                                 API.selectAvatar({
