@@ -9769,6 +9769,9 @@ speechSynthesis.getVoices();
         API.getAvatar({avatarId}).then((args) => {
             var { ref } = args;
             D.ref = ref;
+            if ((ref.imageUrl === API.currentUser.currentAvatarImageUrl) && (!ref.assetUrl)) {
+                D.ref.assetUrl = API.currentUser.currentAvatarAssetUrl;
+            }
             D.visible = true;
             if (/quest/.test(ref.tags)) {
                 D.isQuestFallback = true;
@@ -9788,7 +9791,7 @@ speechSynthesis.getVoices();
                 var fileId = extractFileId(ref.assetUrl);
                 var fileVersion = extractFileVersion(ref.assetUrl);
             }
-            var imageId = extractFileId(ref.thumbnailImageUrl);
+            var imageId = extractFileId(ref.imageUrl);
             D.fileSize = '';
             if (fileId) {
                 D.fileSize = 'Loading';
@@ -9930,7 +9933,7 @@ speechSynthesis.getVoices();
             });
             return;
         }
-        if ((refUserId === API.currentUser.id) && (API.cachedAvatars.has(API.currentUser.currentAvatar))) {
+        if (refUserId === API.currentUser.id) {
             this.showAvatarDialog(API.currentUser.currentAvatar);
             return;
         }
