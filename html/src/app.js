@@ -9314,7 +9314,7 @@ speechSynthesis.getVoices();
             for (var i = ref.unityPackages.length - 1; i > -1; i--) {
                 var unityPackage = ref.unityPackages[i];
                 if ((unityPackage.platform === 'standalonewindows') &&
-                    (unityPackage.unitySortNumber <= 20180420000)) {
+                    (unityPackage.unitySortNumber <= 20190428000)) {
                     assetUrl = unityPackage.assetUrl;
                     break;
                 }
@@ -9712,7 +9712,7 @@ speechSynthesis.getVoices();
             for (var i = ref.unityPackages.length - 1; i > -1; i--) {
                 var unityPackage = ref.unityPackages[i];
                 if ((unityPackage.platform === 'standalonewindows') &&
-                    (unityPackage.unitySortNumber <= 20180420000)) {
+                    (unityPackage.unitySortNumber <= 20190428000)) {
                     assetUrl = unityPackage.assetUrl;
                     break;
                 }
@@ -12992,7 +12992,7 @@ speechSynthesis.getVoices();
         for (var i = ref.unityPackages.length - 1; i > -1; i--) {
             var unityPackage = ref.unityPackages[i];
             if ((unityPackage.platform === 'standalonewindows') &&
-                (unityPackage.unitySortNumber <= 20180420000)) {
+                (unityPackage.unitySortNumber <= 20190428000)) {
                 assetUrl = unityPackage.assetUrl;
                 break;
             }
