@@ -159,19 +159,19 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CefSharp.Common">
-      <Version>91.1.210</Version>
+      <Version>91.1.230</Version>
     </PackageReference>
     <PackageReference Include="CefSharp.OffScreen">
-      <Version>91.1.210</Version>
+      <Version>91.1.230</Version>
     </PackageReference>
     <PackageReference Include="CefSharp.WinForms">
-      <Version>91.1.210</Version>
+      <Version>91.1.230</Version>
     </PackageReference>
     <PackageReference Include="DiscordRichPresence">
       <Version>1.0.175</Version>
     </PackageReference>
     <PackageReference Include="LiteDB">
-      <Version>5.0.10</Version>
+      <Version>5.0.11</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications">
       <Version>7.0.2</Version>
