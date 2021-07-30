@@ -59,21 +59,23 @@ namespace VRCX
 
         public bool CheckAvatarDatabase()
         {
-            using (var key = Registry.ClassesRoot.OpenSubKey(@"VRChat\shell\open\command"))
+            try
             {
-                var path = String.Empty;
-                var match = Regex.Match(key.GetValue(string.Empty) as string, "(?!\")(.+?\\\\VRChat.*)(!?\\\\launch.exe\")");
-                if (match.Success == true)
+                using (var key = Registry.ClassesRoot.OpenSubKey(@"VRChat\shell\open\command"))
                 {
-                    path = match.Groups[1].Value;
+                    var path = String.Empty;
+                    var match = Regex.Match(key.GetValue(string.Empty) as string, "(?!\")(.+?\\\\VRChat.*)(!?\\\\launch.exe\")");
+                    if (match.Success == true)
+                        path = match.Groups[1].Value;
+                    AvatarDatabasePath = Path.Combine(path, "UserData\\");
+                    if (Directory.Exists(AvatarDatabasePath) && File.Exists($"{AvatarDatabasePath}favcat-favs.db") && File.Exists($"{AvatarDatabasePath}favcat-store.db"))
+                        return true;
                 }
-                AvatarDatabasePath = Path.Combine(path, "UserData\\");
-                if (Directory.Exists(AvatarDatabasePath) && File.Exists($"{AvatarDatabasePath}favcat-favs.db") && File.Exists($"{AvatarDatabasePath}favcat-store.db"))
-                {
-                    return true;
-                }
-                return false;
             }
+            catch
+            {
+            }
+            return false;
         }
 
         public void InitAvatarDatabase()
