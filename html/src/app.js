@@ -18,7 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 import PyPyVideos from './PyPyVideos.json';
 var PyPyVideosTable = JSON.parse(atob(PyPyVideos.json));
 
-import {appVersion} from './constants.js';
+import { appVersion } from './constants.js';
 import sharedRepository from './repository/shared.js';
 import configRepository from './repository/config.js';
 import webApiService from './service/webapi.js';
@@ -426,8 +426,8 @@ speechSynthesis.getVoices();
             }
             if ((status === 404) && (endpoint.substring(0, 8) === 'avatars/')) {
                 $app.$message({
-                   message: 'Avatar private or deleted',
-                   type: 'error'
+                    message: 'Avatar private or deleted',
+                    type: 'error'
                 });
                 throw new Error('404: Can\'t find avatarǃ');
             }
@@ -4987,13 +4987,13 @@ speechSynthesis.getVoices();
                     inputType: "password",
                     inputPattern: /[\s\S]{1,32}/
                 },
-            ).then(({value}) => {
+            ).then(({ value }) => {
                 security.decrypt(args.password, value).then(pwd => {
                     return resolve(pwd);
                 }).catch(_ => {
                     return reject();
                 })
-            }).catch(_=>{
+            }).catch(_ => {
                 return reject();
             })
         })
@@ -5022,7 +5022,7 @@ speechSynthesis.getVoices();
                     inputType: "password",
                     inputPattern: /[\s\S]{1,32}/
                 },
-            ).then(({value}) => {
+            ).then(({ value }) => {
                 for (let name in this.loginForm.savedCredentials) {
                     security.decrypt(this.loginForm.savedCredentials[name].loginParmas.password, value).then(pt => {
                         this.saveCredentials = { username: name, password: pt };
@@ -5046,7 +5046,7 @@ speechSynthesis.getVoices();
             let key = this.enablePrimaryPasswordDialog.password;
             for (let name in this.loginForm.savedCredentials) {
                 security.encrypt(this.loginForm.savedCredentials[name].loginParmas.password, key).then(ct => {
-                    this.saveCredentials = { username: name, password: ct};
+                    this.saveCredentials = { username: name, password: ct };
                     this.updateStoredUser(this.loginForm.savedCredentials[name].user);
                 });
             }
@@ -5735,10 +5735,10 @@ speechSynthesis.getVoices();
             try {
                 var L = API.parseLocation(location);
                 if (L.worldId) {
-                var args = await API.getCachedWorld({
-                    worldId: L.worldId
-                });
-                worldName = args.ref.name;
+                    var args = await API.getCachedWorld({
+                        worldId: L.worldId
+                    });
+                    worldName = args.ref.name;
                 }
             } catch (err) {
             }
@@ -8228,11 +8228,11 @@ speechSynthesis.getVoices();
         this.notificationTTSVoice = index;
         configRepository.setString('VRCX_notificationTTSVoice', this.notificationTTSVoice);
         var voices = speechSynthesis.getVoices();
-		if (voices.length === 0) {
-			return;
-		}
+        if (voices.length === 0) {
+            return;
+        }
         if (index > voices.length) {
-			index = 0;
+            index = 0;
         }
         var voiceName = voices[index].name;
         speechSynthesis.cancel();
@@ -9768,7 +9768,7 @@ speechSynthesis.getVoices();
                 return;
             }
         }
-        API.getAvatar({avatarId}).then((args) => {
+        API.getAvatar({ avatarId }).then((args) => {
             var { ref } = args;
             D.ref = ref;
             if ((ref.imageUrl === API.currentUser.currentAvatarImageUrl) && (!ref.assetUrl)) {
@@ -9920,9 +9920,9 @@ speechSynthesis.getVoices();
                             default:
                                 break;
                         }
-                }
-            });
-            break;
+                    }
+                });
+                break;
         }
     };
 
@@ -11470,7 +11470,7 @@ speechSynthesis.getVoices();
     $app.methods.friendsListSearchChange = function () {
         var filters = [...this.friendsListSearchFilters];
         if (filters.length === 0) {
-            filters = [ 'Display Name', 'User Name', 'Rank', 'Status', 'Bio', 'Memo' ];
+            filters = ['Display Name', 'User Name', 'Rank', 'Status', 'Bio', 'Memo'];
         }
         var results = [];
         if (this.friendsListSearch) {
@@ -12422,7 +12422,7 @@ speechSynthesis.getVoices();
         if (API.cachedAvatarNames.has(fileId)) {
             return API.cachedAvatarNames.get(fileId);
         }
-        var args = await API.getAvatarImages({fileId});
+        var args = await API.getAvatarImages({ fileId });
         return this.storeAvatarImage(args);
     };
 
@@ -12737,7 +12737,7 @@ speechSynthesis.getVoices();
         if (result) {
             var index = this.localAvatarFavoriteGroupNames.indexOf(category);
             if (index > -1) {
-              this.localAvatarFavoriteGroupNames.splice(index, 1);
+                this.localAvatarFavoriteGroupNames.splice(index, 1);
             }
             delete this.localAvatarFavoriteGroups[category];
             this.$message({
@@ -12774,7 +12774,7 @@ speechSynthesis.getVoices();
             count: 0
         };
         this.localAvatarFavoriteGroupNames.push(categoryName);
-        this.localAvatarFavoriteGroupNames.sort(function(a, b){return a.toLowerCase().localeCompare(b.toLowerCase())});
+        this.localAvatarFavoriteGroupNames.sort(function (a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()) });
         this.localAvatarFavoriteGroups[categoryName] = addCategory;
         this.$message({
             message: `Added group ${categoryName}`,
@@ -12803,18 +12803,18 @@ speechSynthesis.getVoices();
                 var imageURL = avatar.thumbnailImageUrl;
                 fetch(imageURL, {
                     method: 'HEAD',
-                redirect: 'follow',
-                headers: {
-                    'User-Agent': appVersion
-                }
-            }).then(response => {
-                if (response.status === 403) {
-                    API.cachedAvatars.delete(avatar.id);
-                    for (var i = 0; i < avatars.length; i++) {
-                        if (avatars[i].id === avatar.id) {
-                            avatars.splice(i, 1);
-                            break;
-                        }
+                    redirect: 'follow',
+                    headers: {
+                        'User-Agent': appVersion
+                    }
+                }).then(response => {
+                    if (response.status === 403) {
+                        API.cachedAvatars.delete(avatar.id);
+                        for (var i = 0; i < avatars.length; i++) {
+                            if (avatars[i].id === avatar.id) {
+                                avatars.splice(i, 1);
+                                break;
+                            }
                         }
                         if (!this.isGameRunning) {
                             this.deleteLocalAvatarCache(avatar.id);
@@ -12822,8 +12822,8 @@ speechSynthesis.getVoices();
                         }
                     }
                 }).catch(error => {
-                console.log(error);
-            });
+                    console.log(error);
+                });
             }
         });
     };
@@ -12956,16 +12956,16 @@ speechSynthesis.getVoices();
         switch (res) {
             case '1280x720':
                 return '1280x720 (720p)';
-            break;
+                break;
             case '1920x1080':
                 return '1920x1080 (1080p)';
-            break;
+                break;
             case '2560x1440':
                 return '2560x1440 (2K)';
-            break;
+                break;
             case '3840x2160':
                 return '3840x2160 (4K)';
-            break;
+                break;
             default:
                 return `${res} (Custom)`;
         }
@@ -13027,7 +13027,7 @@ speechSynthesis.getVoices();
             var date = new Date().toJSON();
             var userId = '';
             var location = ref.id;
-            this.downloadQueue.set(ref.id, {ref, type, date, userId, location});
+            this.downloadQueue.set(ref.id, { ref, type, date, userId, location });
             this.downloadQueueTable.data = Array.from(this.downloadQueue.values());
         }
         if (!this.downloadInProgress) {
@@ -13199,7 +13199,7 @@ speechSynthesis.getVoices();
             var { ref } = args;
             this.checkVRChatCache(ref).then((cacheSize) => {
                 if (cacheSize === -1) {
-                    this.downloadQueue.set(ref.id, {ref, type, userId, location});
+                    this.downloadQueue.set(ref.id, { ref, type, userId, location });
                     this.downloadQueueTable.data = Array.from(this.downloadQueue.values());
                     if (!this.downloadInProgress) {
                         this.downloadVRChatCache();
@@ -13460,8 +13460,8 @@ speechSynthesis.getVoices();
             var urlParams = new URLSearchParams(url.search);
             var worldId = urlParams.get('worldId');
             var instanceId = urlParams.get('instanceId');
-        if (instanceId) {
-            return `${worldId}:${instanceId}`;
+            if (instanceId) {
+                return `${worldId}:${instanceId}`;
             } else if (worldId) {
                 return worldId;
             }
@@ -13526,7 +13526,7 @@ speechSynthesis.getVoices();
         this.userDialog.isFavoriteWorldsLoading = false;
     };
 
-    $app.data.worldGroupVisibilityOptions = [ 'private', 'friends', 'public' ];
+    $app.data.worldGroupVisibilityOptions = ['private', 'friends', 'public'];
 
     $app.methods.userFavoriteWorldsStatus = function (visibility) {
         var style = {};
