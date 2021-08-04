@@ -904,17 +904,20 @@ var bar = new ProgressBar.Circle(vroverlay, {
         }
         var bias = new Date(Date.now() - 60000).toJSON();
         var noty = {};
-        var messageList = [ 'inviteMessage', 'requestMessage', 'responseMessage' ];
+        var messageList = ['inviteMessage', 'requestMessage', 'responseMessage'];
         for (var i = 0; i < notyToPlay.length; i++) {
             noty = notyToPlay[i];
             if (noty.created_at < bias) {
                 continue;
             }
             var message = '';
-            for (i = 0; i < messageList.length; i++) {
-                if (typeof noty.details !== 'undefined' && typeof noty.details[messageList[i]] !== 'undefined') {
-                    message = noty.details[messageList[i]];
+            for (var k = 0; k < messageList.length; k++) {
+                if (typeof noty.details !== 'undefined' && typeof noty.details[messageList[k]] !== 'undefined') {
+                    message = noty.details[messageList[k]];
                 }
+            }
+            if (message) {
+                message = `, ${message}`;
             }
             if ((this.config.overlayNotifications) && (!this.isGameNoVR) && (this.isGameRunning) && (!this.config.xsNotifications)) {
                 var text = '';
@@ -941,7 +944,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         text = `<strong>${noty.displayName}</strong> status is now <i>${noty.status}</i> ${noty.statusDescription}`;
                         break;
                     case 'invite':
-                        text = `<strong>${noty.senderUsername}</strong> has invited you to ${noty.details.worldName} ${message}`;
+                        text = `<strong>${noty.senderUsername}</strong> has invited you to ${this.displayLocation(noty.details.worldId, noty.details.worldName)}${message}`;
                         break;
                     case 'requestInvite':
                         text = `<strong>${noty.senderUsername}</strong> has requested an invite ${message}`;

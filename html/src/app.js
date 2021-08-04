@@ -4577,7 +4577,7 @@ speechSynthesis.getVoices();
                 this.speak(`${noty.displayName} status is now ${noty.status} ${noty.statusDescription}`);
                 break;
             case 'invite':
-                this.speak(`${noty.senderUsername} has invited you to ${noty.details.worldName}${message}`);
+                this.speak(`${noty.senderUsername} has invited you to ${this.displayLocation(noty.details.worldId, noty.details.worldName)}${message}`);
                 break;
             case 'requestInvite':
                 this.speak(`${noty.senderUsername} has requested an invite${message}`);
@@ -4651,7 +4651,7 @@ speechSynthesis.getVoices();
                 AppApi.XSNotification('VRCX', `${noty.displayName} status is now ${noty.status} ${noty.statusDescription}`, timeout, image);
                 break;
             case 'invite':
-                AppApi.XSNotification('VRCX', `${noty.senderUsername} has invited you to ${noty.details.worldName}${message}`, timeout, image);
+                AppApi.XSNotification('VRCX', `${noty.senderUsername} has invited you to ${this.displayLocation(noty.details.worldId, noty.details.worldName)}${message}`, timeout, image);
                 break;
             case 'requestInvite':
                 AppApi.XSNotification('VRCX', `${noty.senderUsername} has requested an invite${message}`, timeout, image);
@@ -4724,7 +4724,7 @@ speechSynthesis.getVoices();
                 AppApi.DesktopNotification(noty.displayName, `status is now ${noty.status} ${noty.statusDescription}`, image);
                 break;
             case 'invite':
-                AppApi.DesktopNotification(noty.senderUsername, `has invited you to ${noty.details.worldName}${message}`, image);
+                AppApi.DesktopNotification(noty.senderUsername, `has invited you to ${this.displayLocation(noty.details.worldId, noty.details.worldName)}${message}`, image);
                 break;
             case 'requestInvite':
                 AppApi.DesktopNotification(noty.senderUsername, `has requested an invite${message}`, image);
@@ -5974,12 +5974,15 @@ speechSynthesis.getVoices();
             } else if (user.userId) {
                 id = user.userId;
             }
-            if ((!user.isFriend) && (id) && (id !== API.currentUser.id)) {
+            if ((id) && (id === API.currentUser.id)) {
+                return this.statusClass(user.status);
+            }
+            if (!user.isFriend) {
                 return;
             }
             //temp fix
             if ((user.status !== 'active') && (user.location === 'private') && (user.state === '') &&
-                (id) && (id !== API.currentUser.id) &&
+                (id) &&
                 (!API.currentUser.onlineFriends.includes(id))) {
                 if (API.currentUser.activeFriends.includes(id)) {
                     // Active
@@ -13256,7 +13259,7 @@ speechSynthesis.getVoices();
                 return;
             case -11:
                 this.$message({
-                    message: 'VRChat can\'t be located',
+                    message: 'Delete \'data.unity3d\' file from AssetBundleCacher_Data folder',
                     type: 'error'
                 });
                 this.downloadCurrent = {};
