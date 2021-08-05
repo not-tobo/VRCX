@@ -13840,7 +13840,15 @@ speechSynthesis.getVoices();
         });
         this.checkingForVRCXUpdate = false;
         var json = JSON.parse(response.data);
-        D.releases = json;
+        var releases = [];
+        for (var release of json) {
+            for (var asset of release.assets) {
+                if ((asset.content_type === 'application/octet-stream') && (asset.state === 'uploaded')) {
+                    releases.push(release);
+                }
+            }
+        }
+        D.releases = releases;
         D.release = json[0].name;
         if (configRepository.getString('VRCX_branch') !== this.branch) {
             configRepository.setString('VRCX_branch', this.branch);

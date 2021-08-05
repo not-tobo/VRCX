@@ -1796,9 +1796,6 @@ html
             //- dialog: update VRCX
             el-dialog.x-dialog(ref="VRCXUpdateDialog" :visible.sync="VRCXUpdateDialog.visible" title="VRCX Updater" width="400px")
                 div(v-loading="checkingForVRCXUpdate" style="margin-top:15px")
-                    template(v-if="!VRCXUpdateDialog.updatePending && VRCXUpdateDialog.release === appVersion")
-                        span VRCX is up to date.
-                        br
                     template(v-if="VRCXUpdateDialog.updatePending")
                         span Update ready for install, restart VRCX to apply.
                     template(v-else)
@@ -1806,6 +1803,9 @@ html
                             el-option(v-once v-for="branch in branches" :key="branch.name" :label="branch.name" :value="branch.name")
                         el-select(v-model="VRCXUpdateDialog.release" style="display:inline-block;width:150px")
                             el-option(v-for="item in VRCXUpdateDialog.releases" :key="item.name" :label="item.tag_name" :value="item.name")
+                    template(v-if="!VRCXUpdateDialog.updatePending && VRCXUpdateDialog.release === appVersion")
+                        br
+                        span VRCX is up to date.
                 template(#footer)
                     el-button(v-if="!VRCXUpdateDialog.updatePending && VRCXUpdateDialog.release !== appVersion" type="primary" size="small" @click="installVRCXUpdate") Download
                     el-button(v-if="VRCXUpdateDialog.updatePending" type="primary" size="small" @click="restartVRCX") Install
