@@ -9446,7 +9446,7 @@ speechSynthesis.getVoices();
                 D.loading = false;
                 D.ref = args.ref;
                 D.isFavorite = API.cachedFavoritesByObjectId.has(D.id);
-                this.updateVRChatCache();
+                this.updateVRChatWorldCache();
                 if (args.cache) {
                     API.getWorld(args.params);
                 }
@@ -9591,7 +9591,7 @@ speechSynthesis.getVoices();
                         D.loading = false;
                         D.ref = args.ref;
                         D.isFavorite = API.cachedFavoritesByObjectId.has(D.id);
-                        this.updateVRChatCache();
+                        this.updateVRChatWorldCache();
                     }
                     return args;
                 });
@@ -9710,7 +9710,9 @@ speechSynthesis.getVoices();
         isQuestFallback: false,
         treeData: [],
         fileCreatedAt: '',
-        fileSize: ''
+        fileSize: '',
+        inCache: false,
+        cacheSize: 0
     };
 
     API.$on('LOGOUT', function () {
@@ -9740,18 +9742,21 @@ speechSynthesis.getVoices();
     $app.methods.showAvatarDialog = function (avatarId) {
         this.$nextTick(() => adjustDialogZ(this.$refs.avatarDialog.$el));
         var D = this.avatarDialog;
+        D.visible = true;
         D.id = avatarId;
         D.treeData = [];
         D.fileSize = '';
+        D.inCache = false;
+        D.cacheSize = 0;
         D.isQuestFallback = false;
         D.isFavorite = API.cachedFavoritesByObjectId.has(avatarId);
         var ref = API.cachedAvatars.get(avatarId);
         if (typeof ref !== 'undefined') {
             D.ref = ref;
+            this.updateVRChatAvatarCache();
             if (ref.$cached) {
                 D.fileSize = 'Local Database';
             }
-            D.visible = true;
             if ((ref.releaseStatus !== 'public') && (ref.authorId !== API.currentUser.id)) {
                 return;
             }
@@ -9759,10 +9764,10 @@ speechSynthesis.getVoices();
         API.getAvatar({ avatarId }).then((args) => {
             var { ref } = args;
             D.ref = ref;
+            this.updateVRChatAvatarCache();
             if ((ref.imageUrl === API.currentUser.currentAvatarImageUrl) && (!ref.assetUrl)) {
                 D.ref.assetUrl = API.currentUser.currentAvatarAssetUrl;
             }
-            D.visible = true;
             if (/quest/.test(ref.tags)) {
                 D.isQuestFallback = true;
             }
@@ -12991,9 +12996,24 @@ speechSynthesis.getVoices();
 
     // Asset Bundle Cacher
 
-    $app.methods.updateVRChatCache = function () {
+    $app.methods.updateVRChatWorldCache = function () {
         var D = this.worldDialog;
         if (D.visible) {
+            D.inCache = false;
+            D.cacheSize = 0;
+            this.checkVRChatCache(D.ref).then((cacheSize) => {
+                if (cacheSize > 0) {
+                    D.inCache = true;
+                    D.cacheSize = `${(cacheSize / 1048576).toFixed(2)} MiB`;
+                }
+            });
+        }
+    };
+
+    $app.methods.updateVRChatAvatarCache = function () {
+        var D = this.avatarDialog;
+        if (D.visible) {
+            console.log(D.ref.id);
             D.inCache = false;
             D.cacheSize = 0;
             this.checkVRChatCache(D.ref).then((cacheSize) => {
@@ -13217,7 +13237,7 @@ speechSynthesis.getVoices();
                 break;
             case -3:
                 if (this.worldDialog.id === this.downloadCurrent.id) {
-                    this.updateVRChatCache();
+                    this.updateVRChatWorldCache();
                 }
                 if (this.downloadCurrent.type === 'Manual') {
                     this.$message({
@@ -13270,7 +13290,7 @@ speechSynthesis.getVoices();
                 return;
             case -12:
                 if (this.worldDialog.id === this.downloadCurrent.id) {
-                    this.updateVRChatCache();
+                    this.updateVRChatWorldCache();
                 }
                 if (this.downloadCurrent.type === 'Manual') {
                     this.$message({
@@ -13379,7 +13399,8 @@ speechSynthesis.getVoices();
         var cacheDir = await this.getVRChatCacheDir();
         await AssetBundleCacher.DeleteCache(cacheDir, ref.id, ref.version);
         this.getVRChatCacheSize();
-        this.updateVRChatCache();
+        this.updateVRChatWorldCache();
+        this.updateVRChatAvatarCache();
     };
 
     $app.methods.showDeleteAllVRChatCacheConfirm = function () {
