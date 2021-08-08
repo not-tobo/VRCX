@@ -5623,7 +5623,13 @@ speechSynthesis.getVoices();
             }
             var location = '';
             var $location_at = '';
-            if ((typeof ref !== 'undefined') &&
+            if ((typeof ctx.ref !== 'undefined') &&
+                (typeof ctx.ref.location !== 'undefined')) {
+                var { location, $location_at } = ctx.ref;
+            }
+            if (((location === '') ||
+                (location === 'offline')) &&
+                (typeof ref !== 'undefined') &&
                 (typeof ref.location !== 'undefined')) {
                 var { location, $location_at } = ref;
             }
