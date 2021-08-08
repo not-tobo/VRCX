@@ -9372,7 +9372,7 @@ speechSynthesis.getVoices();
             for (var i = ref.unityPackages.length - 1; i > -1; i--) {
                 var unityPackage = ref.unityPackages[i];
                 if ((unityPackage.platform === 'standalonewindows') &&
-                    (unityPackage.unitySortNumber <= 20190428000)) {
+                    ($app.compareUnityVersion(unityPackage.unityVersion))) {
                     assetUrl = unityPackage.assetUrl;
                     break;
                 }
@@ -9775,7 +9775,7 @@ speechSynthesis.getVoices();
             for (var i = ref.unityPackages.length - 1; i > -1; i--) {
                 var unityPackage = ref.unityPackages[i];
                 if ((unityPackage.platform === 'standalonewindows') &&
-                    (unityPackage.unitySortNumber <= 20190428000)) {
+                    (this.compareUnityVersion(unityPackage.unityVersion))) {
                     assetUrl = unityPackage.assetUrl;
                     break;
                 }
@@ -13013,7 +13013,6 @@ speechSynthesis.getVoices();
     $app.methods.updateVRChatAvatarCache = function () {
         var D = this.avatarDialog;
         if (D.visible) {
-            console.log(D.ref.id);
             D.inCache = false;
             D.cacheSize = 0;
             this.checkVRChatCache(D.ref).then((cacheSize) => {
@@ -13076,7 +13075,7 @@ speechSynthesis.getVoices();
         for (var i = ref.unityPackages.length - 1; i > -1; i--) {
             var unityPackage = ref.unityPackages[i];
             if ((unityPackage.platform === 'standalonewindows') &&
-                (unityPackage.unitySortNumber <= 20190428000)) {
+                (this.compareUnityVersion(unityPackage.unityVersion))) {
                 assetUrl = unityPackage.assetUrl;
                 break;
             }
@@ -13904,6 +13903,15 @@ speechSynthesis.getVoices();
         } else {
             this.latestAppVersion = 'Error occured';
         }
+    };
+
+    $app.methods.compareUnityVersion = function (version) {
+        var currentUnityVersion = API.cachedConfig.sdkUnityVersion.replace(/\D/g, '');
+        var assetVersion = version.replace(/\D/g, '');
+        if (parseInt(assetVersion) <= parseInt(currentUnityVersion)) {
+            return true;
+        }
+        return false;
     };
 
     $app = new Vue($app);
