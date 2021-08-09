@@ -9352,7 +9352,8 @@ speechSynthesis.getVoices();
         fileCreatedAt: '',
         fileSize: '',
         inCache: false,
-        cacheSize: 0
+        cacheSize: 0,
+        cacheLocked: false
     };
 
     API.$on('LOGOUT', function () {
@@ -9447,6 +9448,7 @@ speechSynthesis.getVoices();
         D.loading = true;
         D.inCache = false;
         D.cacheSize = 0;
+        D.cacheLocked = false;
         D.rooms = [];
         API.getCachedWorld({
             worldId: L.worldId
@@ -9725,7 +9727,8 @@ speechSynthesis.getVoices();
         fileCreatedAt: '',
         fileSize: '',
         inCache: false,
-        cacheSize: 0
+        cacheSize: 0,
+        cacheLocked: false
     };
 
     API.$on('LOGOUT', function () {
@@ -9761,6 +9764,7 @@ speechSynthesis.getVoices();
         D.fileSize = '';
         D.inCache = false;
         D.cacheSize = 0;
+        D.cacheLocked = false;
         D.isQuestFallback = false;
         D.isFavorite = API.cachedFavoritesByObjectId.has(avatarId);
         var ref = API.cachedAvatars.get(avatarId);
@@ -13014,10 +13018,14 @@ speechSynthesis.getVoices();
         if (D.visible) {
             D.inCache = false;
             D.cacheSize = 0;
-            this.checkVRChatCache(D.ref).then((cacheSize) => {
-                if (cacheSize > 0) {
+            D.cacheLocked = false;
+            this.checkVRChatCache(D.ref).then((cacheInfo) => {
+                if (cacheInfo[0] > 0) {
                     D.inCache = true;
-                    D.cacheSize = `${(cacheSize / 1048576).toFixed(2)} MiB`;
+                    D.cacheSize = `${(cacheInfo[0] / 1048576).toFixed(2)} MiB`;
+                }
+                if (cacheInfo[1] === 1) {
+                    D.cacheLocked = true;
                 }
             });
         }
@@ -13028,10 +13036,14 @@ speechSynthesis.getVoices();
         if (D.visible) {
             D.inCache = false;
             D.cacheSize = 0;
-            this.checkVRChatCache(D.ref).then((cacheSize) => {
-                if (cacheSize > 0) {
+            D.cacheLocked = false;
+            this.checkVRChatCache(D.ref).then((cacheInfo) => {
+                if (cacheInfo[0] > 0) {
                     D.inCache = true;
-                    D.cacheSize = `${(cacheSize / 1048576).toFixed(2)} MiB`;
+                    D.cacheSize = `${(cacheInfo[0] / 1048576).toFixed(2)} MiB`;
+                }
+                if (cacheInfo[1] === 1) {
+                    D.cacheLocked = true;
                 }
             });
         }
@@ -13217,8 +13229,8 @@ speechSynthesis.getVoices();
             worldId: L.worldId
         }).then((args) => {
             var { ref } = args;
-            this.checkVRChatCache(ref).then((cacheSize) => {
-                if (cacheSize === -1) {
+            this.checkVRChatCache(ref).then((cacheInfo) => {
+                if ((cacheInfo[0] === -1) && (cacheInfo[1] === 0)) {
                     this.downloadQueue.set(ref.id, { ref, type, userId, location });
                     this.downloadQueueTable.data = Array.from(this.downloadQueue.values());
                     if (!this.downloadInProgress) {
@@ -13251,9 +13263,17 @@ speechSynthesis.getVoices();
                 if (this.worldDialog.id === this.downloadCurrent.id) {
                     this.updateVRChatWorldCache();
                 }
+                if (this.avatarDialog.id === this.downloadCurrent.id) {
+                    this.updateVRChatAvatarCache();
+                }
                 if (this.downloadCurrent.type === 'Manual') {
                     this.$message({
                         message: 'World cache complete',
+                        type: 'success'
+                    });
+                } else if (this.downloadCurrent.type === 'Avatar') {
+                    this.$message({
+                        message: 'Avatar cache complete',
                         type: 'success'
                     });
                 }
@@ -13303,6 +13323,9 @@ speechSynthesis.getVoices();
             case -12:
                 if (this.worldDialog.id === this.downloadCurrent.id) {
                     this.updateVRChatWorldCache();
+                }
+                if (this.avatarDialog.id === this.downloadCurrent.id) {
+                    this.updateVRChatAvatarCache();
                 }
                 if (this.downloadCurrent.type === 'Manual') {
                     this.$message({
