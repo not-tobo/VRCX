@@ -13878,7 +13878,7 @@ speechSynthesis.getVoices();
         var releases = [];
         for (var release of json) {
             for (var asset of release.assets) {
-                if ((asset.content_type === 'application/octet-stream') && (asset.state === 'uploaded')) {
+                if ((asset.content_type === 'application/x-msdownload') && (asset.state === 'uploaded')) {
                     releases.push(release);
                 }
             }
