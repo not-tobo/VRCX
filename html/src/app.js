@@ -1679,7 +1679,8 @@ speechSynthesis.getVoices();
         }).then((json) => {
             var args = {
                 json,
-                params
+                params,
+                option
             };
             this.$emit('WORLD:LIST', args);
             return args;
@@ -1916,6 +1917,21 @@ speechSynthesis.getVoices();
                 params
             };
             this.$emit('FRIEND:REQUEST:CANCEL', args);
+            return args;
+        });
+    };
+
+    API.deleteHiddenFriendRequest = function (params, userId) {
+        return this.call(`user/${userId}/friendRequest`, {
+            method: 'DELETE',
+            params
+        }).then((json) => {
+            var args = {
+                json,
+                params,
+                userId
+            };
+            this.$emit('NOTIFICATION:HIDE', args);
             return args;
         });
     };
@@ -2163,6 +2179,18 @@ speechSynthesis.getVoices();
         }
     });
 
+    API.$on('NOTIFICATION:LIST:HIDDEN', function (args) {
+        for (var json of args.json) {
+            json.type = 'hiddenFriendRequest';
+            this.$emit('NOTIFICATION', {
+                json,
+                params: {
+                    notificationId: json.id
+                }
+            });
+        }
+    });
+
     API.$on('NOTIFICATION:ACCEPT', function (args) {
         var ref = this.cachedNotifications.get(args.params.notificationId);
         if (typeof ref === 'undefined' ||
@@ -2242,6 +2270,9 @@ speechSynthesis.getVoices();
     API.expireNotifications = function () {
         for (var ref of this.cachedNotifications.values()) {
             ref.$isExpired = true;
+            if ((ref.type === 'friendRequest') || (ref.type === 'hiddenFriendRequest')) {
+                this.cachedNotifications.delete(ref.id);
+            }
         }
     };
 
@@ -2277,6 +2308,19 @@ speechSynthesis.getVoices();
                 break;
             }
         }
+        var params = {
+            n: 100,
+            offset: 0
+        };
+        var count = 50; //5000 max
+        for (var i = 0; i < count; i++) {
+            var args = await this.getHiddenFriendRequests(params);
+            $app.unseenNotifications = [];
+            params.offset += 100;
+            if (args.json.length < 100) {
+                break;
+            }
+        }
         this.deleteExpiredNotifcations();
         this.isNotificationsLoading = false;
     };
@@ -2300,6 +2344,24 @@ speechSynthesis.getVoices();
                 params
             };
             this.$emit('NOTIFICATION:LIST', args);
+            return args;
+        });
+    };
+
+    API.getHiddenFriendRequests = function (params) {
+        return this.call('auth/user/notifications', {
+            method: 'GET',
+            params: {
+                type: 'friendRequest',
+                hidden: true,
+                ...params
+            }
+        }).then((json) => {
+            var args = {
+                json,
+                params
+            };
+            this.$emit('NOTIFICATION:LIST:HIDDEN', args);
             return args;
         });
     };
@@ -2334,7 +2396,8 @@ speechSynthesis.getVoices();
         }).then((json) => {
             var args = {
                 json,
-                params
+                params,
+                receiverUserId
             };
             this.$emit('NOTIFICATION:INVITE:SEND', args);
             return args;
@@ -2349,7 +2412,8 @@ speechSynthesis.getVoices();
         }).then((json) => {
             var args = {
                 json,
-                params
+                params,
+                receiverUserId
             };
             this.$emit('NOTIFICATION:INVITE:PHOTO:SEND', args);
             return args;
@@ -2363,7 +2427,8 @@ speechSynthesis.getVoices();
         }).then((json) => {
             var args = {
                 json,
-                params
+                params,
+                receiverUserId
             };
             this.$emit('NOTIFICATION:REQUESTINVITE:SEND', args);
             return args;
@@ -2378,7 +2443,8 @@ speechSynthesis.getVoices();
         }).then((json) => {
             var args = {
                 json,
-                params
+                params,
+                receiverUserId
             };
             this.$emit('NOTIFICATION:REQUESTINVITE:PHOTO:SEND', args);
             return args;
@@ -7657,9 +7723,17 @@ speechSynthesis.getVoices();
             type: 'info',
             callback: (action) => {
                 if (action === 'confirm') {
-                    API.hideNotification({
-                        notificationId: row.id
-                    });
+                    if (row.type === 'hiddenFriendRequest') {
+                        API.deleteHiddenFriendRequest({
+                                notificationId: row.id
+                            },
+                            row.senderUserId
+                        );
+                    } else {
+                        API.hideNotification({
+                            notificationId: row.id
+                        });
+                    }
                 }
             }
         });
@@ -11677,7 +11751,8 @@ speechSynthesis.getVoices();
             }).then((json) => {
                 var args = {
                     json,
-                    params
+                    params,
+                    fileId
                 };
                 this.$emit('AVATARIMAGE:INIT', args);
                 return args;
@@ -11981,7 +12056,8 @@ speechSynthesis.getVoices();
             }).then((json) => {
                 var args = {
                     json,
-                    params
+                    params,
+                    fileId
                 };
                 this.$emit('WORLDIMAGE:INIT', args);
                 return args;
