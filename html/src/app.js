@@ -1000,11 +1000,12 @@ speechSynthesis.getVoices();
     });
 
     API.logout = function () {
-        return this.call('logout', {
-            method: 'PUT'
-        }).finally(() => {
-            this.$emit('LOGOUT');
-        });
+        this.$emit('LOGOUT');
+        // return this.call('logout', {
+        //     method: 'PUT'
+        // }).finally(() => {
+        //     this.$emit('LOGOUT');
+        // });
     };
 
     /*
