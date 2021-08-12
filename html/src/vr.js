@@ -19,7 +19,7 @@ Vue.component('marquee-text', MarqueeText);
 
 speechSynthesis.getVoices();
 
-var bar = new ProgressBar.Circle(vroverlay, {
+var bar = new ProgressBar.Circle('#vroverlay', {
     strokeWidth: 50,
     easing: 'easeInOut',
     duration: 500,
@@ -389,9 +389,9 @@ var bar = new ProgressBar.Circle(vroverlay, {
     // API: Location
 
     API.parseLocation = function (tag) {
-        tag = String(tag || '');
+        var _tag = String(tag || '');
         var ctx = {
-            tag,
+            tag: _tag,
             isOffline: false,
             isPrivate: false,
             worldId: '',
@@ -405,15 +405,15 @@ var bar = new ProgressBar.Circle(vroverlay, {
             friendsId: null,
             canRequestInvite: false
         };
-        if (tag === 'offline') {
+        if (_tag === 'offline') {
             ctx.isOffline = true;
-        } else if (tag === 'private') {
+        } else if (_tag === 'private') {
             ctx.isPrivate = true;
-        } else if (tag.startsWith('local') === false) {
-            var sep = tag.indexOf(':');
+        } else if (_tag.startsWith('local') === false) {
+            var sep = _tag.indexOf(':');
             if (sep >= 0) {
-                ctx.worldId = tag.substr(0, sep);
-                ctx.instanceId = tag.substr(sep + 1);
+                ctx.worldId = _tag.substr(0, sep);
+                ctx.instanceId = _tag.substr(sep + 1);
                 ctx.instanceId.split('~').forEach((s, i) => {
                     if (i) {
                         var A = s.indexOf('(');
@@ -455,7 +455,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     ctx.userId = ctx.hiddenId;
                 }
             } else {
-                ctx.worldId = tag;
+                ctx.worldId = _tag;
             }
         }
         return ctx;
@@ -829,7 +829,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
         });
     };
 
-    $app.methods.initLoop = async function () {
+    $app.methods.initLoop = function () {
         if (!sharedRepository.getBool('VRInit')) {
             setTimeout(this.initLoop, 500);
         } else {
@@ -1036,7 +1036,22 @@ var bar = new ProgressBar.Circle(vroverlay, {
         }
     };
 
-    $app.methods.updateSharedFeedVideo = async function (feeds) {
+    function sec2time(timeInSeconds) {
+        var pad = function (num, size) {
+                return `000${num}`.slice(size * -1);
+            },
+            time = parseFloat(timeInSeconds).toFixed(3),
+            hours = Math.floor(time / 60 / 60),
+            minutes = Math.floor(time / 60) % 60,
+            seconds = Math.floor(time - minutes * 60);
+        var hoursOut = '';
+        if (hours > '0') {
+            hoursOut = `${pad(hours, 2)}:`;
+        }
+        return `${hoursOut + pad(minutes, 2)}:${pad(seconds, 2)}`;
+    }
+
+    $app.methods.updateSharedFeedVideo = function (feeds) {
         this.nowPlayingobj.videoProgressText = '';
         for (var i = 0; i < feeds.length; i++) {
             var feed = feeds[i];
@@ -1066,7 +1081,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             Discord.SetText('', '');
         }
         var percentage = 0;
-        if (this.newPlayingobj.videoURL != '') {
+        if (this.newPlayingobj.videoURL !== '') {
             var videoLength = Number(this.newPlayingobj.videoLength) + 10; // magic number
             var currentTime = Date.now() / 1000;
             var videoStartTime =
@@ -1078,20 +1093,6 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 videoProgress = -120;
             }
             if (videoProgress > 0) {
-                function sec2time(timeInSeconds) {
-                    var pad = function (num, size) {
-                            return `000${num}`.slice(size * -1);
-                        },
-                        time = parseFloat(timeInSeconds).toFixed(3),
-                        hours = Math.floor(time / 60 / 60),
-                        minutes = Math.floor(time / 60) % 60,
-                        seconds = Math.floor(time - minutes * 60);
-                    var hoursOut = '';
-                    if (hours > '0') {
-                        hoursOut = `${pad(hours, 2)}:`;
-                    }
-                    return `${hoursOut + pad(minutes, 2)}:${pad(seconds, 2)}`;
-                }
                 this.nowPlayingobj.videoProgressText = sec2time(videoProgress);
                 percentage =
                     Math.floor(
@@ -1169,11 +1170,11 @@ var bar = new ProgressBar.Circle(vroverlay, {
             if (
                 isDanceWorld &&
                 this.appType === '2' &&
-                this.nowPlayingobj.videoURL != ''
+                this.nowPlayingobj.videoURL !== ''
             ) {
                 if (configRepository.getBool('VRCX_xsNotifications')) {
                     var timeout =
-                        parseInt(this.config.notificationTimeout) / 1000;
+                        parseInt(this.config.notificationTimeout, 10) / 1000;
                     var message = this.newPlayingobj.videoName;
                     if (this.newPlayingobj.playerPlayer !== '') {
                         message = `${message} (${this.newPlayingobj.playerPlayer})`;
@@ -1208,7 +1209,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         this.isGameRunning)
                 ) {
                     var ttsURL = '';
-                    if (this.newPlayingobj.videoID == 'YouTube') {
+                    if (this.newPlayingobj.videoID === 'YouTube') {
                         ttsURL = 'URL';
                     }
                     var ttsRequestedBy = '';
@@ -1224,7 +1225,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 }
             }
             if (configRepository.getBool('VRCX_volumeNormalize')) {
-                if (this.newPlayingobj.videoVolume != '') {
+                if (this.newPlayingobj.videoVolume !== '') {
                     var mindB = '-10.0';
                     var maxdB = '-24.0';
                     var minVolume = '30';

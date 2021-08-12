@@ -113,7 +113,7 @@ class Database {
 
     async getMemo(userId) {
         var row = {};
-        await sqliteService.execute((dbRow, userId) => {
+        await sqliteService.execute((dbRow) => {
             row = {
                 userId: dbRow[0],
                 editedAt: dbRow[1],

@@ -8,10 +8,8 @@ import Noty from 'noty';
 import Vue from 'vue';
 import VueLazyload from 'vue-lazyload';
 import {DataTables} from 'vue-data-tables';
-// eslint-disable-next-line no-unused-vars
 import VSwatches from 'vue-swatches';
 Vue.component('v-swatches', VSwatches);
-import '../node_modules/vue-swatches/dist/vue-swatches.css';
 import ElementUI from 'element-ui';
 import locale from 'element-ui/lib/locale/lang/en';
 import {v4 as uuidv4} from 'uuid';
@@ -216,7 +214,6 @@ speechSynthesis.getVoices();
     };
     Vue.filter('timeToText', timeToText);
 
-    const loadimage = require('./blank.png');
     Vue.use(VueLazyload, {
         preLoad: 1,
         observer: true,
@@ -392,6 +389,7 @@ speechSynthesis.getVoices();
                 return req;
             }
         } else if (init.uploadImage || init.uploadFilePUT) {
+            // nothing
         } else {
             init.headers = {
                 'Content-Type': 'application/json;charset=utf-8',
@@ -647,9 +645,9 @@ speechSynthesis.getVoices();
     // API: Location
 
     API.parseLocation = function (tag) {
-        tag = String(tag || '');
+        var _tag = String(tag || '');
         var ctx = {
-            tag,
+            tag: _tag,
             isOffline: false,
             isPrivate: false,
             worldId: '',
@@ -663,15 +661,15 @@ speechSynthesis.getVoices();
             friendsId: null,
             canRequestInvite: false
         };
-        if (tag === 'offline') {
+        if (_tag === 'offline') {
             ctx.isOffline = true;
-        } else if (tag === 'private') {
+        } else if (_tag === 'private') {
             ctx.isPrivate = true;
-        } else if (tag.startsWith('local') === false) {
-            var sep = tag.indexOf(':');
+        } else if (_tag.startsWith('local') === false) {
+            var sep = _tag.indexOf(':');
             if (sep >= 0) {
-                ctx.worldId = tag.substr(0, sep);
-                ctx.instanceId = tag.substr(sep + 1);
+                ctx.worldId = _tag.substr(0, sep);
+                ctx.instanceId = _tag.substr(sep + 1);
                 ctx.instanceId.split('~').forEach((s, i) => {
                     if (i) {
                         var A = s.indexOf('(');
@@ -713,7 +711,7 @@ speechSynthesis.getVoices();
                     ctx.userId = ctx.hiddenId;
                 }
             } else {
-                ctx.worldId = tag;
+                ctx.worldId = _tag;
             }
         }
         return ctx;
@@ -3620,9 +3618,6 @@ speechSynthesis.getVoices();
                     }
                 });
                 break;
-
-            default:
-                break;
         }
     });
 
@@ -4011,7 +4006,7 @@ speechSynthesis.getVoices();
     $app.data.appInit = false;
     $app.data.notyInit = false;
 
-    API.$on('LOGIN', function (args) {
+    API.$on('LOGIN', function () {
         sharedRepository.setArray('wristFeed', []);
         sharedRepository.setArray('notyFeed', []);
         setTimeout(function () {
@@ -4694,18 +4689,17 @@ speechSynthesis.getVoices();
             }
         });
         var bias = new Date(Date.now() - 60000).toJSON();
-        var noty = {};
         var messageList = [
             'inviteMessage',
             'requestMessage',
             'responseMessage'
         ];
         for (var i = 0; i < notyToPlay.length; i++) {
-            noty = notyToPlay[i];
+            let noty = notyToPlay[i];
             if (noty.created_at < bias) {
                 continue;
             }
-            var message = '';
+            let message = '';
             for (var k = 0; k < messageList.length; k++) {
                 if (
                     typeof noty.details !== 'undefined' &&
@@ -4786,9 +4780,7 @@ speechSynthesis.getVoices();
                     'User-Agent': appVersion
                 }
             })
-                .then((response) => {
-                    return response.arrayBuffer();
-                })
+                .then((response) => response.arrayBuffer())
                 .then((buffer) => {
                     var binary = '';
                     var bytes = new Uint8Array(buffer);
@@ -4900,13 +4892,11 @@ speechSynthesis.getVoices();
             case 'MutedOnPlayerLeft':
                 this.speak(`Muted user ${noty.displayName} has left`);
                 break;
-            default:
-                break;
         }
     };
 
     $app.methods.displayXSNotification = function (noty, message, image) {
-        var timeout = parseInt(parseInt(this.notificationTimeout) / 1000);
+        var timeout = Math.floor(parseInt(this.notificationTimeout, 10) / 1000);
         switch (noty.type) {
             case 'OnPlayerJoined':
                 AppApi.XSNotification(
@@ -5087,8 +5077,6 @@ speechSynthesis.getVoices();
                     image
                 );
                 break;
-            default:
-                break;
         }
     };
 
@@ -5242,8 +5230,6 @@ speechSynthesis.getVoices();
                     image
                 );
                 break;
-            default:
-                break;
         }
     };
 
@@ -5362,7 +5348,7 @@ speechSynthesis.getVoices();
         var lines = ['UserID,DisplayName,Memo'];
         var _ = function (str) {
             if (/[\x00-\x1f,"]/.test(str) === true) {
-                str = `"${str.replace(/"/g, '""')}"`;
+                return `"${str.replace(/"/g, '""')}"`;
             }
             return str;
         };
@@ -5414,7 +5400,7 @@ speechSynthesis.getVoices();
                 var lines = ['AvatarID,AvatarName'];
                 var _ = function (str) {
                     if (/[\x00-\x1f,"]/.test(str) === true) {
-                        str = `"${str.replace(/"/g, '""')}"`;
+                        return `"${str.replace(/"/g, '""')}"`;
                     }
                     return str;
                 };
@@ -5462,7 +5448,7 @@ speechSynthesis.getVoices();
     $app.methods.checkPrimaryPassword = function (args) {
         return new Promise((resolve, reject) => {
             if (!this.enablePrimaryPassword) {
-                return resolve(args.password);
+                resolve(args.password);
             }
             $app.$prompt(
                 'Please enter your Primary Password.',
@@ -5475,21 +5461,16 @@ speechSynthesis.getVoices();
                 .then(({value}) => {
                     security
                         .decrypt(args.password, value)
-                        .then((pwd) => {
-                            return resolve(pwd);
-                        })
-                        .catch((_) => {
-                            return reject();
-                        });
+                        .then(resolve)
+                        .catch(reject);
                 })
-                .catch((_) => {
-                    return reject();
-                });
+                .catch(reject);
         });
     };
 
-    $app.data.enablePrimaryPassword = Boolean(
-        configRepository.getBool('enablePrimaryPassword')
+    $app.data.enablePrimaryPassword = configRepository.getBool(
+        'enablePrimaryPassword',
+        false
     );
     $app.data.enablePrimaryPasswordDialog = {
         visible: false,
@@ -5535,7 +5516,7 @@ speechSynthesis.getVoices();
                                     false
                                 );
                             })
-                            .catch((_) => {
+                            .catch(() => {
                                 this.enablePrimaryPassword = true;
                                 configRepository.setBool(
                                     'enablePrimaryPassword',
@@ -5544,7 +5525,7 @@ speechSynthesis.getVoices();
                             });
                     }
                 })
-                .catch((_) => {
+                .catch(() => {
                     this.enablePrimaryPassword = true;
                     configRepository.setBool('enablePrimaryPassword', true);
                 });
@@ -5609,7 +5590,7 @@ speechSynthesis.getVoices();
                     return API.getConfig()
                         .catch((err) => {
                             this.loginForm.loading = false;
-                            return reject(err);
+                            reject(err);
                         })
                         .then(() => {
                             API.login({
@@ -5620,11 +5601,11 @@ speechSynthesis.getVoices();
                                 .catch((err2) => {
                                     this.loginForm.loading = false;
                                     API.logout();
-                                    return reject(err2);
+                                    reject(err2);
                                 })
                                 .then(() => {
                                     this.loginForm.loading = false;
-                                    return resolve();
+                                    resolve();
                                 });
                         });
                 })
@@ -5633,7 +5614,7 @@ speechSynthesis.getVoices();
                         message: 'Incorrect primary password',
                         type: 'error'
                     });
-                    return reject();
+                    reject(_);
                 });
         });
     };
@@ -5736,7 +5717,7 @@ speechSynthesis.getVoices();
                                             saveCredential.loginParmas.password,
                                             value
                                         )
-                                        .then((_) => {
+                                        .then(() => {
                                             security
                                                 .encrypt(
                                                     this.loginForm.password,
@@ -6195,7 +6176,7 @@ speechSynthesis.getVoices();
             ) {
                 API.getUser({
                     userId: id
-                }).catch((err) => {
+                }).catch(() => {
                     this.updateFriendInProgress.delete(id);
                 });
             }
@@ -6206,7 +6187,9 @@ speechSynthesis.getVoices();
                 (newState === 'active' || newState === 'offline')
             ) {
                 this.updateFriendInProgress.delete(id);
-                await new Promise((resolve) => setTimeout(resolve, 50000));
+                await new Promise((resolve) => {
+                    setTimeout(resolve, 50000);
+                });
                 if (this.APILastOnline.has(id)) {
                     var date = this.APILastOnline.get(id);
                     if (date > Date.now() - 60000) {
@@ -6224,13 +6207,14 @@ speechSynthesis.getVoices();
             }
             var args = await API.getUser({
                 userId: id
-            }).catch((err) => {
+            }).catch(() => {
                 this.updateFriendInProgress.delete(id);
             });
             if (
                 typeof args !== 'undefined' &&
                 typeof args.ref !== 'undefined'
             ) {
+                // eslint-disable-next-line no-param-reassign
                 newState = args.ref.state;
                 ctx.ref = args.ref;
             }
@@ -6386,19 +6370,6 @@ speechSynthesis.getVoices();
         return 0;
     };
 
-    // ascending
-    var compareByDisplayName = function (a, b) {
-        var A = String(a.displayName).toUpperCase();
-        var B = String(b.displayName).toUpperCase();
-        if (A < B) {
-            return -1;
-        }
-        if (A > B) {
-            return 1;
-        }
-        return 0;
-    };
-
     // private
     var compareByPrivate = function (a, b) {
         if (typeof a.ref === 'undefined' || typeof b.ref === 'undefined') {
@@ -6476,10 +6447,8 @@ speechSynthesis.getVoices();
                         return -1;
                 }
                 break;
-            default:
-                return 0;
-                break;
         }
+        return 0;
     };
 
     // location at
@@ -6578,7 +6547,7 @@ speechSynthesis.getVoices();
                 return this.statusClass(user.status);
             }
             if (!user.isFriend) {
-                return;
+                return '';
             }
             // temp fix
             if (
@@ -6783,7 +6752,7 @@ speechSynthesis.getVoices();
         } else {
             $app.initFriendLog(args.json.id);
         }
-        // remove old data from json file and migrate them to SQLite
+        // remove old data from json file and migrate to SQLite
         if (VRCXStorage.Get(`${args.json.id}_friendLogUpdatedAt`)) {
             VRCXStorage.Remove(`${args.json.id}_feedTable`);
             $app.migrateMemos();
@@ -7020,13 +6989,12 @@ speechSynthesis.getVoices();
             {
                 prop: 'data',
                 value: true,
-                filterFn: (row, filter) =>
-                    row.data !== API.currentUser.displayName
+                filterFn: (row) => row.data !== API.currentUser.displayName
             },
             {
                 prop: 'type',
                 value: true,
-                filterFn: (row, filter) => row.type !== 'Notification'
+                filterFn: (row) => row.type !== 'Notification'
             }
         ],
         tableProps: {
@@ -7087,35 +7055,35 @@ speechSynthesis.getVoices();
             var a = duration.match(/\d+/g);
             if (
                 duration.indexOf('M') >= 0 &&
-                duration.indexOf('H') == -1 &&
-                duration.indexOf('S') == -1
+                duration.indexOf('H') === -1 &&
+                duration.indexOf('S') === -1
             ) {
                 a = [0, a[0], 0];
             }
-            if (duration.indexOf('H') >= 0 && duration.indexOf('M') == -1) {
+            if (duration.indexOf('H') >= 0 && duration.indexOf('M') === -1) {
                 a = [a[0], 0, a[1]];
             }
             if (
                 duration.indexOf('H') >= 0 &&
-                duration.indexOf('M') == -1 &&
-                duration.indexOf('S') == -1
+                duration.indexOf('M') === -1 &&
+                duration.indexOf('S') === -1
             ) {
                 a = [a[0], 0, 0];
             }
-            duration = 0;
-            if (a.length == 3) {
-                duration += parseInt(a[0]) * 3600;
-                duration += parseInt(a[1]) * 60;
-                duration += parseInt(a[2]);
+            var length = 0;
+            if (a.length === 3) {
+                length += parseInt(a[0], 10) * 3600;
+                length += parseInt(a[1], 10) * 60;
+                length += parseInt(a[2], 10);
             }
-            if (a.length == 2) {
-                duration += parseInt(a[0]) * 60;
-                duration += parseInt(a[1]);
+            if (a.length === 2) {
+                length += parseInt(a[0], 10) * 60;
+                length += parseInt(a[1], 10);
             }
-            if (a.length == 1) {
-                duration += parseInt(a[0]);
+            if (a.length === 1) {
+                length += parseInt(a[0], 10);
             }
-            return duration;
+            return length;
         }
 
         async function youtubeAPI(videoID) {
@@ -7137,12 +7105,12 @@ speechSynthesis.getVoices();
             try {
                 var youtubeAPIResult = JSON.parse(youtubeAPIGet);
                 if (youtubeAPIResult.pageInfo.totalResults !== 0) {
-                    videoobj.videoName =
-                        youtubeAPIResult.items[0].snippet.title;
-                    videoobj.videoLength = convert_youtube_time(
-                        youtubeAPIResult.items[0].contentDetails.duration
-                    );
-                    videoobj.videoID = 'YouTube';
+                    var videoobj = {
+                        videoName: youtubeAPIResult.items[0].snippet.title,
+                        videoLength: convert_youtube_time(youtubeAPIResult.items[0].contentDetails.duration),
+                        videoID: 'YouTube',
+                        ...videoobj
+                    }
                 }
             } catch {
                 console.log('YouTube video lookup failed');
@@ -7221,9 +7189,9 @@ speechSynthesis.getVoices();
                     };
                     var videoID = '';
                     if (
-                        videoobj.playerPlayer != '' &&
-                        videoobj.playerRequest != '' &&
-                        videoobj.playerPlayer != videoobj.playerRequest &&
+                        videoobj.playerPlayer !== '' &&
+                        videoobj.playerRequest !== '' &&
+                        videoobj.playerPlayer !== videoobj.playerRequest &&
                         videoobj.videoURL.substring(0, 34) ===
                             'https://jd.pypy.moe/api/v1/videos/'
                     ) {
@@ -7272,9 +7240,6 @@ speechSynthesis.getVoices();
                         type: 'VideoChange',
                         data: videoobj
                     };
-                    break;
-
-                default:
                     break;
             }
             if (tableData !== null) {
@@ -8605,7 +8570,7 @@ speechSynthesis.getVoices();
     if (!$app.data.themeMode) {
         $app.data.themeMode = 'system';
     }
-    var systemIsDarkMode = (_) =>
+    var systemIsDarkMode = () =>
         window.matchMedia('(prefers-color-scheme: dark)').matches;
     $app.data.isDarkMode =
         $app.data.themeMode === 'system'
@@ -8794,20 +8759,19 @@ speechSynthesis.getVoices();
     $app.data.sharedFeedFilters.wrist.VideoChange = 'On';
 
     if (!configRepository.getString('VRCX_trustColor')) {
-        var trustColor = {
-            untrusted: '#CCCCCC',
-            basic: '#1778FF',
-            known: '#2BCF5C',
-            trusted: '#FF7B42',
-            veteran: '#B18FFF',
-            legend: '#FFD000',
-            legendary: '#FF69B4',
-            vip: '#FF2626',
-            troll: '#782F2F'
-        };
         configRepository.setString(
             'VRCX_trustColor',
-            JSON.stringify(trustColor)
+            JSON.stringify({
+                untrusted: '#CCCCCC',
+                basic: '#1778FF',
+                known: '#2BCF5C',
+                trusted: '#FF7B42',
+                veteran: '#B18FFF',
+                legend: '#FFD000',
+                legendary: '#FF69B4',
+                vip: '#FF2626',
+                troll: '#782F2F'
+            })
         );
     }
     $app.data.trustColor = JSON.parse(
@@ -9084,10 +9048,7 @@ speechSynthesis.getVoices();
         if (voices.length === 0) {
             return;
         }
-        if (index > voices.length) {
-            index = 0;
-        }
-        var voiceName = voices[index].name;
+        var voiceName = voices[index < voices.length ? index : 0].name;
         speechSynthesis.cancel();
         this.speak(voiceName);
         this.updateVRConfigVars();
@@ -9725,7 +9686,7 @@ speechSynthesis.getVoices();
                                 if (this.localAvatarDatabaseAuthorCache) {
                                     this.getLocalAvatarCacheFromAuthor(userId);
                                 } else {
-                                    this.checkAvatarAvailable(userId);
+                                    this.checkAvatarAvailable();
                                 }
                             }
                         }
@@ -9937,7 +9898,7 @@ speechSynthesis.getVoices();
             releaseStatus: 'all',
             user: 'me'
         };
-        for (var ref of API.cachedAvatars.values()) {
+        for (let ref of API.cachedAvatars.values()) {
             if (ref.authorId === D.id) {
                 API.cachedAvatars.delete(ref.id);
             }
@@ -9961,7 +9922,7 @@ speechSynthesis.getVoices();
                 D.isAvatarsLoading = false;
                 if (fileId) {
                     D.loading = false;
-                    for (var ref of array) {
+                    for (let ref of array) {
                         if (extractFileId(ref.imageUrl) === fileId) {
                             this.showAvatarDialog(ref.id);
                             return;
@@ -10057,8 +10018,6 @@ speechSynthesis.getVoices();
                 API.deleteFriend({
                     userId
                 });
-                break;
-            default:
                 break;
         }
     };
@@ -10279,7 +10238,7 @@ speechSynthesis.getVoices();
         });
         if (D.fileSize === 'Loading') {
             var assetUrl = '';
-            for (var i = ref.unityPackages.length - 1; i > -1; i--) {
+            for (let i = ref.unityPackages.length - 1; i > -1; i--) {
                 var unityPackage = ref.unityPackages[i];
                 if (
                     unityPackage.platform === 'standalonewindows' &&
@@ -10293,12 +10252,11 @@ speechSynthesis.getVoices();
             var fileVersion = extractFileVersion(assetUrl);
             if (fileId) {
                 API.getBundles(fileId)
-                    .then((args) => {
-                        var {versions} = args.json;
-                        var ctx = '';
-                        for (var i = versions.length - 1; i > -1; i--) {
+                    .then((args2) => {
+                        var {versions} = args2.json;
+                        for (let i = versions.length - 1; i > -1; i--) {
                             var version = versions[i];
-                            if (version.version == fileVersion) {
+                            if (version.version === fileVersion) {
                                 D.fileCreatedAt = version.created_at;
                                 D.fileSize = `${(
                                     version.file.sizeInBytes / 1048576
@@ -10307,7 +10265,7 @@ speechSynthesis.getVoices();
                             }
                         }
                     })
-                    .catch((err) => {
+                    .catch(() => {
                         D.fileSize = 'Error';
                     });
             }
@@ -10392,7 +10350,7 @@ speechSynthesis.getVoices();
         var lastLocation$ = API.parseLocation(this.lastLocation.location);
         var playersInInstance = this.lastLocation.playerList;
         if (lastLocation$.worldId === D.id) {
-            instance = {
+            var instance = {
                 id: lastLocation$.instanceId,
                 occupants: playersInInstance.length,
                 users: []
@@ -10586,8 +10544,6 @@ speechSynthesis.getVoices();
                                     return args;
                                 });
                                 break;
-                            default:
-                                break;
                         }
                     }
                 });
@@ -10669,16 +10625,16 @@ speechSynthesis.getVoices();
         D.cacheLocked = false;
         D.isQuestFallback = false;
         D.isFavorite = API.cachedFavoritesByObjectId.has(avatarId);
-        var ref = API.cachedAvatars.get(avatarId);
-        if (typeof ref !== 'undefined') {
-            D.ref = ref;
+        var ref2 = API.cachedAvatars.get(avatarId);
+        if (typeof ref2 !== 'undefined') {
+            D.ref = ref2;
             this.updateVRChatAvatarCache();
-            if (ref.$cached) {
+            if (ref2.$cached) {
                 D.fileSize = 'Local Database';
             }
             if (
-                ref.releaseStatus !== 'public' &&
-                ref.authorId !== API.currentUser.id
+                ref2.releaseStatus !== 'public' &&
+                ref2.authorId !== API.currentUser.id
             ) {
                 return;
             }
@@ -10697,7 +10653,7 @@ speechSynthesis.getVoices();
                 D.isQuestFallback = true;
             }
             var assetUrl = '';
-            for (var i = ref.unityPackages.length - 1; i > -1; i--) {
+            for (let i = ref.unityPackages.length - 1; i > -1; i--) {
                 var unityPackage = ref.unityPackages[i];
                 if (
                     unityPackage.platform === 'standalonewindows' &&
@@ -10713,17 +10669,16 @@ speechSynthesis.getVoices();
                 var fileId = extractFileId(ref.assetUrl);
                 var fileVersion = extractFileVersion(ref.assetUrl);
             }
-            var imageId = extractFileId(ref.imageUrl);
+            // var imageId = extractFileId(ref.imageUrl);
             D.fileSize = '';
             if (fileId) {
                 D.fileSize = 'Loading';
                 API.getBundles(fileId)
-                    .then((args) => {
-                        var {versions} = args.json;
-                        var ctx = '';
-                        for (var i = versions.length - 1; i > -1; i--) {
+                    .then((args2) => {
+                        var {versions} = args2.json;
+                        for (let i = versions.length - 1; i > -1; i--) {
                             var version = versions[i];
-                            if (version.version == fileVersion) {
+                            if (version.version === fileVersion) {
                                 D.ref.created_at = version.created_at;
                                 D.fileSize = `${(
                                     version.file.sizeInBytes / 1048576
@@ -10732,7 +10687,7 @@ speechSynthesis.getVoices();
                             }
                         }
                     })
-                    .catch((err) => {
+                    .catch(() => {
                         D.fileSize = 'Error';
                     });
             }
@@ -10841,8 +10796,6 @@ speechSynthesis.getVoices();
                                     return args;
                                 });
                                 break;
-                            default:
-                                break;
                         }
                     }
                 });
@@ -10883,9 +10836,9 @@ speechSynthesis.getVoices();
             ) {
                 this.getLocalAvatarCacheFromAuthor(avatarInfo.ownerId).then(
                     () => {
-                        for (var ref of API.cachedAvatars.values()) {
-                            if (extractFileId(ref.imageUrl) === fileId) {
-                                this.showAvatarDialog(ref.id);
+                        for (var ref2 of API.cachedAvatars.values()) {
+                            if (extractFileId(ref2.imageUrl) === fileId) {
+                                this.showAvatarDialog(ref2.id);
                                 return;
                             }
                         }
@@ -12610,7 +12563,9 @@ speechSynthesis.getVoices();
             await API.getUser({
                 userId
             });
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await new Promise((resolve) => {
+                setTimeout(resolve, 1000);
+            });
         }
         this.friendsListLoadingProgress = '';
         this.friendsListLoading = false;
@@ -12743,13 +12698,12 @@ speechSynthesis.getVoices();
             console.error(err);
             this.uploadAvatarFailCleanup(fileId);
         }
+        return void 0;
     };
 
     API.uploadAvatarFailCleanup = async function (fileId) {
         var json = await this.call(`file/${fileId}`, {
             method: 'GET'
-        }).then((json) => {
-            return json;
         });
         var fileId = json.id;
         var fileVersion = json.versions[json.versions.length - 1].version;
@@ -12792,6 +12746,7 @@ speechSynthesis.getVoices();
             console.error(err);
             this.uploadAvatarFailCleanup(params.fileId);
         }
+        return void 0;
     };
 
     API.$on('AVATARIMAGE:FILESTART', function (args) {
@@ -12887,6 +12842,7 @@ speechSynthesis.getVoices();
             console.error(err);
             this.uploadAvatarFailCleanup(params.fileId);
         }
+        return void 0;
     };
 
     API.$on('AVATARIMAGE:SIGSTART', function (args) {
@@ -13072,13 +13028,12 @@ speechSynthesis.getVoices();
             console.error(err);
             this.uploadWorldFailCleanup(fileId);
         }
+        return void 0;
     };
 
     API.uploadWorldFailCleanup = async function (fileId) {
         var json = await this.call(`file/${fileId}`, {
             method: 'GET'
-        }).then((json) => {
-            return json;
         });
         var fileId = json.id;
         var fileVersion = json.versions[json.versions.length - 1].version;
@@ -13121,6 +13076,7 @@ speechSynthesis.getVoices();
             console.error(err);
             this.uploadWorldFailCleanup(params.fileId);
         }
+        return void 0;
     };
 
     API.$on('WORLDIMAGE:FILESTART', function (args) {
@@ -13216,6 +13172,7 @@ speechSynthesis.getVoices();
             console.error(err);
             this.uploadWorldFailCleanup(params.fileId);
         }
+        return void 0;
     };
 
     API.$on('WORLDIMAGE:SIGSTART', function (args) {
@@ -13382,7 +13339,7 @@ speechSynthesis.getVoices();
             API.getAvatarImages(params).then((args) => {
                 this.previousImagesTableFileId = args.json.id;
                 var images = args.json.versions.reverse();
-                this.checkPreviousImageAvailable(images, command);
+                this.checkPreviousImageAvailable(images);
             });
         } else if (type === 'World') {
             if (command === 'Change') {
@@ -13394,21 +13351,18 @@ speechSynthesis.getVoices();
             API.getWorldImages(params).then((args) => {
                 this.previousImagesTableFileId = args.json.id;
                 var images = args.json.versions.reverse();
-                this.checkPreviousImageAvailable(images, command);
+                this.checkPreviousImageAvailable(images);
             });
         } else if (type === 'User') {
             API.getAvatarImages(params).then((args) => {
                 this.previousImagesTableFileId = args.json.id;
                 var images = args.json.versions.reverse();
-                this.checkPreviousImageAvailable(images, command);
+                this.checkPreviousImageAvailable(images);
             });
         }
     };
 
-    $app.methods.checkPreviousImageAvailable = async function (
-        images,
-        command
-    ) {
+    $app.methods.checkPreviousImageAvailable = async function (images) {
         this.previousImagesTable = [];
         for (var image of images) {
             if (image.file && image.file.url) {
@@ -13441,8 +13395,8 @@ speechSynthesis.getVoices();
         $app.previousImagesDialogVisible = false;
     });
 
-    API.getAvatarImages = async function (params) {
-        return await this.call(`file/${params.fileId}`, {
+    API.getAvatarImages = function (params) {
+        return this.call(`file/${params.fileId}`, {
             method: 'GET',
             params
         }).then((json) => {
@@ -13455,8 +13409,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    API.getWorldImages = async function (params) {
-        return await this.call(`file/${params.fileId}`, {
+    API.getWorldImages = function (params) {
+        return this.call(`file/${params.fileId}`, {
             method: 'GET',
             params
         }).then((json) => {
@@ -13476,7 +13430,6 @@ speechSynthesis.getVoices();
     $app.methods.storeAvatarImage = function (args) {
         var refCreatedAt = args.json.versions[0];
         var fileCreatedAt = refCreatedAt.created_at;
-        var ref = args.json.versions[args.json.versions.length - 1];
         var fileId = args.params.fileId;
         var avatarName = '';
         var imageName = args.json.name;
@@ -13558,7 +13511,7 @@ speechSynthesis.getVoices();
         var lines = ['DisplayName,DiscordName'];
         var _ = function (str) {
             if (/[\x00-\x1f,"]/.test(str) === true) {
-                str = `"${str.replace(/"/g, '""')}"`;
+                return `"${str.replace(/"/g, '""')}"`;
             }
             return str;
         };
@@ -13664,7 +13617,7 @@ speechSynthesis.getVoices();
         var result = await LiteDB.RemoveAvatarFav(json);
         if (result) {
             this.localAvatarFavorites = this.localAvatarFavorites.filter(
-                (a) => a.ref.id != id || a.category != group
+                (a) => a.ref.id !== id || a.category !== group
             );
             this.localAvatarFavoriteGroups[group].count--;
             if (this.localAvatarFavoriteGroups[group].count <= 0) {
@@ -13672,7 +13625,7 @@ speechSynthesis.getVoices();
             }
             if (this.avatarDialog.visible) {
                 this.avatarDialog.isFavorite = false;
-                for (i = 0; i < this.localAvatarFavorites.length; i++) {
+                for (var i = 0; i < this.localAvatarFavorites.length; i++) {
                     if (this.localAvatarFavorites[i].ref.id === id) {
                         this.avatarDialog.isFavorite = true;
                         break;
@@ -13706,11 +13659,11 @@ speechSynthesis.getVoices();
                 }
             });
             this.localAvatarFavorites = this.localAvatarFavorites.filter(
-                (a) => a.ref.id != avatarId
+                (a) => a.ref.id !== avatarId
             );
             if (this.avatarDialog.visible) {
                 this.avatarDialog.isFavorite = false;
-                for (i = 0; i < this.localAvatarFavorites.length; i++) {
+                for (var i = 0; i < this.localAvatarFavorites.length; i++) {
                     if (this.localAvatarFavorites[i].ref.id === avatarId) {
                         this.avatarDialog.isFavorite = true;
                         break;
@@ -13852,7 +13805,7 @@ speechSynthesis.getVoices();
         });
         this.setUserDialogAvatars(userId);
         this.userDialog.isAvatarsLoading = false;
-        this.checkAvatarAvailable(userId);
+        this.checkAvatarAvailable();
     };
 
     $app.methods.getLocalAvatarCategories = async function (isGameRunning) {
@@ -13937,7 +13890,7 @@ speechSynthesis.getVoices();
         return false;
     };
 
-    $app.methods.checkAvatarAvailable = function (userId) {
+    $app.methods.checkAvatarAvailable = function () {
         var avatars = this.userDialog.avatars;
         avatars.forEach((avatar) => {
             if (avatar.$cached) {
@@ -13999,7 +13952,7 @@ speechSynthesis.getVoices();
                     if (this.localAvatarDatabaseAuthorCache) {
                         this.getLocalAvatarCacheFromAuthor(userId);
                     } else {
-                        this.checkAvatarAvailable(userId);
+                        this.checkAvatarAvailable();
                     }
                 }
             }
@@ -14071,7 +14024,7 @@ speechSynthesis.getVoices();
         }
     };
 
-    $app.methods.WriteVRChatConfigFile = async function () {
+    $app.methods.WriteVRChatConfigFile = function () {
         var json = JSON.stringify(this.VRChatConfigFile, null, '\t');
         AppApi.WriteConfigFile(json);
     };
@@ -14107,7 +14060,8 @@ speechSynthesis.getVoices();
                 !isNaN(this.VRChatConfigFile[item])
             ) {
                 this.VRChatConfigFile[item] = parseInt(
-                    this.VRChatConfigFile[item]
+                    this.VRChatConfigFile[item],
+                    10
                 );
             }
         }
@@ -14135,19 +14089,14 @@ speechSynthesis.getVoices();
         switch (res) {
             case '1280x720':
                 return '1280x720 (720p)';
-                break;
             case '1920x1080':
                 return '1920x1080 (1080p)';
-                break;
             case '2560x1440':
                 return '2560x1440 (2K)';
-                break;
             case '3840x2160':
                 return '3840x2160 (4K)';
-                break;
-            default:
-                return `${res} (Custom)`;
         }
+        return `${res} (Custom)`;
     };
 
     $app.methods.getVRChatCameraResolution = function () {
@@ -14222,7 +14171,7 @@ speechSynthesis.getVoices();
 
     $app.methods.checkVRChatCache = async function (ref) {
         var cacheDir = await this.getVRChatCacheDir();
-        return await AssetBundleCacher.CheckVRChatCache(
+        return AssetBundleCacher.CheckVRChatCache(
             ref.id,
             ref.version,
             cacheDir
@@ -14244,7 +14193,7 @@ speechSynthesis.getVoices();
         }
     };
 
-    API.getBundles = async function (fileId) {
+    API.getBundles = function (fileId) {
         return this.call(`file/${fileId}`, {
             method: 'GET'
         }).then((json) => {
@@ -14264,7 +14213,7 @@ speechSynthesis.getVoices();
         this.downloadInProgress = true;
         this.downloadCurrent = this.downloadQueue.values().next().value;
         this.downloadCurrent.id = this.downloadQueue.keys().next().value;
-        var {ref, type} = this.downloadCurrent;
+        var {ref} = this.downloadCurrent;
         this.downloadQueue.delete(ref.id);
         this.downloadQueueTable.data = Array.from(this.downloadQueue.values());
         if (this.downloadCurrent.id === 'VRCXUpdate') {
@@ -14319,7 +14268,7 @@ speechSynthesis.getVoices();
         var file = '';
         for (var i = versions.length - 1; i > -1; i--) {
             var version = versions[i];
-            if (version.version == fileVersion) {
+            if (version.version === fileVersion) {
                 file = version.file;
                 break;
             }
@@ -14722,16 +14671,19 @@ speechSynthesis.getVoices();
         if (urlPath.substring(5, 12) === '/world/') {
             var worldId = urlPath.substring(12);
             return worldId;
-        } else if (urlPath.substring(5, 12) === '/launch') {
+        }
+        if (urlPath.substring(5, 12) === '/launch') {
             var urlParams = new URLSearchParams(url.search);
             var worldId = urlParams.get('worldId');
             var instanceId = urlParams.get('instanceId');
             if (instanceId) {
                 return `${worldId}:${instanceId}`;
-            } else if (worldId) {
+            }
+            if (worldId) {
                 return worldId;
             }
         }
+        return void 0;
     };
 
     // Parse User URL
@@ -14743,6 +14695,7 @@ speechSynthesis.getVoices();
             var userId = urlPath.substring(11);
             return userId;
         }
+        return void 0;
     };
 
     // Parse Avatar URL
@@ -14754,6 +14707,7 @@ speechSynthesis.getVoices();
             var avatarId = urlPath.substring(13);
             return avatarId;
         }
+        return void 0;
     };
 
     // userDialog Favorite Worlds
@@ -14978,7 +14932,7 @@ speechSynthesis.getVoices();
 
     $app.methods.replaceBioSymbols = function (text) {
         if (!text) {
-            return;
+            return void 0;
         }
         var symbolList = {
             '@': '＠',
@@ -15009,12 +14963,12 @@ speechSynthesis.getVoices();
             '|': '｜',
             '*': '∗'
         };
+        var newText = text;
         for (var key in symbolList) {
             var regex = new RegExp(symbolList[key], 'g');
-            text = text.replace(regex, key);
+            newText = newText.replace(regex, key);
         }
-        text = text.replace(/ {1,}/g, ' ');
-        return text;
+        return newText.replace(/ {1,}/g, ' ');
     };
 
     $app.methods.checkCanInvite = function (location) {
@@ -15207,7 +15161,7 @@ speechSynthesis.getVoices();
             ''
         );
         var assetVersion = version.replace(/\D/g, '');
-        if (parseInt(assetVersion) <= parseInt(currentUnityVersion)) {
+        if (parseInt(assetVersion, 10) <= parseInt(currentUnityVersion, 10)) {
             return true;
         }
         return false;
