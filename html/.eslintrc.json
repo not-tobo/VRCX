@@ -74,6 +74,7 @@
     "prefer-const": 0,
     "prefer-destructuring": 0,
     "prefer-named-capture-group": 0,
+    "require-atomic-updates": 0,
     "require-unicode-regexp": 0,
     "sort-imports": 0,
     "sort-keys": 0,

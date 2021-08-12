@@ -7107,10 +7107,12 @@ speechSynthesis.getVoices();
                 if (youtubeAPIResult.pageInfo.totalResults !== 0) {
                     var videoobj = {
                         videoName: youtubeAPIResult.items[0].snippet.title,
-                        videoLength: convert_youtube_time(youtubeAPIResult.items[0].contentDetails.duration),
+                        videoLength: convert_youtube_time(
+                            youtubeAPIResult.items[0].contentDetails.duration
+                        ),
                         videoID: 'YouTube',
                         ...videoobj
-                    }
+                    };
                 }
             } catch {
                 console.log('YouTube video lookup failed');
