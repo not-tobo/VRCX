@@ -20,12 +20,12 @@ Vue.component('marquee-text', MarqueeText);
 speechSynthesis.getVoices();
 
 var bar = new ProgressBar.Circle(vroverlay, {
-  strokeWidth: 50,
-  easing: 'easeInOut',
-  duration: 500,
-  color: '#aaa',
-  trailWidth: 0,
-  svgStyle: null
+    strokeWidth: 50,
+    easing: 'easeInOut',
+    duration: 500,
+    color: '#aaa',
+    trailWidth: 0,
+    svgStyle: null
 });
 
 (async function () {
@@ -55,10 +55,12 @@ var bar = new ProgressBar.Circle(vroverlay, {
         locale
     });
 
-    var escapeTag = (s) => String(s).replace(/["&'<>]/gu, (c) => `&#${c.charCodeAt(0)};`);
+    var escapeTag = (s) =>
+        String(s).replace(/["&'<>]/gu, (c) => `&#${c.charCodeAt(0)};`);
     Vue.filter('escapeTag', escapeTag);
 
-    var commaNumber = (n) => String(Number(n) || 0).replace(/(\d)(?=(\d{3})+(?!\d))/gu, '$1,');
+    var commaNumber = (n) =>
+        String(Number(n) || 0).replace(/(\d)(?=(\d{3})+(?!\d))/gu, '$1,');
     Vue.filter('commaNumber', commaNumber);
 
     var formatDate = (s, format) => {
@@ -68,24 +70,27 @@ var bar = new ProgressBar.Circle(vroverlay, {
         }
         var hours = dt.getHours();
         var map = {
-            'YYYY': String(10000 + dt.getFullYear()).substr(-4),
-            'MM': String(101 + dt.getMonth()).substr(-2),
-            'DD': String(100 + dt.getDate()).substr(-2),
-            'HH24': String(100 + hours).substr(-2),
-            'HH': String(100 + (hours > 12
-                ? hours - 12
-                : hours)).substr(-2),
-            'MI': String(100 + dt.getMinutes()).substr(-2),
-            'SS': String(100 + dt.getSeconds()).substr(-2),
-            'AMPM': hours >= 12
-                ? 'PM'
-                : 'AM'
+            YYYY: String(10000 + dt.getFullYear()).substr(-4),
+            MM: String(101 + dt.getMonth()).substr(-2),
+            DD: String(100 + dt.getDate()).substr(-2),
+            HH24: String(100 + hours).substr(-2),
+            HH: String(100 + (hours > 12 ? hours - 12 : hours)).substr(-2),
+            MI: String(100 + dt.getMinutes()).substr(-2),
+            SS: String(100 + dt.getSeconds()).substr(-2),
+            AMPM: hours >= 12 ? 'PM' : 'AM'
         };
-        return format.replace(/YYYY|MM|DD|HH24|HH|MI|SS|AMPM/gu, (c) => map[c] || c);
+        return format.replace(
+            /YYYY|MM|DD|HH24|HH|MI|SS|AMPM/gu,
+            (c) => map[c] || c
+        );
     };
     Vue.filter('formatDate', formatDate);
 
-    var textToHex = (s) => String(s).split('').map((c) => c.charCodeAt(0).toString(16)).join(' ');
+    var textToHex = (s) =>
+        String(s)
+            .split('')
+            .map((c) => c.charCodeAt(0).toString(16))
+            .join(' ');
     Vue.filter('textToHex', textToHex);
 
     var timeToText = (t) => {
@@ -110,8 +115,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
             arr.push(`${Math.floor(sec / 60)}m`);
             sec %= 60;
         }
-        if (sec ||
-            !arr.length) {
+        if (sec || !arr.length) {
             arr.push(`${sec}s`);
         }
         return arr.join(' ');
@@ -155,7 +159,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
         if (typeof handlers === 'undefined') {
             return;
         }
-        var { length } = handlers;
+        var {length} = handlers;
         for (var i = 0; i < length; ++i) {
             if (handlers[i] === handler) {
                 if (length > 1) {
@@ -176,13 +180,13 @@ var bar = new ProgressBar.Circle(vroverlay, {
             method: 'GET',
             ...options
         };
-        var { params } = init;
+        var {params} = init;
         var isGetRequest = init.method === 'GET';
         if (isGetRequest === true) {
             // transform body to url
             if (params === Object(params)) {
                 var url = new URL(init.url);
-                var { searchParams } = url;
+                var {searchParams} = url;
                 for (var key in params) {
                     searchParams.set(key, params[key]);
                 }
@@ -198,54 +202,53 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 'Content-Type': 'application/json;charset=utf-8',
                 ...init.headers
             };
-            init.body = params === Object(params)
-                ? JSON.stringify(params)
-                : '{}';
+            init.body =
+                params === Object(params) ? JSON.stringify(params) : '{}';
         }
         init.headers = {
             'User-Agent': appVersion,
             ...init.headers
         };
-        var req = webApiService.execute(init).catch((err) => {
-            this.$throw(0, err);
-        }).then((response) => {
-            try {
-                response.data = JSON.parse(response.data);
-                return response;
-            } catch (e) {
-            }
-            if (response.status === 200) {
-                this.$throw(0, 'Invalid JSON response');
-            }
-            this.$throw(response.status);
-            return {};
-        }).then(({ data, status }) => {
-            if (data === Object(data)) {
-                if (status === 200) {
-                    if (data.success === Object(data.success)) {
-                        new Noty({
-                            type: 'success',
-                            text: escapeTag(data.success.message)
-                        }).show();
+        var req = webApiService
+            .execute(init)
+            .catch((err) => {
+                this.$throw(0, err);
+            })
+            .then((response) => {
+                try {
+                    response.data = JSON.parse(response.data);
+                    return response;
+                } catch (e) {}
+                if (response.status === 200) {
+                    this.$throw(0, 'Invalid JSON response');
+                }
+                this.$throw(response.status);
+                return {};
+            })
+            .then(({data, status}) => {
+                if (data === Object(data)) {
+                    if (status === 200) {
+                        if (data.success === Object(data.success)) {
+                            new Noty({
+                                type: 'success',
+                                text: escapeTag(data.success.message)
+                            }).show();
+                        }
+                        return data;
                     }
-                    return data;
+                    if (data.error === Object(data.error)) {
+                        this.$throw(
+                            data.error.status_code || status,
+                            data.error.message,
+                            data.error.data
+                        );
+                    } else if (typeof data.error === 'string') {
+                        this.$throw(data.status_code || status, data.error);
+                    }
                 }
-                if (data.error === Object(data.error)) {
-                    this.$throw(
-                        data.error.status_code || status,
-                        data.error.message,
-                        data.error.data
-                    );
-                } else if (typeof data.error === 'string') {
-                    this.$throw(
-                        data.status_code || status,
-                        data.error
-                    );
-                }
-            }
-            this.$throw(status, data);
-            return data;
-        });
+                this.$throw(status, data);
+                return data;
+            });
         if (isGetRequest === true) {
             req.finally(() => {
                 this.pendingGetRequests.delete(init.url);
@@ -414,15 +417,9 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 ctx.instanceId.split('~').forEach((s, i) => {
                     if (i) {
                         var A = s.indexOf('(');
-                        var Z = A >= 0
-                            ? s.lastIndexOf(')')
-                            : -1;
-                        var key = Z >= 0
-                            ? s.substr(0, A)
-                            : s;
-                        var value = A < Z
-                            ? s.substr(A + 1, Z - A - 1)
-                            : '';
+                        var Z = A >= 0 ? s.lastIndexOf(')') : -1;
+                        var key = Z >= 0 ? s.substr(0, A) : s;
+                        var value = A < Z ? s.substr(A + 1, Z - A - 1) : '';
                         if (key === 'hidden') {
                             ctx.hiddenId = value;
                         } else if (key === 'private') {
@@ -465,7 +462,8 @@ var bar = new ProgressBar.Circle(vroverlay, {
     };
 
     Vue.component('location', {
-        template: '<span>{{ text }}<slot></slot><span class="famfamfam-flags" :class="region" style="display:inline-block;margin-left:5px"></span></span>',
+        template:
+            '<span>{{ text }}<slot></slot><span class="famfamfam-flags" :class="region" style="display:inline-block;margin-left:5px"></span></span>',
         props: {
             location: String,
             hint: {
@@ -501,7 +499,12 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     }
                 }
                 this.region = '';
-                if ((this.location !== '') && (L.instanceId) && (!L.isOffline) && (!L.isPrivate)) {
+                if (
+                    this.location !== '' &&
+                    L.instanceId &&
+                    !L.isOffline &&
+                    !L.isPrivate
+                ) {
                     if (L.region === 'eu') {
                         this.region = 'europeanunion';
                     } else if (L.region === 'jp') {
@@ -639,7 +642,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     props[prop] = true;
                 }
             }
-            var $ref = { ...ref };
+            var $ref = {...ref};
             Object.assign(ref, json);
             for (var prop in ref) {
                 if (ref[prop] !== Object(ref[prop])) {
@@ -652,10 +655,7 @@ var bar = new ProgressBar.Circle(vroverlay, {
                 if (asis === tobe) {
                     delete props[prop];
                 } else {
-                    props[prop] = [
-                        tobe,
-                        asis
-                    ];
+                    props[prop] = [tobe, asis];
                 }
             }
         }
@@ -754,21 +754,25 @@ var bar = new ProgressBar.Circle(vroverlay, {
             // OO has muted you
             // OO has hidden you
             // --
-            API.getConfig().catch((err) => {
-                // FIXME: 어케 복구하냐 이건
-                throw err;
-            }).then((args) => {
-                if (this.appType === '1') {
-                    this.updateCpuUsageLoop();
-                }
-                this.initLoop();
-                return args;
-            });
+            API.getConfig()
+                .catch((err) => {
+                    // FIXME: 어케 복구하냐 이건
+                    throw err;
+                })
+                .then((args) => {
+                    if (this.appType === '1') {
+                        this.updateCpuUsageLoop();
+                    }
+                    this.initLoop();
+                    return args;
+                });
         }
     };
 
     $app.methods.updateVRConfigVars = function () {
-        this.currentUserStatus = sharedRepository.getString('current_user_status');
+        this.currentUserStatus = sharedRepository.getString(
+            'current_user_status'
+        );
         this.isGameRunning = sharedRepository.getBool('is_game_running');
         this.isGameNoVR = sharedRepository.getBool('is_Game_No_VR');
         this.downloadProgress = sharedRepository.getInt('downloadProgress');
@@ -776,7 +780,9 @@ var bar = new ProgressBar.Circle(vroverlay, {
         if (lastLocation) {
             this.lastLocation = lastLocation;
             if (this.lastLocation.date !== 0) {
-                this.lastLocationTimer = timeToText(Date.now() - this.lastLocation.date);
+                this.lastLocationTimer = timeToText(
+                    Date.now() - this.lastLocation.date
+                );
             } else {
                 this.lastLocationTimer = '';
             }
@@ -814,8 +820,10 @@ var bar = new ProgressBar.Circle(vroverlay, {
             } else {
                 console.error('missing displayName');
             }
-            if ((displayName) && (!this.notyMap[displayName]) ||
-                (this.notyMap[displayName] < feed.created_at)) {
+            if (
+                (displayName && !this.notyMap[displayName]) ||
+                this.notyMap[displayName] < feed.created_at
+            ) {
                 this.notyMap[displayName] = feed.created_at;
             }
         });
@@ -834,13 +842,13 @@ var bar = new ProgressBar.Circle(vroverlay, {
             this.currentTime = new Date().toJSON();
             await this.updateVRConfigVars();
 
-            //Video Change
+            // Video Change
             var wristFeed = sharedRepository.getArray('wristFeed');
             if (typeof wristFeed !== 'undefined' && wristFeed.length > 0) {
                 this.updateSharedFeedVideo(wristFeed);
             }
 
-            if ((!this.config.hideDevicesFromFeed) && (this.appType === '1')) {
+            if (!this.config.hideDevicesFromFeed && this.appType === '1') {
                 AppApi.GetVRDevices().then((devices) => {
                     devices.forEach((device) => {
                         device[2] = parseInt(device[2], 10);
@@ -892,8 +900,10 @@ var bar = new ProgressBar.Circle(vroverlay, {
             } else {
                 console.error('missing displayName');
             }
-            if ((displayName) && (!this.notyMap[displayName]) ||
-                (this.notyMap[displayName] < feed.created_at)) {
+            if (
+                (displayName && !this.notyMap[displayName]) ||
+                this.notyMap[displayName] < feed.created_at
+            ) {
                 this.notyMap[displayName] = feed.created_at;
                 notyToPlay.push(feed);
             }
@@ -904,7 +914,11 @@ var bar = new ProgressBar.Circle(vroverlay, {
         }
         var bias = new Date(Date.now() - 60000).toJSON();
         var noty = {};
-        var messageList = ['inviteMessage', 'requestMessage', 'responseMessage'];
+        var messageList = [
+            'inviteMessage',
+            'requestMessage',
+            'responseMessage'
+        ];
         for (var i = 0; i < notyToPlay.length; i++) {
             noty = notyToPlay[i];
             if (noty.created_at < bias) {
@@ -912,14 +926,22 @@ var bar = new ProgressBar.Circle(vroverlay, {
             }
             var message = '';
             for (var k = 0; k < messageList.length; k++) {
-                if (typeof noty.details !== 'undefined' && typeof noty.details[messageList[k]] !== 'undefined') {
+                if (
+                    typeof noty.details !== 'undefined' &&
+                    typeof noty.details[messageList[k]] !== 'undefined'
+                ) {
                     message = noty.details[messageList[k]];
                 }
             }
             if (message) {
                 message = `, ${message}`;
             }
-            if ((this.config.overlayNotifications) && (!this.isGameNoVR) && (this.isGameRunning) && (!this.config.xsNotifications)) {
+            if (
+                this.config.overlayNotifications &&
+                !this.isGameNoVR &&
+                this.isGameRunning &&
+                !this.config.xsNotifications
+            ) {
                 var text = '';
                 switch (noty.type) {
                     case 'OnPlayerJoined':
@@ -932,7 +954,12 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         text = `<strong>${noty.displayName}</strong> is joining`;
                         break;
                     case 'GPS':
-                        text = `<strong>${noty.displayName}</strong> is in ${this.displayLocation(noty.location, noty.worldName)}`;
+                        text = `<strong>${
+                            noty.displayName
+                        }</strong> is in ${this.displayLocation(
+                            noty.location,
+                            noty.worldName
+                        )}`;
                         break;
                     case 'Online':
                         text = `<strong>${noty.displayName}</strong> has logged in`;
@@ -944,7 +971,12 @@ var bar = new ProgressBar.Circle(vroverlay, {
                         text = `<strong>${noty.displayName}</strong> status is now <i>${noty.status}</i> ${noty.statusDescription}`;
                         break;
                     case 'invite':
-                        text = `<strong>${noty.senderUsername}</strong> has invited you to ${this.displayLocation(noty.details.worldId, noty.details.worldName)}${message}`;
+                        text = `<strong>${
+                            noty.senderUsername
+                        }</strong> has invited you to ${this.displayLocation(
+                            noty.details.worldId,
+                            noty.details.worldName
+                        )}${message}`;
                         break;
                     case 'requestInvite':
                         text = `<strong>${noty.senderUsername}</strong> has requested an invite ${message}`;
@@ -1024,7 +1056,10 @@ var bar = new ProgressBar.Circle(vroverlay, {
         }
         var isDanceWorld = false;
         var L = API.parseLocation(this.lastLocation.location);
-        if ((L.worldId === 'wrld_f20326da-f1ac-45fc-a062-609723b097b1') || (L.worldId === 'wrld_42377cf1-c54f-45ed-8996-5875b0573a83')) {
+        if (
+            L.worldId === 'wrld_f20326da-f1ac-45fc-a062-609723b097b1' ||
+            L.worldId === 'wrld_42377cf1-c54f-45ed-8996-5875b0573a83'
+        ) {
             isDanceWorld = true;
         } else {
             Discord.SetActive(false);
@@ -1032,38 +1067,87 @@ var bar = new ProgressBar.Circle(vroverlay, {
         }
         var percentage = 0;
         if (this.newPlayingobj.videoURL != '') {
-            var videoLength = Number(this.newPlayingobj.videoLength) + 10; //magic number
+            var videoLength = Number(this.newPlayingobj.videoLength) + 10; // magic number
             var currentTime = Date.now() / 1000;
-            var videoStartTime = videoLength + Date.parse(this.newPlayingobj.videoChangeTime) / 1000;
-            var videoProgress = Math.floor((videoStartTime - currentTime) * 100) / 100;
+            var videoStartTime =
+                videoLength +
+                Date.parse(this.newPlayingobj.videoChangeTime) / 1000;
+            var videoProgress =
+                Math.floor((videoStartTime - currentTime) * 100) / 100;
             if (!this.isGameRunning) {
                 videoProgress = -120;
             }
             if (videoProgress > 0) {
                 function sec2time(timeInSeconds) {
-                    var pad = function(num, size) { return ('000' + num).slice(size * -1); },
-                    time = parseFloat(timeInSeconds).toFixed(3),
-                    hours = Math.floor(time / 60 / 60),
-                    minutes = Math.floor(time / 60) % 60,
-                    seconds = Math.floor(time - minutes * 60);
+                    var pad = function (num, size) {
+                            return `000${num}`.slice(size * -1);
+                        },
+                        time = parseFloat(timeInSeconds).toFixed(3),
+                        hours = Math.floor(time / 60 / 60),
+                        minutes = Math.floor(time / 60) % 60,
+                        seconds = Math.floor(time - minutes * 60);
                     var hoursOut = '';
-                    if (hours > '0') { hoursOut = pad(hours, 2) + ':' }
-                    return hoursOut + pad(minutes, 2) + ':' + pad(seconds, 2);
+                    if (hours > '0') {
+                        hoursOut = `${pad(hours, 2)}:`;
+                    }
+                    return `${hoursOut + pad(minutes, 2)}:${pad(seconds, 2)}`;
                 }
                 this.nowPlayingobj.videoProgressText = sec2time(videoProgress);
-                percentage = Math.floor((((videoLength - videoProgress) * 100) / videoLength) * 100) / 100;
-                if ((isDanceWorld) && (this.appType === '2') && (this.nowPlayingobj.videoName) && (configRepository.getBool('discordActive'))) {
+                percentage =
+                    Math.floor(
+                        (((videoLength - videoProgress) * 100) / videoLength) *
+                            100
+                    ) / 100;
+                if (
+                    isDanceWorld &&
+                    this.appType === '2' &&
+                    this.nowPlayingobj.videoName &&
+                    configRepository.getBool('discordActive')
+                ) {
                     var requestedBy = '';
-                    if (this.nowPlayingobj.playerPlayer !== '') { requestedBy = 'Requested by: ' + this.nowPlayingobj.playerPlayer; }
-                    if (L.worldId === 'wrld_f20326da-f1ac-45fc-a062-609723b097b1') {
-                        var discordAppId = "784094509008551956";
-                        Discord.SetAssets('pypy', `Dancing for: ${this.lastLocationTimer}`, 'ayaya', 'Powered by VRCX', L.instanceId, this.lastLocation.playerList.length, 40, discordAppId);
-                    } else if (L.worldId === 'wrld_42377cf1-c54f-45ed-8996-5875b0573a83') {
-                        var discordAppId = "846232616054030376";
-                        Discord.SetAssets('vr_dancing', `Dancing for: ${this.lastLocationTimer}`, 'marshall_bruh', 'Powered by VRCX', L.instanceId, this.lastLocation.playerList.length, 40, discordAppId);
+                    if (this.nowPlayingobj.playerPlayer !== '') {
+                        requestedBy = `Requested by: ${this.nowPlayingobj.playerPlayer}`;
                     }
-                    Discord.SetText('Dancing to: ' + this.nowPlayingobj.videoName, requestedBy);
-                    Discord.SetTimestamps(Date.now(), Date.parse(this.nowPlayingobj.videoChangeTime) + Number(videoLength) * 1000);
+                    if (
+                        L.worldId ===
+                        'wrld_f20326da-f1ac-45fc-a062-609723b097b1'
+                    ) {
+                        var discordAppId = '784094509008551956';
+                        Discord.SetAssets(
+                            'pypy',
+                            `Dancing for: ${this.lastLocationTimer}`,
+                            'ayaya',
+                            'Powered by VRCX',
+                            L.instanceId,
+                            this.lastLocation.playerList.length,
+                            40,
+                            discordAppId
+                        );
+                    } else if (
+                        L.worldId ===
+                        'wrld_42377cf1-c54f-45ed-8996-5875b0573a83'
+                    ) {
+                        var discordAppId = '846232616054030376';
+                        Discord.SetAssets(
+                            'vr_dancing',
+                            `Dancing for: ${this.lastLocationTimer}`,
+                            'marshall_bruh',
+                            'Powered by VRCX',
+                            L.instanceId,
+                            this.lastLocation.playerList.length,
+                            40,
+                            discordAppId
+                        );
+                    }
+                    Discord.SetText(
+                        `Dancing to: ${this.nowPlayingobj.videoName}`,
+                        requestedBy
+                    );
+                    Discord.SetTimestamps(
+                        Date.now(),
+                        Date.parse(this.nowPlayingobj.videoChangeTime) +
+                            Number(videoLength) * 1000
+                    );
                 }
             } else {
                 this.newPlayingobj = {
@@ -1082,43 +1166,60 @@ var bar = new ProgressBar.Circle(vroverlay, {
         }
         if (this.nowPlayingobj.videoURL !== this.newPlayingobj.videoURL) {
             this.nowPlayingobj = this.newPlayingobj;
-            if ((isDanceWorld) && (this.appType === '2') && (this.nowPlayingobj.videoURL != '')) {
+            if (
+                isDanceWorld &&
+                this.appType === '2' &&
+                this.nowPlayingobj.videoURL != ''
+            ) {
                 if (configRepository.getBool('VRCX_xsNotifications')) {
-                    var timeout = parseInt(this.config.notificationTimeout) / 1000;
+                    var timeout =
+                        parseInt(this.config.notificationTimeout) / 1000;
                     var message = this.newPlayingobj.videoName;
-                        if (this.newPlayingobj.playerPlayer !== '') {
-                            message = (`${message} (${this.newPlayingobj.playerPlayer})`);
-                        }
-                        AppApi.XSNotification('VRCX', message, timeout, false);
-                    } else if (configRepository.getBool('VRCX_videoNotification')) {
-                        if (this.newPlayingobj.playerPlayer !== '') {
-                            new Noty({
-                                type: 'alert',
-                                theme: this.config.notificationTheme,
-                                timeout: this.config.notificationTimeout,
-                                layout: this.config.notificationPosition,
-                                text: 'Requested by: ' + this.newPlayingobj.playerPlayer
-                            }).show();
-                        }
+                    if (this.newPlayingobj.playerPlayer !== '') {
+                        message = `${message} (${this.newPlayingobj.playerPlayer})`;
+                    }
+                    AppApi.XSNotification('VRCX', message, timeout, false);
+                } else if (configRepository.getBool('VRCX_videoNotification')) {
+                    if (this.newPlayingobj.playerPlayer !== '') {
                         new Noty({
                             type: 'alert',
                             theme: this.config.notificationTheme,
                             timeout: this.config.notificationTimeout,
                             layout: this.config.notificationPosition,
-                            text: this.newPlayingobj.videoName
+                            text: `Requested by: ${this.newPlayingobj.playerPlayer}`
+                        }).show();
+                    }
+                    new Noty({
+                        type: 'alert',
+                        theme: this.config.notificationTheme,
+                        timeout: this.config.notificationTimeout,
+                        layout: this.config.notificationPosition,
+                        text: this.newPlayingobj.videoName
                     }).show();
                 }
-                if ((this.config.notificationTTS === 'Always') ||
-                    ((this.config.notificationTTS === 'Inside VR') && (!this.isGameNoVR) && (this.isGameRunning)) ||
-                    ((this.config.notificationTTS === 'Game Closed') && (!this.isGameRunning)) ||
-                    ((this.config.notificationTTS === 'Game Running') && (this.isGameRunning))) {
+                if (
+                    this.config.notificationTTS === 'Always' ||
+                    (this.config.notificationTTS === 'Inside VR' &&
+                        !this.isGameNoVR &&
+                        this.isGameRunning) ||
+                    (this.config.notificationTTS === 'Game Closed' &&
+                        !this.isGameRunning) ||
+                    (this.config.notificationTTS === 'Game Running' &&
+                        this.isGameRunning)
+                ) {
                     var ttsURL = '';
-                    if (this.newPlayingobj.videoID == 'YouTube') { ttsURL = 'URL'; }
-                    var ttsRequestedBy = '';
-                    if (this.newPlayingobj.playerPlayer !== '') { ttsRequestedBy = 'Requested by ' + this.newPlayingobj.playerPlayer; }
-                    this.speak(`now playing ${ttsURL} ${this.newPlayingobj.videoName} ${ttsRequestedBy}`);
+                    if (this.newPlayingobj.videoID == 'YouTube') {
+                        ttsURL = 'URL';
                     }
-                    if (configRepository.getBool('discordActive')) {
+                    var ttsRequestedBy = '';
+                    if (this.newPlayingobj.playerPlayer !== '') {
+                        ttsRequestedBy = `Requested by ${this.newPlayingobj.playerPlayer}`;
+                    }
+                    this.speak(
+                        `now playing ${ttsURL} ${this.newPlayingobj.videoName} ${ttsRequestedBy}`
+                    );
+                }
+                if (configRepository.getBool('discordActive')) {
                     Discord.SetActive(true);
                 }
             }
@@ -1127,10 +1228,16 @@ var bar = new ProgressBar.Circle(vroverlay, {
                     var mindB = '-10.0';
                     var maxdB = '-24.0';
                     var minVolume = '30';
-                    var dBpercenatge = ((this.newPlayingobj.videoVolume - mindB) * 100) / (maxdB - mindB);
-                    if (dBpercenatge > 100) { dBpercenatge = 100; }
-                    else if (dBpercenatge < 0) { dBpercenatge = 0; }
-                    var newPercenatge = ((minVolume / 43) * dBpercenatge) + Number(minVolume);
+                    var dBpercenatge =
+                        ((this.newPlayingobj.videoVolume - mindB) * 100) /
+                        (maxdB - mindB);
+                    if (dBpercenatge > 100) {
+                        dBpercenatge = 100;
+                    } else if (dBpercenatge < 0) {
+                        dBpercenatge = 0;
+                    }
+                    var newPercenatge =
+                        (minVolume / 43) * dBpercenatge + Number(minVolume);
                     var mixerVolume = newPercenatge / 100.0;
                     var mixerVolumeFloat = mixerVolume.toFixed(2);
                 } else {
@@ -1140,13 +1247,13 @@ var bar = new ProgressBar.Circle(vroverlay, {
             }
         }
         if (this.appType === '2') {
-            if ((configRepository.getBool('VRCX_progressPie')) && (isDanceWorld)) {
+            if (configRepository.getBool('VRCX_progressPie') && isDanceWorld) {
                 bar.animate(parseFloat(percentage) / 100.0);
             } else {
                 bar.animate(0);
             }
         } else if (this.appType === '1') {
-            document.getElementById('progress').style.width = percentage + '%';
+            document.getElementById('progress').style.width = `${percentage}%`;
         }
     };
 
@@ -1198,4 +1305,4 @@ var bar = new ProgressBar.Circle(vroverlay, {
 
     $app = new Vue($app);
     window.$app = $app;
-}());
+})();

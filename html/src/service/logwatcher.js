@@ -13,7 +13,4 @@ class LogWatcherService {
 var self = new LogWatcherService();
 window.logWatcherService = self;
 
-export {
-    self as default,
-    LogWatcherService
-};
+export {self as default, LogWatcherService};
