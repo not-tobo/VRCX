@@ -1143,40 +1143,40 @@ speechSynthesis.getVoices();
         if (tags.includes('system_trust_legend')) {
             ref.$trustLevel = 'Veteran User';
             ref.$trustClass = 'x-tag-legend';
-            ref.$trustNum = 6;
+            ref.$trustSortNum = 6;
         } else if (tags.includes('system_trust_veteran')) {
             ref.$trustLevel = 'Trusted User';
             ref.$trustClass = 'x-tag-veteran';
-            ref.$trustNum = 5;
+            ref.$trustSortNum = 5;
         } else if (tags.includes('system_trust_trusted')) {
             ref.$trustLevel = 'Known User';
             ref.$trustClass = 'x-tag-trusted';
-            ref.$trustNum = 4;
+            ref.$trustSortNum = 4;
         } else if (tags.includes('system_trust_known')) {
             ref.$trustLevel = 'User';
             ref.$trustClass = 'x-tag-known';
-            ref.$trustNum = 3;
+            ref.$trustSortNum = 3;
         } else if (tags.includes('system_trust_basic')) {
             ref.$trustLevel = 'New User';
             ref.$trustClass = 'x-tag-basic';
-            ref.$trustNum = 2;
+            ref.$trustSortNum = 2;
         } else {
             ref.$trustLevel = 'Visitor';
             ref.$trustClass = 'x-tag-untrusted';
-            ref.$trustNum = 1;
+            ref.$trustSortNum = 1;
         }
         ref.$trustColor = ref.$trustClass;
         if (ref.$isTroll) {
             ref.$trustColor = 'x-tag-troll';
-            ref.$trustNum += 0.1;
+            ref.$trustSortNum += 0.1;
         }
         if (ref.$isLegend) {
             ref.$trustColor = 'x-tag-legendary';
-            ref.$trustNum += 0.2;
+            ref.$trustSortNum += 0.2;
         }
         if (ref.$isModerator) {
             ref.$trustColor = 'x-tag-vip';
-            ref.$trustNum += 0.3;
+            ref.$trustSortNum += 0.3;
         }
     };
 
@@ -1246,7 +1246,7 @@ speechSynthesis.getVoices();
                 $trustLevel: 'Visitor',
                 $trustClass: 'x-tag-untrusted',
                 $trustColor: 'x-tag-untrusted',
-                $trustNum: 1,
+                $trustSortNum: 1,
                 $languages: [],
                 //
                 ...json
@@ -1364,7 +1364,7 @@ speechSynthesis.getVoices();
                 $trustLevel: 'Visitor',
                 $trustClass: 'x-tag-untrusted',
                 $trustColor: 'x-tag-untrusted',
-                $trustNum: 1,
+                $trustSortNum: 1,
                 $languages: [],
                 //
                 ...json
@@ -8918,7 +8918,10 @@ speechSynthesis.getVoices();
         $app.updateVRConfigVars();
     });
 
-    $app.data.localAvatarDatabaseAvailable = await LiteDB.CheckAvatarDatabase();
+    $app.data.localAvatarDatabaseAvailable = false;
+    LiteDB.CheckAvatarDatabase().then((result) => {
+        $app.localAvatarDatabaseAvailable = result;
+    });
     $app.data.localAvatarDatabaseEnable = configRepository.getBool(
         'VRCX_localAvatarDatabaseEnable'
     );
@@ -14147,11 +14150,23 @@ speechSynthesis.getVoices();
 
     $app.methods.checkVRChatCache = async function (ref) {
         var cacheDir = await this.getVRChatCacheDir();
-        return AssetBundleCacher.CheckVRChatCache(
-            ref.id,
-            ref.version,
-            cacheDir
-        );
+        var assetUrl = '';
+        for (var i = ref.unityPackages.length - 1; i > -1; i--) {
+            var unityPackage = ref.unityPackages[i];
+            if (
+                unityPackage.platform === 'standalonewindows' &&
+                this.compareUnityVersion(unityPackage.unityVersion)
+            ) {
+                assetUrl = unityPackage.assetUrl;
+                break;
+            }
+        }
+        var id = extractFileId(assetUrl);
+        var version = parseInt(extractFileVersion(assetUrl), 10);
+        if (!id || !version) {
+            return [-1, 0];
+        }
+        return AssetBundleCacher.CheckVRChatCache(id, version, cacheDir);
     };
 
     $app.methods.queueCacheDownload = function (ref, type) {
@@ -14263,8 +14278,8 @@ speechSynthesis.getVoices();
         await AssetBundleCacher.DownloadCacheFile(
             cacheDir,
             url,
-            ref.id,
-            ref.version,
+            fileId,
+            fileVersion,
             sizeInBytes,
             md5,
             appVersion,
@@ -14579,7 +14594,20 @@ speechSynthesis.getVoices();
 
     $app.methods.deleteVRChatCache = async function (ref) {
         var cacheDir = await this.getVRChatCacheDir();
-        await AssetBundleCacher.DeleteCache(cacheDir, ref.id, ref.version);
+        var assetUrl = '';
+        for (var i = ref.unityPackages.length - 1; i > -1; i--) {
+            var unityPackage = ref.unityPackages[i];
+            if (
+                unityPackage.platform === 'standalonewindows' &&
+                this.compareUnityVersion(unityPackage.unityVersion)
+            ) {
+                assetUrl = unityPackage.assetUrl;
+                break;
+            }
+        }
+        var id = extractFileId(assetUrl);
+        var version = parseInt(extractFileVersion(assetUrl), 10);
+        await AssetBundleCacher.DeleteCache(cacheDir, id, version);
         this.getVRChatCacheSize();
         this.updateVRChatWorldCache();
         this.updateVRChatAvatarCache();
@@ -15093,7 +15121,7 @@ speechSynthesis.getVoices();
             if (json.name > this.appVersion) {
                 for (var asset of json.assets) {
                     if (
-                        asset.content_type === 'application/octet-stream' &&
+                        asset.content_type === 'application/x-msdownload' &&
                         asset.state === 'uploaded'
                     ) {
                         var downloadUrl = asset.browser_download_url;

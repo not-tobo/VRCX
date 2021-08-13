@@ -118,13 +118,13 @@ namespace VRCX
                     {
                         cmdline = objects.Cast<ManagementBaseObject>().SingleOrDefault()?["CommandLine"]?.ToString();
                     }
+                    isGameNoVR = cmdline.Contains("--no-vr");
                 }
                 catch
                 {
                 }
 
                 isGameRunning = true;
-                isGameNoVR = cmdline.Contains("--no-vr");
             }
 
             return new bool[]
