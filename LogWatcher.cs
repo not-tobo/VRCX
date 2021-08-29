@@ -3,6 +3,7 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT>.
 
+using CefSharp;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -30,8 +31,8 @@ namespace VRCX
         private readonly List<string[]> m_LogList;
         private Thread m_Thread;
         private bool m_ResetLog;
-        private static string playerPlayer = string.Empty;
-        private static string playerRequest = string.Empty;
+        private bool m_FirstRun = true;
+        private static DateTime tillDate = DateTime.Now;
 
         // NOTE
         // FileSystemWatcher() is unreliable
@@ -66,6 +67,17 @@ namespace VRCX
             thread.Interrupt();
             thread.Join();
         }
+        
+        public void Reset()
+        {
+            m_ResetLog = true;
+            m_Thread?.Interrupt();
+        }
+
+        public void SetDateTill(string date)
+        {
+            tillDate = DateTime.Parse(date);
+        }
 
         private void ThreadLoop()
         {
@@ -88,6 +100,7 @@ namespace VRCX
         {
             if (m_ResetLog == true)
             {
+                m_FirstRun = true;
                 m_ResetLog = false;
                 m_LogContextMap.Clear();
                 m_LogListLock.EnterWriteLock();
@@ -111,26 +124,17 @@ namespace VRCX
                 // sort by creation time
                 Array.Sort(fileInfos, (a, b) => a.CreationTimeUtc.CompareTo(b.CreationTimeUtc));
 
-                var utcNow = DateTime.UtcNow;
-                var minLimitDateTime = utcNow.AddDays(-7d);
-                var minRefreshDateTime = utcNow.AddMinutes(-3d);
-
                 foreach (var fileInfo in fileInfos)
                 {
-                    var lastWriteTimeUtc = fileInfo.LastWriteTimeUtc;
-
-                    if (lastWriteTimeUtc < minLimitDateTime)
+                    fileInfo.Refresh();
+                    if (fileInfo.Exists == false)
                     {
                         continue;
                     }
 
-                    if (lastWriteTimeUtc >= minRefreshDateTime)
+                    if (DateTime.Compare(fileInfo.LastWriteTime, tillDate) < 0)
                     {
-                        fileInfo.Refresh();
-                        if (fileInfo.Exists == false)
-                        {
-                            continue;
-                        }
+                        continue;
                     }
 
                     if (m_LogContextMap.TryGetValue(fileInfo.Name, out LogContext logContext) == true)
@@ -157,6 +161,8 @@ namespace VRCX
             {
                 m_LogContextMap.Remove(name);
             }
+
+            m_FirstRun = false;
         }
 
         private void ParseLog(FileInfo fileInfo, LogContext logContext)
@@ -186,6 +192,20 @@ namespace VRCX
                                 continue;
                             }
 
+                            if (DateTime.TryParseExact(
+                                line.Substring(0, 19),
+                                "yyyy.MM.dd HH:mm:ss",
+                                CultureInfo.InvariantCulture,
+                                DateTimeStyles.AssumeLocal,
+                                out DateTime lineDate
+                            ))
+                            {
+                                if (DateTime.Compare(lineDate, tillDate) <= 0)
+                                {
+                                    continue;
+                                }
+                            }
+
                             var offset = 34;
                             if (line[offset] == '[')
                             {
@@ -197,8 +217,7 @@ namespace VRCX
                                     ParseLogAvatarPedestalChange(fileInfo, logContext, line, offset) == true ||
                                     ParseLogVideoError(fileInfo, logContext, line, offset) == true ||
                                     ParseLogVideoChange(fileInfo, logContext, line, offset) == true ||
-                                    ParseLogVideoBeep(fileInfo, logContext, line, offset) == true ||
-                                    ParseLogPlayDanceStart(fileInfo, logContext, line, offset) == true)
+                                    ParseLogWorldVRCX(fileInfo, logContext, line, offset) == true)
                                 {
                                     continue;
                                 }
@@ -225,6 +244,12 @@ namespace VRCX
             m_LogListLock.EnterWriteLock();
             try
             {
+                if (!m_FirstRun)
+                {
+                    var logLine = System.Text.Json.JsonSerializer.Serialize(item);
+                    if (MainForm.Instance != null && MainForm.Instance.Browser != null)
+                        MainForm.Instance.Browser.ExecuteScriptAsync("$app.addGameLogEvent", logLine);
+                }
                 m_LogList.Add(item);
             }
             finally
@@ -248,7 +273,7 @@ namespace VRCX
                 dt = DateTime.UtcNow;
             }
 
-            return $"{dt:yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'}";
+            return $"{dt:yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'}";
         }
 
         private bool ParseLogLocation(FileInfo fileInfo, LogContext logContext, string line, int offset)
@@ -281,8 +306,6 @@ namespace VRCX
                     location,
                     logContext.RecentWorldName
                 });
-                playerPlayer = string.Empty;
-                playerRequest = string.Empty;
 
                 return true;
             }
@@ -508,46 +531,28 @@ namespace VRCX
             {
                 fileInfo.Name,
                 ConvertLogTimeToISO8601(line),
-                "video-change",
-                data,
-                playerRequest,
-                playerPlayer
+                "video-play",
+                data
             });
-            playerPlayer = string.Empty;
-            playerRequest = string.Empty;
 
             return true;
         }
 
-        private bool ParseLogVideoBeep(FileInfo fileInfo, LogContext logContext, string line, int offset)
+        private bool ParseLogWorldVRCX(FileInfo fileInfo, LogContext logContext, string line, int offset)
         {
-            // 2020.10.16 14:42:31 Log        -  [UdonSync] vrcw executing Beep at the behest of Natsumi-sama
-            // 2021.02.04 02:16:58 Log        -  [ǄǄǅǅǄǄǄǄǄǄǄǅǅǅǄǅǄǄǅǄǄǄǅǄǄǅǅǅǄǄǅǅǄǄǅǅǅǄǄǅǄǄǅǅǅǅǅ] vrcw executing Beep at the behest of Natsumi-sama
-            // 2021.06.21 03:01:59 Log        -  [Behaviour] vrcw executing Beep at the behest of Natsumi-sama
+            // [VRCX] VideoPlay(PyPyDance) "https://jd.pypy.moe/api/v1/videos/-Q3pdlsQxOk.mp4",0.5338666,260.6938,"1339 : Le Freak (Random)"
 
-            if (string.Compare(line, offset, "[Behaviour] vrcw executing Beep at the behest of ", 0, 49, StringComparison.Ordinal) == 0)
+            if (string.Compare(line, offset, "[VRCX] ", 0, 7, StringComparison.Ordinal) == 0)
             {
-                var data = line.Substring(offset + 49);
+                var data = line.Substring(offset + 7);
 
-                playerRequest = playerPlayer;
-                playerPlayer = data;
-
-                return true;
-            }
-
-            return false;
-        }
-
-        private bool ParseLogPlayDanceStart(FileInfo fileInfo, LogContext logContext, string line, int offset)
-        {
-            // 2021.05.23 04:22:07 Log        -  [Behaviour] AudioManager_DanceMenu executing PlayDanceStart at the behest of Natsumi-sama
-
-            if (string.Compare(line, offset, "[Behaviour] AudioManager_DanceMenu executing PlayDanceStart at the behest of ", 0, 77, StringComparison.Ordinal) == 0)
-            {
-                var data = line.Substring(offset + 77);
-
-                playerRequest = String.Empty;
-                playerPlayer = data;
+                AppendLog(new[]
+                {
+                    fileInfo.Name,
+                    ConvertLogTimeToISO8601(line),
+                    "vrcx",
+                    data
+                });
 
                 return true;
             }
@@ -583,7 +588,7 @@ namespace VRCX
             {
                 fileInfo.Name,
                 ConvertLogTimeToISO8601(line),
-                "video-change",
+                "video-play",
                 data,
                 playerPlayer
             });
@@ -619,14 +624,10 @@ namespace VRCX
             return true;
         }
 
-        public void Reset()
-        {
-            m_ResetLog = true;
-            m_Thread?.Interrupt();
-        }
-
         public string[][] Get()
         {
+            Update();
+
             if (m_ResetLog == false &&
                 m_LogList.Count > 0)
             {
