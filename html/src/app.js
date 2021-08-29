@@ -4193,7 +4193,6 @@ speechSynthesis.getVoices();
         if (this.worldDialog.visible) {
             this.applyWorldDialogInstances();
         }
-        this.getCurrentInstanceUserList();
         this.playNoty(notyFeed);
         feeds.pendingUpdate = false;
     };
