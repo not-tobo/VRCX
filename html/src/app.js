@@ -86,10 +86,10 @@ speechSynthesis.getVoices();
 
     document.addEventListener('keyup', function (e) {
         if (e.ctrlKey) {
-            if (e.shiftKey && e.code === 'KeyI') {
+            if (e.key === 'I') {
                 AppApi.ShowDevTools();
                 showConsoleWarningMessage();
-            } else if (e.code === 'KeyR') {
+            } else if (e.key === 'r') {
                 location.reload();
             }
         }
@@ -8276,6 +8276,38 @@ speechSynthesis.getVoices();
                             notificationId: row.id
                         });
                     }
+                }
+            }
+        });
+    };
+
+    $app.methods.acceptRequestInvite = function (row) {
+        this.$confirm('Continue? Send Invite', 'Confirm', {
+            confirmButtonText: 'Confirm',
+            cancelButtonText: 'Cancel',
+            type: 'info',
+            callback: (action) => {
+                if (action === 'confirm') {
+                    var L = API.parseLocation(this.lastLocation.location);
+                    API.getCachedWorld({
+                        worldId: L.worldId
+                    }).then((args) => {
+                        API.sendInvite(
+                            {
+                                instanceId: this.lastLocation.location,
+                                worldId: this.lastLocation.location,
+                                worldName: args.ref.name,
+                                rsvp: true
+                            },
+                            row.senderUserId
+                        ).then((_args) => {
+                            this.$message('Invite sent');
+                            API.hideNotification({
+                                notificationId: row.id
+                            });
+                            return _args;
+                        });
+                    });
                 }
             }
         });
