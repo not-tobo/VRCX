@@ -7483,8 +7483,7 @@ speechSynthesis.getVoices();
             }
             if (!videoId && this.youtubeAPI) {
                 try {
-                    var youtubeAPIKey =
-                        '';
+                    var youtubeAPIKey = '';
                     if (!youtubeAPIKey) {
                         throw new Error(
                             'youtubeAPIKey is missing, add it to use this function'

@@ -63,7 +63,6 @@ class GameLogService {
             if (rawGameLogs.length === 0) {
                 done = true;
             }
-
         }
         return gameLogs;
     }

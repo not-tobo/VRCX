@@ -10,7 +10,6 @@ import ElementUI from 'element-ui';
 import locale from 'element-ui/lib/locale/lang/en';
 
 import configRepository from './repository/config.js';
-import webApiService from './service/webapi.js';
 import ProgressBar from 'progressbar.js';
 import MarqueeText from 'vue-marquee-text-component';
 Vue.component('marquee-text', MarqueeText);
