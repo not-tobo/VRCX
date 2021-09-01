@@ -4018,22 +4018,18 @@ speechSynthesis.getVoices();
     $app.data.sharedFeed = {
         gameLog: {
             wrist: [],
-            noty: [],
             lastEntryDate: ''
         },
         feedTable: {
             wrist: [],
-            noty: [],
             lastEntryDate: ''
         },
         notificationTable: {
             wrist: [],
-            noty: [],
             lastEntryDate: ''
         },
         friendLogTable: {
             wrist: [],
-            noty: [],
             lastEntryDate: ''
         },
         pendingUpdate: false
@@ -4057,13 +4053,6 @@ speechSynthesis.getVoices();
             feeds.feedTable.wrist,
             feeds.notificationTable.wrist,
             feeds.friendLogTable.wrist
-        );
-        var notyFeed = [];
-        notyFeed = notyFeed.concat(
-            feeds.gameLog.noty,
-            feeds.feedTable.noty,
-            feeds.notificationTable.noty,
-            feeds.friendLogTable.noty
         );
         // OnPlayerJoining
         var L = API.parseLocation(this.lastLocation.location); // WebSocket dosen't update friend only instances
@@ -4107,9 +4096,6 @@ speechSynthesis.getVoices();
                     var gameLogTable = this.gameLogTable.data;
                     for (var k = gameLogTable.length - 1; k > -1; k--) {
                         var gameLogItem = gameLogTable[k];
-                        if (gameLogItem.type === 'Notification') {
-                            continue;
-                        }
                         if (
                             gameLogItem.type === 'Location' ||
                             gameLogItem.created_at < bias
@@ -4144,15 +4130,7 @@ speechSynthesis.getVoices();
                         ) {
                             wristFeed.unshift(onPlayerJoining);
                         }
-                        if (
-                            this.sharedFeedFilters.noty.OnPlayerJoining ===
-                                'Friends' ||
-                            (this.sharedFeedFilters.noty.OnPlayerJoining ===
-                                'VIP' &&
-                                isFavorite)
-                        ) {
-                            notyFeed.unshift(onPlayerJoining);
-                        }
+                        this.queueFeedNoty(onPlayerJoining);
                     }
                 }
             }
@@ -4167,16 +4145,6 @@ speechSynthesis.getVoices();
             return 0;
         });
         wristFeed.splice(20);
-        notyFeed.sort(function (a, b) {
-            if (a.created_at < b.created_at) {
-                return 1;
-            }
-            if (a.created_at > b.created_at) {
-                return -1;
-            }
-            return 0;
-        });
-        notyFeed.splice(5);
         AppApi.ExecuteVrFeedFunction(
             'wristFeedUpdate',
             JSON.stringify(wristFeed)
@@ -4193,7 +4161,6 @@ speechSynthesis.getVoices();
         if (this.worldDialog.visible) {
             this.applyWorldDialogInstances();
         }
-        this.playNoty(notyFeed);
         feeds.pendingUpdate = false;
     };
 
@@ -4215,13 +4182,10 @@ speechSynthesis.getVoices();
         }
         var bias = new Date(Date.now() - 86400000).toJSON(); // 24 hours
         var wristArr = [];
-        var notyArr = [];
         var w = 0;
-        var n = 0;
         var wristFilter = this.sharedFeedFilters.wrist;
-        var notyFilter = this.sharedFeedFilters.noty;
-        var currentUserJoinTime = '';
-        var currentUserLeaveTime = '';
+        var currentUserLeaveTime = 0;
+        var locationJoinTime = 0;
         for (var i = data.length - 1; i > -1; i--) {
             var ctx = data[i];
             if (ctx.created_at < bias) {
@@ -4231,69 +4195,36 @@ speechSynthesis.getVoices();
                 continue;
             }
             // on Location change remove OnPlayerLeft
-            if (ctx.type === 'OnPlayerLeft') {
-                if (ctx.created_at.slice(0, -4) === currentUserLeaveTime) {
-                    continue;
-                }
-                if (ctx.displayName === API.currentUser.displayName) {
-                    var {created_at} = ctx;
-                    currentUserLeaveTime = created_at.slice(0, -4);
-                    for (var k = w - 1; k > -1; k--) {
-                        var feedItem = wristArr[k];
-                        if (
-                            feedItem.created_at.slice(0, -4) ===
-                                currentUserLeaveTime &&
-                            feedItem.type === 'OnPlayerLeft'
-                        ) {
-                            wristArr.splice(k, 1);
-                            w--;
-                        }
+            if (ctx.type === 'LocationDestination') {
+                currentUserLeaveTime = Date.parse(ctx.created_at);
+                for (var k = w - 1; k > -1; k--) {
+                    var feedItem = wristArr[k];
+                    if (
+                        feedItem.type === 'OnPlayerLeft' &&
+                        Date.parse(feedItem.created_at) >=
+                            currentUserLeaveTime &&
+                        Date.parse(feedItem.created_at) <=
+                            currentUserLeaveTime + 5 * 1000
+                    ) {
+                        wristArr.splice(k, 1);
+                        w--;
                     }
-                    for (var k = n - 1; k > -1; k--) {
-                        var feedItem = notyArr[k];
-                        if (
-                            feedItem.created_at.slice(0, -4) ===
-                                currentUserLeaveTime &&
-                            feedItem.type === 'OnPlayerLeft'
-                        ) {
-                            notyArr.splice(k, 1);
-                            n--;
-                        }
-                    }
-                    continue;
                 }
             }
             // on Location change remove OnPlayerJoined
-            if (ctx.type === 'OnPlayerJoined') {
-                if (ctx.created_at.slice(0, -4) === currentUserJoinTime) {
-                    continue;
-                }
-                if (ctx.displayName === API.currentUser.displayName) {
-                    var {created_at} = ctx;
-                    currentUserJoinTime = created_at.slice(0, -4);
-                    for (var k = w - 1; k > -1; k--) {
-                        var feedItem = wristArr[k];
-                        if (
-                            feedItem.created_at.slice(0, -4) ===
-                                currentUserJoinTime &&
-                            feedItem.type === 'OnPlayerJoined'
-                        ) {
-                            wristArr.splice(k, 1);
-                            w--;
-                        }
+            if (ctx.type === 'Location') {
+                locationJoinTime = Date.parse(ctx.created_at);
+                for (var k = w - 1; k > -1; k--) {
+                    var feedItem = wristArr[k];
+                    if (
+                        feedItem.type === 'OnPlayerJoined' &&
+                        Date.parse(feedItem.created_at) >= locationJoinTime &&
+                        Date.parse(feedItem.created_at) <=
+                            locationJoinTime + 20 * 1000
+                    ) {
+                        wristArr.splice(k, 1);
+                        w--;
                     }
-                    for (var k = n - 1; k > -1; k--) {
-                        var feedItem = notyArr[k];
-                        if (
-                            feedItem.created_at.slice(0, -4) ===
-                                currentUserJoinTime &&
-                            feedItem.type === 'OnPlayerJoined'
-                        ) {
-                            notyArr.splice(k, 1);
-                            n--;
-                        }
-                    }
-                    continue;
                 }
             }
             // remove current user
@@ -4307,24 +4238,15 @@ speechSynthesis.getVoices();
             }
             var isFriend = false;
             var isFavorite = false;
-            if (
-                ctx.type === 'OnPlayerJoined' ||
-                ctx.type === 'OnPlayerLeft' ||
-                ctx.type === 'PortalSpawn' ||
-                ctx.type === 'AvatarChange'
-            ) {
-                if (ctx.userId) {
-                    isFriend = this.friends.has(ctx.userId);
-                    isFavorite = API.cachedFavoritesByObjectId.has(ctx.userId);
-                } else {
-                    for (var ref of API.cachedUsers.values()) {
-                        if (ref.displayName === ctx.displayName) {
-                            isFriend = this.friends.has(ref.id);
-                            isFavorite = API.cachedFavoritesByObjectId.has(
-                                ref.id
-                            );
-                            break;
-                        }
+            if (ctx.userId) {
+                isFriend = this.friends.has(ctx.userId);
+                isFavorite = API.cachedFavoritesByObjectId.has(ctx.userId);
+            } else if (ctx.displayName) {
+                for (var ref of API.cachedUsers.values()) {
+                    if (ref.displayName === ctx.displayName) {
+                        isFriend = this.friends.has(ref.id);
+                        isFavorite = API.cachedFavoritesByObjectId.has(ref.id);
+                        break;
                     }
                 }
             }
@@ -4339,55 +4261,23 @@ speechSynthesis.getVoices();
                         } else {
                             continue;
                         }
-                        var displayName = ref.targetDisplayName;
-                        var userId = ref.targetUserId;
-                        var created_at = ctx.created_at;
+                        var entry = {
+                            created_at: ctx.created_at,
+                            type,
+                            displayName: ref.targetDisplayName,
+                            userId: ref.targetUserId,
+                            isFriend,
+                            isFavorite
+                        };
                         if (
                             wristFilter[type] &&
                             (wristFilter[type] === 'Everyone' ||
                                 (wristFilter[type] === 'Friends' && isFriend) ||
                                 (wristFilter[type] === 'VIP' && isFavorite))
                         ) {
-                            wristArr.unshift({
-                                created_at,
-                                type,
-                                displayName,
-                                userId,
-                                isFriend,
-                                isFavorite
-                            });
+                            wristArr.unshift(entry);
                         }
-                        if (
-                            notyFilter[type] &&
-                            (notyFilter[type] === 'Everyone' ||
-                                (notyFilter[type] === 'Friends' && isFriend) ||
-                                (notyFilter[type] === 'VIP' && isFavorite))
-                        ) {
-                            notyArr.unshift({
-                                created_at,
-                                type,
-                                displayName,
-                                userId,
-                                isFriend,
-                                isFavorite
-                            });
-                        }
-                    }
-                }
-            }
-            if (ctx.type === 'VideoPlay' && ctx.displayName) {
-                if (ctx.userId) {
-                    isFriend = this.friends.has(ctx.userId);
-                    isFavorite = API.cachedFavoritesByObjectId.has(ctx.userId);
-                } else {
-                    for (var ref of API.cachedUsers.values()) {
-                        if (ref.displayName === ctx.displayName) {
-                            isFriend = this.friends.has(ref.id);
-                            isFavorite = API.cachedFavoritesByObjectId.has(
-                                ref.id
-                            );
-                            break;
-                        }
+                        this.queueFeedNoty(entry);
                     }
                 }
             }
@@ -4406,25 +4296,59 @@ speechSynthesis.getVoices();
                 });
                 ++w;
             }
-            if (
-                n < 5 &&
-                notyFilter[ctx.type] &&
-                (notyFilter[ctx.type] === 'On' ||
-                    notyFilter[ctx.type] === 'Everyone' ||
-                    (notyFilter[ctx.type] === 'Friends' && isFriend) ||
-                    (notyFilter[ctx.type] === 'VIP' && isFavorite))
-            ) {
-                notyArr.push({
-                    ...ctx,
-                    isFriend,
-                    isFavorite
-                });
-                ++n;
-            }
         }
         this.sharedFeed.gameLog.wrist = wristArr;
-        this.sharedFeed.gameLog.noty = notyArr;
         this.sharedFeed.pendingUpdate = true;
+    };
+
+    $app.methods.queueGameLogNoty = function (noty) {
+        // remove join/leave notifications when switching worlds
+        if (noty.type === 'OnPlayerJoined') {
+            var bias = this.lastLocation.date + 30 * 1000; // 30 secs
+            if (Date.parse(noty.created_at) <= bias) {
+                return;
+            }
+        }
+        if (noty.type === 'OnPlayerLeft') {
+            var bias = this.lastLocationDestinationTime + 5 * 1000; // 5 secs
+            if (Date.parse(noty.created_at) <= bias) {
+                return;
+            }
+        }
+        if (noty.type === 'Notification' || noty.type === 'LocationDestination') {
+            return;
+        }
+        // remove current user
+        if (
+            noty.type !== 'VideoPlay' &&
+            noty.displayName === API.currentUser.displayName
+        ) {
+            return;
+        }
+        noty.isFriend = false;
+        noty.isFavorite = false;
+        if (noty.userId) {
+            noty.isFriend = this.friends.has(noty.userId);
+            noty.isFavorite = API.cachedFavoritesByObjectId.has(noty.userId);
+        } else if (noty.displayName) {
+            for (var ref of API.cachedUsers.values()) {
+                if (ref.displayName === noty.displayName) {
+                    noty.isFriend = this.friends.has(ref.id);
+                    noty.isFavorite = API.cachedFavoritesByObjectId.has(ref.id);
+                    break;
+                }
+            }
+        }
+        var notyFilter = this.sharedFeedFilters.noty;
+        if (
+            notyFilter[noty.type] &&
+            (notyFilter[noty.type] === 'On' ||
+                notyFilter[noty.type] === 'Everyone' ||
+                (notyFilter[noty.type] === 'Friends' && noty.isFriend) ||
+                (notyFilter[noty.type] === 'VIP' && noty.isFavorite))
+        ) {
+            this.playNoty(noty);
+        }
     };
 
     $app.methods.updateSharedFeedFeedTable = function (forceUpdate) {
@@ -4445,11 +4369,8 @@ speechSynthesis.getVoices();
         }
         var bias = new Date(Date.now() - 86400000).toJSON(); // 24 hours
         var wristArr = [];
-        var notyArr = [];
         var w = 0;
-        var n = 0;
         var wristFilter = this.sharedFeedFilters.wrist;
-        var notyFilter = this.sharedFeedFilters.noty;
         for (var i = data.length - 1; i > -1; i--) {
             var ctx = data[i];
             if (ctx.created_at < bias) {
@@ -4458,7 +4379,7 @@ speechSynthesis.getVoices();
             if (ctx.type === 'Avatar') {
                 continue;
             }
-            // hide private worlds from feeds
+            // hide private worlds from feed
             if (
                 this.hidePrivateFromFeed &&
                 ctx.type === 'GPS' &&
@@ -4481,23 +4402,33 @@ speechSynthesis.getVoices();
                 });
                 ++w;
             }
-            if (
-                n < 5 &&
-                notyFilter[ctx.type] &&
-                (notyFilter[ctx.type] === 'Friends' ||
-                    (notyFilter[ctx.type] === 'VIP' && isFavorite))
-            ) {
-                notyArr.push({
-                    ...ctx,
-                    isFriend,
-                    isFavorite
-                });
-                ++n;
-            }
         }
         this.sharedFeed.feedTable.wrist = wristArr;
-        this.sharedFeed.feedTable.noty = notyArr;
         this.sharedFeed.pendingUpdate = true;
+    };
+
+    $app.methods.queueFeedNoty = function (noty) {
+        if (noty.type === 'Avatar') {
+            return;
+        }
+        // hide private worlds from feed
+        if (
+            this.hidePrivateFromFeed &&
+            noty.type === 'GPS' &&
+            noty.location === 'private'
+        ) {
+            return;
+        }
+        noty.isFriend = this.friends.has(noty.userId);
+        noty.isFavorite = API.cachedFavoritesByObjectId.has(noty.userId);
+        var notyFilter = this.sharedFeedFilters.noty;
+        if (
+            notyFilter[noty.type] &&
+            (notyFilter[noty.type] === 'Friends' ||
+                (notyFilter[noty.type] === 'VIP' && noty.isFavorite))
+        ) {
+            this.playNoty(noty);
+        }
     };
 
     $app.methods.updateSharedFeedNotificationTable = function (forceUpdate) {
@@ -4519,11 +4450,8 @@ speechSynthesis.getVoices();
         }
         var bias = new Date(Date.now() - 86400000).toJSON(); // 24 hours
         var wristArr = [];
-        var notyArr = [];
         var w = 0;
-        var n = 0;
         var wristFilter = this.sharedFeedFilters.wrist;
-        var notyFilter = this.sharedFeedFilters.noty;
         for (var i = data.length - 1; i > -1; i--) {
             var ctx = data[i];
             if (ctx.created_at < bias) {
@@ -4550,24 +4478,26 @@ speechSynthesis.getVoices();
                 });
                 ++w;
             }
-            if (
-                n < 5 &&
-                notyFilter[ctx.type] &&
-                (notyFilter[ctx.type] === 'On' ||
-                    notyFilter[ctx.type] === 'Friends' ||
-                    (notyFilter[ctx.type] === 'VIP' && isFavorite))
-            ) {
-                notyArr.push({
-                    ...ctx,
-                    isFriend,
-                    isFavorite
-                });
-                ++n;
-            }
         }
         this.sharedFeed.notificationTable.wrist = wristArr;
-        this.sharedFeed.notificationTable.noty = notyArr;
         this.sharedFeed.pendingUpdate = true;
+    };
+
+    $app.methods.queueNotificationNoty = function (noty) {
+        if (noty.senderUserId === API.currentUser.id) {
+            return;
+        }
+        noty.isFriend = this.friends.has(noty.senderUserId);
+        noty.isFavorite = API.cachedFavoritesByObjectId.has(noty.senderUserId);
+        var notyFilter = this.sharedFeedFilters.noty;
+        if (
+            notyFilter[noty.type] &&
+            (notyFilter[noty.type] === 'On' ||
+                notyFilter[noty.type] === 'Friends' ||
+                (notyFilter[noty.type] === 'VIP' && noty.isFavorite))
+        ) {
+            this.playNoty(noty);
+        }
     };
 
     $app.methods.updateSharedFeedFriendLogTable = function (forceUpdate) {
@@ -4589,11 +4519,8 @@ speechSynthesis.getVoices();
         }
         var bias = new Date(Date.now() - 86400000).toJSON(); // 24 hours
         var wristArr = [];
-        var notyArr = [];
         var w = 0;
-        var n = 0;
         var wristFilter = this.sharedFeedFilters.wrist;
-        var notyFilter = this.sharedFeedFilters.noty;
         for (var i = data.length - 1; i > -1; i--) {
             var ctx = data[i];
             if (ctx.created_at < bias) {
@@ -4618,29 +4545,58 @@ speechSynthesis.getVoices();
                 });
                 ++w;
             }
-            if (
-                n < 5 &&
-                notyFilter[ctx.type] &&
-                (notyFilter[ctx.type] === 'On' ||
-                    notyFilter[ctx.type] === 'Friends' ||
-                    (notyFilter[ctx.type] === 'VIP' && isFavorite))
-            ) {
-                notyArr.push({
-                    ...ctx,
-                    isFriend,
-                    isFavorite
-                });
-                ++n;
-            }
         }
         this.sharedFeed.friendLogTable.wrist = wristArr;
-        this.sharedFeed.friendLogTable.noty = notyArr;
         this.sharedFeed.pendingUpdate = true;
+    };
+
+    $app.methods.queueFriendLogNoty = function (noty) {
+        if (noty.type === 'FriendRequest') {
+            return;
+        }
+        noty.isFriend = this.friends.has(noty.userId);
+        noty.isFavorite = API.cachedFavoritesByObjectId.has(noty.userId);
+        var notyFilter = this.sharedFeedFilters.noty;
+        if (
+            notyFilter[noty.type] &&
+            (notyFilter[noty.type] === 'On' ||
+                notyFilter[noty.type] === 'Friends' ||
+                (notyFilter[noty.type] === 'VIP' && noty.isFavorite))
+        ) {
+            this.playNoty(noty);
+        }
     };
 
     $app.data.notyMap = [];
 
-    $app.methods.playNoty = function (notyFeed) {
+    $app.methods.playNoty = function (noty) {
+        if (API.currentUser.status === 'busy' || !this.friendLogInitStatus) {
+            return;
+        }
+        var displayName = '';
+        if (noty.displayName) {
+            displayName = noty.displayName;
+        } else if (noty.senderUsername) {
+            displayName = noty.senderUsername;
+        } else if (noty.sourceDisplayName) {
+            displayName = noty.sourceDisplayName;
+        }
+        if (displayName) {
+            // don't play noty twice
+            if (
+                this.notyMap[displayName] &&
+                this.notyMap[displayName] > noty.created_at
+            ) {
+                return;
+            }
+            this.notyMap[displayName] = noty.created_at;
+        }
+        var bias = new Date(Date.now() - 60000).toJSON();
+        if (noty.created_at < bias) {
+            // don't play noty if it's over 1min old
+            return;
+        }
+
         var playNotificationTTS = false;
         if (
             this.notificationTTS === 'Always' ||
@@ -4675,70 +4631,37 @@ speechSynthesis.getVoices();
         ) {
             playOverlayNotification = true;
         }
-        if (API.currentUser.status === 'busy' || !this.notyInit) {
-            return;
-        }
-        var notyToPlay = [];
-        notyFeed.forEach((feed) => {
-            var displayName = '';
-            if (feed.displayName) {
-                displayName = feed.displayName;
-            } else if (feed.senderUsername) {
-                displayName = feed.senderUsername;
-            } else if (feed.sourceDisplayName) {
-                displayName = feed.sourceDisplayName;
-            } else if (feed.data) {
-                displayName = feed.data;
-            }
-            if (
-                (displayName && !this.notyMap[displayName]) ||
-                this.notyMap[displayName] < feed.created_at
-            ) {
-                this.notyMap[displayName] = feed.created_at;
-                notyToPlay.push(feed);
-            }
-        });
-        var bias = new Date(Date.now() - 60000).toJSON();
         var messageList = [
             'inviteMessage',
             'requestMessage',
             'responseMessage'
         ];
-        for (var i = 0; i < notyToPlay.length; i++) {
-            let noty = notyToPlay[i];
-            if (noty.created_at < bias) {
-                continue;
+        let message = '';
+        for (var k = 0; k < messageList.length; k++) {
+            if (
+                typeof noty.details !== 'undefined' &&
+                typeof noty.details[messageList[k]] !== 'undefined'
+            ) {
+                message = `, ${noty.details[messageList[k]]}`;
             }
-            let message = '';
-            for (var k = 0; k < messageList.length; k++) {
-                if (
-                    typeof noty.details !== 'undefined' &&
-                    typeof noty.details[messageList[k]] !== 'undefined'
-                ) {
-                    message = noty.details[messageList[k]];
+        }
+        if (playNotificationTTS) {
+            this.playNotyTTS(noty, message);
+        }
+        if (playOverlayNotification) {
+            this.notyGetImage(noty).then((imageUrl) => {
+                this.displayOverlayNotification(noty, message, imageUrl);
+            });
+        }
+        if (playDesktopToast || playXSNotification) {
+            this.notySaveImage(noty).then((image) => {
+                if (playXSNotification) {
+                    this.displayXSNotification(noty, message, image);
                 }
-            }
-            if (message) {
-                message = `, ${message}`;
-            }
-            if (playNotificationTTS) {
-                this.playNotyTTS(noty, message);
-            }
-            if (playOverlayNotification) {
-                this.notyGetImage(noty).then((imageUrl) => {
-                    this.displayOverlayNotification(noty, message, imageUrl);
-                });
-            }
-            if (playDesktopToast || playXSNotification) {
-                this.notySaveImage(noty).then((image) => {
-                    if (playXSNotification) {
-                        this.displayXSNotification(noty, message, image);
-                    }
-                    if (playDesktopToast) {
-                        this.displayDesktopToast(noty, message, image);
-                    }
-                });
-            }
+                if (playDesktopToast) {
+                    this.displayDesktopToast(noty, message, image);
+                }
+            });
         }
     };
 
@@ -7087,6 +7010,7 @@ speechSynthesis.getVoices();
         this.feedTable.data.push(feed);
         this.sweepFeed();
         this.updateSharedFeed(false);
+        this.queueFeedNoty(feed);
         this.notifyMenu('feed');
     };
 
@@ -7194,6 +7118,7 @@ speechSynthesis.getVoices();
             playerList: new Map(),
             friendList: new Map()
         };
+        this.updateVRLastLocation();
     };
 
     $app.data.lastLocation$ = {};
@@ -7233,7 +7158,7 @@ speechSynthesis.getVoices();
             {
                 prop: 'type',
                 value: true,
-                filterFn: (row) => row.type !== 'Notification'
+                filterFn: (row) => row.type !== 'Notification' || row.type !== 'LocationDestination'
             }
         ],
         tableProps: {
@@ -7317,11 +7242,9 @@ speechSynthesis.getVoices();
         this.sweepGameLog();
     };
 
-    $app.methods.addGameLogEntry = async function (
-        gameLog,
-        location,
-        pushToTable
-    ) {
+    $app.lastLocationDestinationTime = 0;
+
+    $app.methods.addGameLogEntry = function (gameLog, location, pushToTable) {
         var userId = '';
         if (gameLog.userDisplayName) {
             for (var ref of API.cachedUsers.values()) {
@@ -7332,6 +7255,17 @@ speechSynthesis.getVoices();
             }
         }
         switch (gameLog.type) {
+            case 'location-destination':
+                if (this.isGameRunning) {
+                    this.cancelVRChatCacheDownload(gameLog.location);
+                }
+                this.lastLocationDestinationTime = Date.parse(gameLog.dt);
+                var entry = {
+                    created_at: gameLog.dt,
+                    type: 'LocationDestination',
+                    location: gameLog.location
+                };
+                break;
             case 'location':
                 if (this.isGameRunning) {
                     this.lastLocationReset();
@@ -7343,7 +7277,7 @@ speechSynthesis.getVoices();
                         friendList: new Map()
                     };
                     this.updateVRLastLocation();
-                    this.checkVRChatCacheDownload(this.lastLocation.location);
+                    this.cancelVRChatCacheDownload(gameLog.location);
                 }
                 var L = API.parseLocation(gameLog.location);
                 var entry = {
@@ -7421,7 +7355,8 @@ speechSynthesis.getVoices();
                 database.addGamelogPortalSpawnToDatabase(entry);
                 break;
             case 'video-play':
-                var entry = await this.addGameLogVideo(gameLog, location);
+                this.addGameLogVideo(gameLog, location, pushToTable);
+                return;
                 database.addGamelogVideoPlayToDatabase(entry);
                 break;
             case 'notification':
@@ -7441,17 +7376,26 @@ speechSynthesis.getVoices();
                 break;
         }
         if (pushToTable && entry) {
+            this.queueGameLogNoty(entry);
             this.gameLogTable.data.push(entry);
         }
     };
 
-    $app.methods.addGameLogVideo = async function (gameLog, location) {
+    $app.methods.addGameLogVideo = async function (
+        gameLog,
+        location,
+        pushToTable
+    ) {
         var videoUrl = gameLog.videoUrl;
         var youtubeVideoId = '';
         var videoId = '';
         var videoName = '';
         var videoLength = '';
         var videoVolume = '';
+        var displayName = '';
+        if (typeof gameLog.displayName !== 'undefined') {
+            displayName = gameLog.displayName;
+        }
         if (
             gameLog.displayName !== '' &&
             gameLog.pypyRequest !== '' &&
@@ -7515,10 +7459,14 @@ speechSynthesis.getVoices();
             videoLength,
             videoVolume,
             location,
-            displayName: gameLog.displayName,
+            displayName,
             userId: ''
         };
-        return entry;
+        database.addGamelogVideoPlayToDatabase(entry);
+        if (pushToTable) {
+            this.queueGameLogNoty(entry);
+            this.gameLogTable.data.push(entry);
+        }
     };
 
     $app.methods.sweepGameLog = function () {
@@ -8248,6 +8196,7 @@ speechSynthesis.getVoices();
             };
             this.friendLogTable.data.push(friendLogHistory);
             database.addFriendLogHistory(friendLogHistory);
+            this.queueFriendLogNoty(friendLogHistory);
             var friendLogCurrent = {
                 userId: id,
                 displayName: ctx.displayName,
@@ -8272,6 +8221,7 @@ speechSynthesis.getVoices();
         };
         this.friendLogTable.data.push(friendLogHistory);
         database.addFriendLogHistory(friendLogHistory);
+        this.queueFriendLogNoty(friendLogHistory);
         this.friendLog.delete(id);
         database.deleteFriendLogCurrent(id);
         this.notifyMenu('friendLog');
@@ -8304,18 +8254,17 @@ speechSynthesis.getVoices();
                     displayName: ref.displayName,
                     previousDisplayName: ctx.displayName
                 };
-                this.friendLogTable.data.push(friendLogHistory);
-                database.addFriendLogHistory(friendLogHistory);
-            } else if (ctx.displayName === null) {
+            } else {
                 var friendLogHistory = {
                     created_at: new Date().toJSON(),
                     type: 'Friend',
                     userId: ref.id,
                     displayName: ref.displayName
                 };
-                this.friendLogTable.data.push(friendLogHistory);
-                database.addFriendLogHistory(friendLogHistory);
             }
+            this.friendLogTable.data.push(friendLogHistory);
+            database.addFriendLogHistory(friendLogHistory);
+            this.queueFriendLogNoty(friendLogHistory);
             var friendLogCurrent = {
                 userId: ref.id,
                 displayName: ref.displayName,
@@ -8326,35 +8275,32 @@ speechSynthesis.getVoices();
             ctx.displayName = ref.displayName;
             this.notifyMenu('friendLog');
         }
-        if (ref.$trustLevel && ctx.trustLevel !== ref.$trustLevel) {
-            if (
-                ctx.trustLevel &&
-                ctx.trustLevel !== 'Legendary User' &&
-                ctx.trustLevel !== 'VRChat Team' &&
-                ctx.trustLevel !== 'Nuisance'
-            ) {
-                // TODO: remove
-                var friendLogHistory = {
-                    created_at: new Date().toJSON(),
-                    type: 'TrustLevel',
-                    userId: ref.id,
-                    displayName: ref.displayName,
-                    trustLevel: ref.$trustLevel,
-                    previousTrustLevel: ctx.trustLevel
-                };
-                this.friendLogTable.data.push(friendLogHistory);
-                database.addFriendLogHistory(friendLogHistory);
-                var friendLogCurrent = {
-                    userId: ref.id,
-                    displayName: ref.displayName,
-                    trustLevel: ref.$trustLevel
-                };
-                this.friendLog.set(ref.id, friendLogCurrent);
-                database.setFriendLogCurrent(friendLogCurrent);
-                this.notifyMenu('friendLog');
-            }
-            ctx.trustLevel = ref.$trustLevel;
+        if (
+            ref.$trustLevel &&
+            ctx.trustLevel &&
+            ctx.trustLevel !== ref.$trustLevel
+        ) {
+            var friendLogHistory = {
+                created_at: new Date().toJSON(),
+                type: 'TrustLevel',
+                userId: ref.id,
+                displayName: ref.displayName,
+                trustLevel: ref.$trustLevel,
+                previousTrustLevel: ctx.trustLevel
+            };
+            this.friendLogTable.data.push(friendLogHistory);
+            database.addFriendLogHistory(friendLogHistory);
+            this.queueFriendLogNoty(friendLogHistory);
+            var friendLogCurrent = {
+                userId: ref.id,
+                displayName: ref.displayName,
+                trustLevel: ref.$trustLevel
+            };
+            this.friendLog.set(ref.id, friendLogCurrent);
+            database.setFriendLogCurrent(friendLogCurrent);
+            this.notifyMenu('friendLog');
         }
+        ctx.trustLevel = ref.$trustLevel;
     };
 
     $app.methods.deleteFriendLog = function (row) {
@@ -8517,6 +8463,7 @@ speechSynthesis.getVoices();
                 $app.notifyMenu('notification');
                 $app.unseenNotifications.push(ref.id);
             }
+            $app.queueNotificationNoty(ref);
         }
         $app.updateSharedFeed(true);
     });
@@ -14665,29 +14612,18 @@ speechSynthesis.getVoices();
         this.downloadVRChatCacheProgress();
     };
 
-    $app.methods.checkVRChatCacheDownload = function (lastLocation) {
-        var L = API.parseLocation(lastLocation);
+    $app.methods.cancelVRChatCacheDownload = function (location) {
+        var L = API.parseLocation(location);
         if (L.worldId) {
             if (this.downloadCurrent.id === L.worldId) {
-                this.cancelVRChatCacheDownload(L.worldId);
-            } else if (this.downloadQueue.has(L.worldId)) {
+                AssetBundleCacher.CancelDownload();
+            }
+            if (this.downloadQueue.has(L.worldId)) {
                 this.downloadQueue.delete(L.worldId);
                 this.downloadQueueTable.data = Array.from(
                     this.downloadQueue.values()
                 );
             }
-        }
-    };
-
-    $app.methods.cancelVRChatCacheDownload = function (worldId) {
-        if (this.downloadCurrent.id === worldId) {
-            AssetBundleCacher.CancelDownload();
-        }
-        if (this.downloadQueue.has(worldId)) {
-            this.downloadQueue.delete(worldId);
-            this.downloadQueueTable.data = Array.from(
-                this.downloadQueue.values()
-            );
         }
     };
 
