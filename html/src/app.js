@@ -7357,8 +7357,6 @@ speechSynthesis.getVoices();
             case 'video-play':
                 this.addGameLogVideo(gameLog, location, pushToTable);
                 return;
-                database.addGamelogVideoPlayToDatabase(entry);
-                break;
             case 'notification':
                 var entry = {
                     created_at: gameLog.dt,
