@@ -14515,6 +14515,8 @@ speechSynthesis.getVoices();
         });
     };
 
+    $app.data.cacheAutoDownloadHistory = new Set();
+
     $app.methods.downloadVRChatCache = async function () {
         if (this.downloadQueue.size === 0) {
             return;
@@ -14564,6 +14566,16 @@ speechSynthesis.getVoices();
             this.downloadVRChatCache();
             return;
         }
+        if (
+            this.downloadCurrent.type === 'Auto' &&
+            this.cacheAutoDownloadHistory.has(assetUrl)
+        ) {
+            this.downloadCurrent = {};
+            this.downloadInProgress = false;
+            this.downloadVRChatCache();
+            return;
+        }
+        this.cacheAutoDownloadHistory.add(assetUrl);
         try {
             var args = await API.getBundles(fileId);
         } catch (err) {
