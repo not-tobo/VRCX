@@ -4339,14 +4339,19 @@ speechSynthesis.getVoices();
         if (
             noty.type === 'Notification' ||
             noty.type === 'LocationDestination'
+            // skip unused entries
         ) {
             return;
         }
-        // remove current user
+        if (noty.type === 'VideoPlay' && !noty.videoName) {
+            // skip videos without names
+            return;
+        }
         if (
             noty.type !== 'VideoPlay' &&
             noty.displayName === API.currentUser.displayName
         ) {
+            // remove current user
             return;
         }
         noty.isFriend = false;
@@ -4874,11 +4879,7 @@ speechSynthesis.getVoices();
                 this.speak(noty.data);
                 break;
             case 'VideoPlay':
-                var videoName = '';
-                if (noty.videoName) {
-                    videoName = `: ${noty.videoName}`;
-                }
-                this.speak(`Now playing video${videoName}`);
+                this.speak(`Now playing: ${noty.videoName}`);
                 break;
             case 'BlockedOnPlayerJoined':
                 this.speak(`Blocked user ${noty.displayName} has joined`);
@@ -5061,13 +5062,9 @@ speechSynthesis.getVoices();
                 AppApi.XSNotification('VRCX', noty.data, timeout, image);
                 break;
             case 'VideoPlay':
-                var videoName = noty.videoUrl;
-                if (noty.videoName) {
-                    videoName = noty.videoName;
-                }
                 AppApi.XSNotification(
                     'VRCX',
-                    `Now playing: ${videoName}`,
+                    `Now playing: ${noty.videoName}`,
                     timeout,
                     image
                 );
@@ -5248,11 +5245,11 @@ speechSynthesis.getVoices();
                 AppApi.DesktopNotification('Event', noty.data, image);
                 break;
             case 'VideoPlay':
-                var videoName = noty.videoUrl;
-                if (noty.videoName) {
-                    videoName = noty.videoName;
-                }
-                AppApi.DesktopNotification('Now playing', videoName, image);
+                AppApi.DesktopNotification(
+                    'Now playing',
+                    noty.videoName,
+                    image
+                );
                 break;
             case 'BlockedOnPlayerJoined':
                 AppApi.DesktopNotification(
@@ -7392,7 +7389,7 @@ speechSynthesis.getVoices();
                 database.addGamelogPortalSpawnToDatabase(entry);
                 break;
             case 'video-play':
-                this.addGameLogVideo(gameLog, location, pushToTable);
+                this.addGameLogVideo(gameLog, location, userId, pushToTable);
                 return;
             case 'notification':
                 var entry = {
@@ -7419,6 +7416,7 @@ speechSynthesis.getVoices();
     $app.methods.addGameLogVideo = async function (
         gameLog,
         location,
+        userId,
         pushToTable
     ) {
         var videoUrl = gameLog.videoUrl;
@@ -7426,64 +7424,37 @@ speechSynthesis.getVoices();
         var videoId = '';
         var videoName = '';
         var videoLength = '';
-        var videoVolume = '';
         var displayName = '';
         if (typeof gameLog.displayName !== 'undefined') {
             displayName = gameLog.displayName;
         }
-        if (
-            gameLog.displayName !== '' &&
-            gameLog.pypyRequest !== '' &&
-            gameLog.displayName !== gameLog.pypyRequest &&
-            videoUrl.substring(0, 34) === 'https://jd.pypy.moe/api/v1/videos/'
-        ) {
-            gameLog.displayName = gameLog.pypyRequest;
-        }
-        if (videoUrl.substring(0, 29) === 'https://www.youtube.com/watch') {
-            var videoParams = videoUrl.substring(29);
-            var urlParams = new URLSearchParams(videoParams);
-            youtubeVideoId = urlParams.get('v');
-        } else if (videoUrl.substring(0, 17) === 'https://youtu.be/') {
-            youtubeVideoId = videoUrl.substring(17, 28);
-        } else if (
-            videoUrl.substring(0, 34) === 'https://jd.pypy.moe/api/v1/videos/'
-        ) {
-            youtubeVideoId = videoUrl.substring(34).slice(0, -4);
-        }
-        if (this.friendsListInit && youtubeVideoId) {
-            for (var video of PyPyVideosTable) {
-                if (video.File_Name === `${youtubeVideoId}.mp4`) {
-                    videoName = video.Video_Name;
-                    videoId = video.Video_ID;
-                    videoLength = video.Video_Length;
-                    videoVolume = video.Video_Volume;
-                    break;
+        try {
+            var url = new URL(videoUrl);
+            var id1 = url.pathname;
+            var id2 = url.searchParams.get('v');
+            if (id1 && id1.length === 12) {
+                youtubeVideoId = id2.substring(1, 12);
+            }
+            if (id2 && id2.length === 11) {
+                youtubeVideoId = id2;
+            }
+            if (this.youTubeApi && youtubeVideoId) {
+                var data = await this.lookupYouTubeVideo(youtubeVideoId);
+                if (
+                    data ||
+                    (data.status === 200 && data.pageInfo.totalResults !== 0)
+                ) {
+                    videoId = 'YouTube';
+                    videoName = data.items[0].snippet.title;
+                    videoLength = this.convertYoutubeTime(
+                        data.items[0].contentDetails.duration
+                    );
+                } else {
+                    console.error(`YouTube video lookup failed status: ${status}`);
                 }
             }
-            if (!videoId && this.youtubeAPI) {
-                try {
-                    var youtubeAPIKey = '';
-                    if (!youtubeAPIKey) {
-                        throw new Error(
-                            'youtubeAPIKey is missing, add it to use this function'
-                        );
-                    }
-                    var response = await webApiService.execute({
-                        url: `https://www.googleapis.com/youtube/v3/videos?id=${youtubeVideoId}&part=snippet,contentDetails&key=${youtubeAPIKey}`,
-                        method: 'GET'
-                    });
-                    var result = JSON.parse(response.data);
-                    if (result.pageInfo.totalResults !== 0) {
-                        videoId = 'YouTube';
-                        videoName = result.items[0].snippet.title;
-                        videoLength = this.convertYoutubeTime(
-                            result.items[0].contentDetails.duration
-                        );
-                    }
-                } catch {
-                    console.error(`YouTube video lookup failed`);
-                }
-            }
+        } catch {
+            console.error(`Invalid URL: ${url}`);
         }
         var entry = {
             created_at: gameLog.dt,
@@ -7492,16 +7463,38 @@ speechSynthesis.getVoices();
             videoId,
             videoName,
             videoLength,
-            videoVolume,
             location,
             displayName,
-            userId: ''
+            userId
         };
-        database.addGamelogVideoPlayToDatabase(entry);
         if (pushToTable) {
             this.queueGameLogNoty(entry);
             this.gameLogTable.data.push(entry);
         }
+        database.addGamelogVideoPlayToDatabase(entry);
+    };
+
+    $app.methods.lookupYouTubeVideo = async function (videoId) {
+        var data = {};
+        var apiKey = 'AIzaSyDC9AwAmtnMWpmk6mhs-iIStfXmH0vJxew';
+        if (this.youTubeApiKey) {
+            apiKey = this.youTubeApiKey;
+        }
+        try {
+            var response = await webApiService.execute({
+                url: `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet,contentDetails&key=${apiKey}`,
+                method: 'GET',
+                headers: {
+                    'User-Agent': appVersion,
+                    Referer: 'https://vrcx.pypy.moe'
+                }
+            });
+            data = JSON.parse(response.data);
+            data.status = response.status;
+        } catch {
+            console.error(`YouTube video lookup failed for ${videoId}`);
+        }
+        return data;
     };
 
     $app.methods.sweepGameLog = function () {
@@ -9219,6 +9212,9 @@ speechSynthesis.getVoices();
         this.updateVRConfigVars();
     };
 
+    $app.data.youTubeApi = configRepository.getBool('VRCX_youtubeAPI');
+    $app.data.youTubeApiKey = configRepository.getString('VRCX_youtubeAPIKey');
+
     $app.data.progressPie = configRepository.getBool('VRCX_progressPie');
     $app.data.videoNotification = configRepository.getBool(
         'VRCX_videoNotification'
@@ -9226,7 +9222,6 @@ speechSynthesis.getVoices();
     $app.data.volumeNormalize = configRepository.getBool(
         'VRCX_volumeNormalize'
     );
-    $app.data.youtubeAPI = configRepository.getBool('VRCX_youtubeAPI');
     var saveVRCXPyPyOption = function () {
         configRepository.setBool('VRCX_progressPie', this.progressPie);
         configRepository.setBool(
@@ -9234,13 +9229,11 @@ speechSynthesis.getVoices();
             this.videoNotification
         );
         configRepository.setBool('VRCX_volumeNormalize', this.volumeNormalize);
-        configRepository.setBool('VRCX_youtubeAPI', this.youtubeAPI);
         this.updateVRConfigVars();
     };
     $app.watch.progressPie = saveVRCXPyPyOption;
     $app.watch.videoNotification = saveVRCXPyPyOption;
     $app.watch.volumeNormalize = saveVRCXPyPyOption;
-    $app.watch.youtubeAPI = saveVRCXPyPyOption;
 
     var downloadProgressStateChange = function () {
         this.updateVRConfigVars();
@@ -14470,6 +14463,57 @@ speechSynthesis.getVoices();
     $app.methods.setVRChatScreenshotResolution = function (res) {
         this.VRChatConfigFile.screenshot_res_height = res.height;
         this.VRChatConfigFile.screenshot_res_width = res.width;
+    };
+
+    // YouTube API
+
+    $app.data.youTubeApiKey = '';
+
+    $app.data.youTubeApiDialog = {
+        visible: false
+    };
+
+    API.$on('LOGOUT', function () {
+        $app.youTubeApiDialog.visible = false;
+    });
+
+    $app.methods.testYouTubeApiKey = async function () {
+        if (!this.youTubeApiKey) {
+            this.$message({
+                message: 'YouTube API key removed',
+                type: 'success'
+            });
+            this.youTubeApiDialog.visible = false;
+            return;
+        }
+        var data = await this.lookupYouTubeVideo('dQw4w9WgXcQ');
+        if (!data || data.status !== 200) {
+            this.youTubeApiKey = '';
+            this.$message({
+                message: `Invalid YouTube API key, error code: ${data.status}`,
+                type: 'error'
+            });
+        } else {
+            configRepository.setString(
+                'VRCX_youtubeAPIKey',
+                this.youTubeApiKey
+            );
+            this.$message({
+                message: 'YouTube API key valid!',
+                type: 'success'
+            });
+        }
+        this.youTubeApiDialog.visible = false;
+    };
+
+    $app.methods.changeYouTubeApi = function () {
+        configRepository.setBool('VRCX_youtubeAPI', this.youTubeApi);
+    };
+
+    $app.methods.showYouTubeApiDialog = function () {
+        this.$nextTick(() => adjustDialogZ(this.$refs.youTubeApiDialog.$el));
+        var D = this.youTubeApiDialog;
+        D.visible = true;
     };
 
     // Asset Bundle Cacher

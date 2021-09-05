@@ -424,11 +424,7 @@ var bar = new ProgressBar.Circle('#vroverlay', {
                 text = noty.data;
                 break;
             case 'VideoPlay':
-                var videoName = noty.videoUrl;
-                if (noty.videoName) {
-                    videoName = noty.videoName;
-                }
-                text = `<strong>Now playing:</strong> ${videoName}`;
+                text = `<strong>Now playing:</strong> ${noty.videoName}`;
                 break;
             case 'BlockedOnPlayerJoined':
                 text = `Blocked user <strong>${noty.displayName}</strong> has joined`;
