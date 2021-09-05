@@ -127,7 +127,7 @@ namespace VRCX
             }
         }
 
-        public void SetAssets(string largeKey, string largeText, string smallKey, string smallText, string partyId, int partySize, int partyMax, string appId)
+        public void SetAssets(string largeKey, string largeText, string smallKey, string smallText, string partyId, int partySize, int partyMax, string buttonText, string buttonUrl, string appId)
         {
             m_Lock.EnterWriteLock();
             try
@@ -150,6 +150,15 @@ namespace VRCX
                     m_Presence.Party.ID = partyId;
                     m_Presence.Party.Size = partySize;
                     m_Presence.Party.Max = partyMax;
+                    Button[] Buttons = { };
+                    if (!string.IsNullOrEmpty(buttonUrl))
+                    {
+                        Buttons = new Button[]
+                        {
+                            new Button() { Label = buttonText, Url = buttonUrl }
+                        };
+                    }
+                    m_Presence.Buttons = Buttons;
                     if (DiscordAppId != appId)
                     {
                         DiscordAppId = appId;

@@ -813,13 +813,14 @@ html
                 div.options-container
                     span.header Discord Presence
                     div.options-container-item
-                        span Show now playing video in Discord.
-                    div.options-container-item
                         span.name Enable
-                        el-switch(v-model="discordActive")
-                    //- div.options-container-item
-                    //-     span.name Instance details
-                    //-     el-switch(v-model="discordInstance" :disabled="!discordActive")
+                        el-switch(v-model="discordActive" @change="saveDiscordOption")
+                    div.options-container-item
+                        span.name Instance type
+                        el-switch(v-model="discordInstance" @change="saveDiscordOption" :disabled="!discordActive")
+                    div.options-container-item
+                        span.name Join button (public only)
+                        el-switch(v-model="discordJoinButton" @change="saveDiscordOption" :disabled="!discordActive")
                 div.options-container
                     span.header SteamVR Overlay
                     div.options-container-item
