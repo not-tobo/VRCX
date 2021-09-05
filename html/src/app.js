@@ -13,8 +13,8 @@ Vue.component('v-swatches', VSwatches);
 import ElementUI from 'element-ui';
 import locale from 'element-ui/lib/locale/lang/en';
 import {v4 as uuidv4} from 'uuid';
-import PyPyVideos from './PyPyVideos.json';
-var PyPyVideosTable = JSON.parse(atob(PyPyVideos.json));
+// import PyPyVideos from './PyPyVideos.json';
+// var PyPyVideosTable = JSON.parse(atob(PyPyVideos.json));
 
 import {appVersion} from './constants.js';
 import configRepository from './repository/config.js';
@@ -4170,12 +4170,6 @@ speechSynthesis.getVoices();
             'wristFeedUpdate',
             JSON.stringify(wristFeed)
         );
-        // temp for video dicord thing
-        AppApi.ExecuteVrOverlayFunction(
-            'wristFeedUpdate',
-            JSON.stringify(wristFeed)
-        );
-
         if (this.userDialog.visible) {
             this.applyUserDialogLocation();
         }
@@ -7450,7 +7444,7 @@ speechSynthesis.getVoices();
                         data.items[0].contentDetails.duration
                     );
                 } else {
-                    console.error(`YouTube video lookup failed status: ${status}`);
+                    console.error(`YouTube video lookup failed, error code: ${data.status}`);
                 }
             }
         } catch {
@@ -9249,7 +9243,6 @@ speechSynthesis.getVoices();
             notificationTTS: this.notificationTTS,
             notificationTTSVoice: this.notificationTTSVoice,
             overlayNotifications: this.overlayNotifications,
-            xsNotifications: this.xsNotifications,
             hideDevicesFromFeed: this.hideDevicesFromFeed,
             minimalFeed: this.minimalFeed,
             notificationPosition: this.notificationPosition,
@@ -11847,7 +11840,7 @@ speechSynthesis.getVoices();
     $app.methods.copyInstanceUrl = function (url) {
         this.copyToClipboard(url);
         this.$message({
-            message: 'URL copied to clipboard',
+            message: 'Instance URL copied to clipboard',
             type: 'success'
         });
         this.launchDialog.visible = false;
@@ -11890,6 +11883,8 @@ speechSynthesis.getVoices();
         });
         this.copyToClipboard(`https://vrchat.com/home/world/${worldId}`);
     };
+
+    // App: VRCPlus Icons
 
     API.$on('LOGIN', function () {
         $app.VRCPlusIconsTable = [];
