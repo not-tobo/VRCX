@@ -4726,26 +4726,25 @@ speechSynthesis.getVoices();
     $app.methods.notySaveImage = async function (noty) {
         var imageUrl = await this.notyGetImage(noty);
         var base64Image = '';
-        try {
-            base64Image = await fetch(imageUrl, {
-                method: 'GET',
-                redirect: 'follow',
-                headers: {
-                    'User-Agent': appVersion
-                }
-            })
-                .then((response) => response.arrayBuffer())
-                .then((buffer) => {
-                    var binary = '';
-                    var bytes = new Uint8Array(buffer);
-                    var length = bytes.byteLength;
-                    for (var i = 0; i < length; i++) {
-                        binary += String.fromCharCode(bytes[i]);
-                    }
-                    return btoa(binary);
-                });
-        } catch (err) {
-            console.error(err);
+        if (imageUrl) {
+            try {
+                base64Image = await fetch(imageUrl, {
+                    method: 'GET',
+                    redirect: 'follow'
+                })
+                    .then((response) => response.arrayBuffer())
+                    .then((buffer) => {
+                        var binary = '';
+                        var bytes = new Uint8Array(buffer);
+                        var length = bytes.byteLength;
+                        for (var i = 0; i < length; i++) {
+                            binary += String.fromCharCode(bytes[i]);
+                        }
+                        return btoa(binary);
+                    });
+            } catch (err) {
+                console.error(err);
+            }
         }
         return base64Image;
     };
@@ -5703,10 +5702,7 @@ speechSynthesis.getVoices();
         var user =
             $app.loginForm.savedCredentials[$app.loginForm.lastUserLoggedIn];
         if (typeof user !== 'undefined') {
-            $app.relogin({
-                username: user.loginParmas.username,
-                password: user.loginParmas.password
-            }).then(() => {
+            $app.relogin(user).then(() => {
                 new Noty({
                     type: 'success',
                     text: 'Automatically logged in.'
@@ -13667,10 +13663,7 @@ speechSynthesis.getVoices();
             if (image.file && image.file.url) {
                 var response = await fetch(image.file.url, {
                     method: 'HEAD',
-                    redirect: 'follow',
-                    headers: {
-                        'User-Agent': appVersion
-                    }
+                    redirect: 'follow'
                 }).catch((error) => {
                     console.log(error);
                 });
@@ -14196,10 +14189,7 @@ speechSynthesis.getVoices();
                 var imageURL = avatar.thumbnailImageUrl;
                 fetch(imageURL, {
                     method: 'HEAD',
-                    redirect: 'follow',
-                    headers: {
-                        'User-Agent': appVersion
-                    }
+                    redirect: 'follow'
                 })
                     .then((response) => {
                         if (response.status === 403) {
