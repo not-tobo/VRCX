@@ -4337,9 +4337,16 @@ speechSynthesis.getVoices();
         ) {
             return;
         }
-        if (noty.type === 'VideoPlay' && !noty.videoName) {
-            // skip videos without names
-            return;
+        if (noty.type === 'VideoPlay') {
+            if (!noty.videoName) {
+                // skip videos without names
+                return;
+            }
+            noty.notyName = noty.videoName;
+            if (noty.displayName) {
+                // add requester's name to noty
+                noty.notyName = `${noty.videoName} (${noty.displayName})`;
+            }
         }
         if (
             noty.type !== 'VideoPlay' &&
@@ -4873,7 +4880,7 @@ speechSynthesis.getVoices();
                 this.speak(noty.data);
                 break;
             case 'VideoPlay':
-                this.speak(`Now playing: ${noty.videoName}`);
+                this.speak(`Now playing: ${noty.notyName}`);
                 break;
             case 'BlockedOnPlayerJoined':
                 this.speak(`Blocked user ${noty.displayName} has joined`);
@@ -5058,7 +5065,7 @@ speechSynthesis.getVoices();
             case 'VideoPlay':
                 AppApi.XSNotification(
                     'VRCX',
-                    `Now playing: ${noty.videoName}`,
+                    `Now playing: ${noty.notyName}`,
                     timeout,
                     image
                 );
@@ -5241,7 +5248,7 @@ speechSynthesis.getVoices();
             case 'VideoPlay':
                 AppApi.DesktopNotification(
                     'Now playing',
-                    noty.videoName,
+                    noty.notyName,
                     image
                 );
                 break;
@@ -7252,7 +7259,7 @@ speechSynthesis.getVoices();
         }
     };
 
-    $app.methods.addGameLogEvent = async function (json) {
+    $app.methods.addGameLogEvent = function (json) {
         var rawLogs = JSON.parse(json);
         var gameLog = gameLogService.parseRawGameLog(
             rawLogs[1],
@@ -7260,14 +7267,11 @@ speechSynthesis.getVoices();
             rawLogs.slice(3)
         );
         var pushToTable = true;
-        await this.addGameLogEntry(
+        this.addGameLogEntry(
             gameLog,
             this.lastLocation.location,
             pushToTable
         );
-        this.updateSharedFeed(false);
-        this.notifyMenu('gameLog');
-        this.sweepGameLog();
     };
 
     $app.lastLocationDestinationTime = 0;
@@ -7414,6 +7418,9 @@ speechSynthesis.getVoices();
         if (pushToTable && entry) {
             this.queueGameLogNoty(entry);
             this.gameLogTable.data.push(entry);
+            this.updateSharedFeed(false);
+            this.notifyMenu('gameLog');
+            this.sweepGameLog();
         }
     };
 
@@ -7472,6 +7479,9 @@ speechSynthesis.getVoices();
             if (pushToTable) {
                 this.queueGameLogNoty(entry);
                 this.gameLogTable.data.push(entry);
+                this.updateSharedFeed(false);
+                this.notifyMenu('gameLog');
+                this.sweepGameLog();
             }
             database.addGamelogVideoPlayToDatabase(entry);
         }
@@ -7532,6 +7542,9 @@ speechSynthesis.getVoices();
             if (pushToTable) {
                 this.queueGameLogNoty(entry);
                 this.gameLogTable.data.push(entry);
+                this.updateSharedFeed(false);
+                this.notifyMenu('gameLog');
+                this.sweepGameLog();
             }
             database.addGamelogVideoPlayToDatabase(entry);
         }
@@ -14721,21 +14734,22 @@ speechSynthesis.getVoices();
             return;
         }
         if (
-            this.downloadCurrent.type === 'Auto' &&
-            this.cacheAutoDownloadHistory.has(assetUrl)
+            this.downloadCurrent.type !== 'Auto' ||
+            !this.cacheAutoDownloadHistory.has(assetUrl)
         ) {
-            this.downloadCurrent = {};
-            this.downloadInProgress = false;
-            this.downloadVRChatCache();
-            return;
-        }
-        this.cacheAutoDownloadHistory.add(assetUrl);
-        try {
-            var args = await API.getBundles(fileId);
-        } catch (err) {
-            this.downloadCurrent.status = 'API request failed';
-            this.downloadCurrent.date = Date.now();
-            this.downloadHistoryTable.data.unshift(this.downloadCurrent);
+            this.cacheAutoDownloadHistory.add(assetUrl);
+            try {
+                var args = await API.getBundles(fileId);
+            } catch (err) {
+                this.downloadCurrent.status = 'API request failed';
+                this.downloadCurrent.date = Date.now();
+                this.downloadHistoryTable.data.unshift(this.downloadCurrent);
+                this.downloadCurrent = {};
+                this.downloadInProgress = false;
+                this.downloadVRChatCache();
+                return;
+            }
+        } else {
             this.downloadCurrent = {};
             this.downloadInProgress = false;
             this.downloadVRChatCache();
