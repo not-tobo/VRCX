@@ -191,12 +191,14 @@ var bar = new ProgressBar.Circle('#vroverlay', {
             currentTime: new Date().toJSON(),
             cpuUsage: 0,
             config: {},
-            nowPlayingobj: {},
-            newPlayingobj: {
-                videoURL: '',
-                videoName: '',
-                videoVolume: '',
-                created_at: ''
+            nowPlaying: {
+                url: '',
+                name: '',
+                length: 0,
+                startTime: 0,
+                elapsed: 0,
+                percentage: 0,
+                remainingText: ''
             },
             lastLocation: {
                 date: 0,
@@ -300,16 +302,16 @@ var bar = new ProgressBar.Circle('#vroverlay', {
         this.config = JSON.parse(json);
     };
 
+    $app.methods.nowPlayingUpdate = function (json) {
+        this.nowPlaying = JSON.parse(json);
+    };
+
     $app.methods.lastLocationUpdate = function (json) {
         this.lastLocation = JSON.parse(json);
     };
 
     $app.methods.wristFeedUpdate = function (json) {
         this.wristFeed = JSON.parse(json);
-        if (this.wristFeed.length > 0) {
-            // yeet this
-            this.updateSharedFeedVideo(this.wristFeed);
-        }
     };
 
     $app.methods.updateStatsLoop = async function () {
