@@ -15,15 +15,6 @@ import configRepository from './repository/config.js';
 
 speechSynthesis.getVoices();
 
-var bar = new ProgressBar.Circle('#vroverlay', {
-    strokeWidth: 50,
-    easing: 'easeInOut',
-    duration: 500,
-    color: '#aaa',
-    trailWidth: 0,
-    svgStyle: null
-});
-
 (async function () {
     var $app = null;
 
