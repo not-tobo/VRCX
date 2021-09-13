@@ -7445,7 +7445,7 @@ speechSynthesis.getVoices();
         var videoName = '';
         var videoLength = '';
         var displayName = '';
-        var videoPos = 5; // video loading delay
+        var videoPos = 10; // video loading delay
         if (typeof gameLog.displayName !== 'undefined') {
             displayName = gameLog.displayName;
         }
@@ -7800,11 +7800,13 @@ speechSynthesis.getVoices();
                 appId = '846232616054030376';
                 bigIcon = 'vr_dancing';
             }
-            L.worldName = this.nowPlaying.name;
-            Discord.SetTimestamps(
-                Date.now(),
-                (this.nowPlaying.startTime + this.nowPlaying.length) * 1000
-            );
+            if (this.nowPlaying.playing) {
+                L.worldName = this.nowPlaying.name;
+                Discord.SetTimestamps(
+                    Date.now(),
+                    (this.nowPlaying.startTime + this.nowPlaying.length) * 1000
+                );
+            }
         }
         Discord.SetAssets(
             bigIcon, // big icon
