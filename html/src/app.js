@@ -4336,8 +4336,9 @@ speechSynthesis.getVoices();
             return;
         }
         if (noty.type === 'VideoPlay') {
-            if (!noty.videoName) {
-                // skip videos without names
+            if (!noty.videoName || noty.videoUrl === this.nowPlaying.url) {
+                // skip video without name
+                // skip video already playing
                 return;
             }
             noty.notyName = noty.videoName;
@@ -7116,7 +7117,7 @@ speechSynthesis.getVoices();
                 userId: ref.userId,
                 time
             };
-            this.addGameLog(entry);
+            $app.addGameLog(entry);
             database.addGamelogJoinLeaveToDatabase(entry);
         }
         if (this.lastLocation.date !== 0) {
@@ -7624,15 +7625,11 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.setNowPlaying = function (ctx) {
-        var videoId = '';
         var displayName = '';
-        if (ctx.videoId) {
-            videoId = `${ctx.videoId} : `;
-        }
         if (ctx.displayName) {
             displayName = ` (${ctx.displayName})`;
         }
-        var name = `${videoId}${ctx.videoName}${displayName} ‎`;
+        var name = `${ctx.videoName}${displayName}`;
         this.nowPlaying = {
             url: ctx.videoUrl,
             name,
@@ -7790,10 +7787,20 @@ speechSynthesis.getVoices();
         }
         var appId = '883308884863901717';
         var bigIcon = 'vrchat';
-        if (L.worldId === 'wrld_f20326da-f1ac-45fc-a062-609723b097b1') {
+        if (
+            L.worldId === 'wrld_f20326da-f1ac-45fc-a062-609723b097b1' ||
+            L.worldId === 'wrld_42377cf1-c54f-45ed-8996-5875b0573a83'
+        ) {
+            if (L.worldId === 'wrld_f20326da-f1ac-45fc-a062-609723b097b1') {
+                appId = '784094509008551956';
+                bigIcon = 'pypy';
+            } else if (
+                L.worldId === 'wrld_42377cf1-c54f-45ed-8996-5875b0573a83'
+            ) {
+                appId = '846232616054030376';
+                bigIcon = 'vr_dancing';
+            }
             L.worldName = this.nowPlaying.name;
-            appId = '784094509008551956';
-            bigIcon = 'pypy';
             Discord.SetTimestamps(
                 Date.now(),
                 (this.nowPlaying.startTime + this.nowPlaying.length) * 1000
@@ -9464,6 +9471,7 @@ speechSynthesis.getVoices();
     $app.methods.vrInit = function () {
         this.updateVRConfigVars();
         this.updateVRLastLocation();
+        this.updateVrNowPlaying();
         this.updateSharedFeed(true);
     };
 

@@ -12,7 +12,6 @@ html
         link(rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Sans+JP|Noto+Sans+KR&display=swap")
         link(rel="stylesheet" href="vr.css")
     body
-        #vroverlay
         .x-app#x-app(v-if="appType === '1'" class="x-app-type" :class="{ background: config && config.backgroundEnabled }")
             .x-container(style="flex:1")
                 .x-friend-list(ref="list" style="color:#aaa")
@@ -340,9 +339,10 @@ html
                                 br
                                 span {{ device[2] }}%
             .x-containerbottom
-                span(style="float:right;padding-left:15px") {{ nowPlaying.remainingText }}
-                marquee-text {{ nowPlaying.name }}
-                div.np-progress-bar(:style="{ width: nowPlaying.percentage + '%' }")
+                template(v-if="nowPlaying.playing")
+                    span(style="float:right;padding-left:10px") {{ nowPlaying.remainingText }}
+                    marquee-text {{ nowPlaying.name }} ‎
+                    div.np-progress-bar(:style="{ width: nowPlaying.percentage + '%' }")
                 template(v-if="config && config.minimalFeed")
                     template(v-if="config.downloadProgress === 100")
                         span(style="display:inline-block;margin-right:5px") #[i.el-icon-loading]
