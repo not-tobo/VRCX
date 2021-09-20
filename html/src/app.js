@@ -3060,8 +3060,9 @@ speechSynthesis.getVoices();
     };
 
     API.refreshFavoriteAvatars = function (tag) {
+        var n = Math.floor(Math.random() * (50 + 1)) + 50;
         var params = {
-            n: 100,
+            n,
             offset: 0,
             tag
         };
@@ -3092,22 +3093,24 @@ speechSynthesis.getVoices();
             if (N > 0) {
                 if (type === 'avatar') {
                     for (var tag of tags) {
+                        var n = Math.floor(Math.random() * (50 + 1)) + 50;
                         this.bulk({
                             fn,
                             N,
                             params: {
-                                n: 100,
+                                n,
                                 offset: 0,
                                 tag
                             }
                         });
                     }
                 } else {
+                    var n = Math.floor(Math.random() * (50 + 1)) + 50;
                     this.bulk({
                         fn,
                         N,
                         params: {
-                            n: 50,
+                            n,
                             offset: 0
                         }
                     });
