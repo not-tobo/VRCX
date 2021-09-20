@@ -805,11 +805,14 @@ html
                         span.name Enable
                         el-switch(v-model="discordActive" @change="saveDiscordOption")
                     div.options-container-item
-                        span.name Instance type
+                        span.name Instance type/player count
                         el-switch(v-model="discordInstance" @change="saveDiscordOption" :disabled="!discordActive")
                     div.options-container-item
                         span.name Join button (public only)
                         el-switch(v-model="discordJoinButton" @change="saveDiscordOption" :disabled="!discordActive")
+                    div.options-container-item
+                        span.name Hide world details in private
+                        el-switch(v-model="discordHideInvite" @change="saveDiscordOption" :disabled="!discordActive")
                 div.options-container
                     span.header SteamVR Overlay
                     div.options-container-item
@@ -955,20 +958,11 @@ html
                         span.name Import entire avatar cache
                         el-switch(v-model="localAvatarDatabaseCache")
                         span.name(style="margin-left:15px") (This uses a lot of extra RAM)
-                div.options-container
-                    span.header PyPyDance Companion Fork Options
-                    div.options-container-item
-                        span.name(style="min-width:350px") Display progress pie overlay for videos
-                        el-switch(v-model="progressPie")
-                    div.options-container-item
-                        span.name(style="min-width:350px") Notification on video change 
-                        el-switch(v-model="videoNotification")
-                    div.options-container-item
-                        span.name(style="min-width:350px") Normalize video volume using Windows Volume Mixer
-                        el-switch(v-model="volumeNormalize")
-                    div.options-container-item
-                        span.name(style="min-width:350px") Use YouTube API for custom URL's
-                        el-switch(v-model="youTubeApi")
+                //- div.options-container
+                //-     span.header PyPyDance Companion Fork Options
+                //-     div.options-container-item
+                //-         span.name(style="min-width:350px") Display progress pie overlay for videos
+                //-         el-switch(v-model="progressPie")
                 div.options-container
                     span.header YouTube API
                     div.options-container-item
