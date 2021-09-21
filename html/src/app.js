@@ -7451,7 +7451,8 @@ speechSynthesis.getVoices();
         this.addGameLogEntry(gameLog, this.lastLocation.location, pushToTable);
     };
 
-    $app.lastLocationDestinationTime = 0;
+    $app.data.lastLocationDestination = '';
+    $app.data.lastLocationDestinationTime = 0;
 
     $app.methods.addGameLogEntry = function (gameLog, location, pushToTable) {
         var userId = '';
@@ -7469,6 +7470,7 @@ speechSynthesis.getVoices();
                     this.cancelVRChatCacheDownload(gameLog.location);
                     this.clearNowPlaying();
                 }
+                this.lastLocationDestination = gameLog.location;
                 this.lastLocationDestinationTime = Date.parse(gameLog.dt);
                 var entry = {
                     created_at: gameLog.dt,
@@ -15092,7 +15094,7 @@ speechSynthesis.getVoices();
             return;
         }
         if (
-            this.downloadCurrent.type !== 'Auto' ||
+            this.downloadCurrent.type !== 'Auto' &&
             !this.cacheAutoDownloadHistory.has(assetUrl)
         ) {
             this.cacheAutoDownloadHistory.add(assetUrl);
@@ -15222,7 +15224,8 @@ speechSynthesis.getVoices();
         if (
             !L.worldId ||
             this.downloadQueue.has(L.worldId) ||
-            this.downloadCurrent.id === L.worldId
+            this.downloadCurrent.id === L.worldId ||
+            this.lastLocationDestination === location
         ) {
             return;
         }
