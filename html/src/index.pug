@@ -969,16 +969,14 @@ html
                         span.name Import entire avatar cache
                         el-switch(v-model="localAvatarDatabaseCache")
                         span.name(style="margin-left:15px") (This uses a lot of extra RAM)
-                //- div.options-container
-                //-     span.header PyPyDance Companion Fork Options
-                //-     div.options-container-item
-                //-         span.name(style="min-width:350px") Display progress pie overlay for videos
-                //-         el-switch(v-model="progressPie")
                 div.options-container
                     span.header YouTube API
                     div.options-container-item
                         span.name Enabled
                         el-switch(v-model="youTubeApi" @change="changeYouTubeApi")
+                    div.options-container-item
+                        span.name Progress pie overlay for videos
+                        el-switch(v-model="progressPie")
                     div.options-container-item
                         el-button(size="small" icon="el-icon-caret-right" @click="showYouTubeApiDialog") YouTube API Key
                 div.options-container

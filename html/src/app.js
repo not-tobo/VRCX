@@ -7829,6 +7829,7 @@ speechSynthesis.getVoices();
     $app.methods.updateVrNowPlaying = function () {
         var json = JSON.stringify(this.nowPlaying);
         AppApi.ExecuteVrFeedFunction('nowPlayingUpdate', json);
+        AppApi.ExecuteVrOverlayFunction('nowPlayingUpdate', json);
     };
 
     $app.methods.formatSeconds = function (duration) {
@@ -9664,7 +9665,8 @@ speechSynthesis.getVoices();
             backgroundEnabled: this.vrBackgroundEnabled,
             isGameRunning: this.isGameRunning,
             isGameNoVR: this.isGameNoVR,
-            downloadProgress: this.downloadProgress
+            downloadProgress: this.downloadProgress,
+            progressPie: this.progressPie
         };
         var json = JSON.stringify(VRConfigVars);
         AppApi.ExecuteVrFeedFunction('configUpdate', json);
