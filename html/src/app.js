@@ -9622,24 +9622,9 @@ speechSynthesis.getVoices();
     $app.data.youTubeApiKey = configRepository.getString('VRCX_youtubeAPIKey');
 
     $app.data.progressPie = configRepository.getBool('VRCX_progressPie');
-    $app.data.videoNotification = configRepository.getBool(
-        'VRCX_videoNotification'
+    $app.data.progressPieFilter = configRepository.getBool(
+        'VRCX_progressPieFilter'
     );
-    $app.data.volumeNormalize = configRepository.getBool(
-        'VRCX_volumeNormalize'
-    );
-    var saveVRCXPyPyOption = function () {
-        configRepository.setBool('VRCX_progressPie', this.progressPie);
-        configRepository.setBool(
-            'VRCX_videoNotification',
-            this.videoNotification
-        );
-        configRepository.setBool('VRCX_volumeNormalize', this.volumeNormalize);
-        this.updateVRConfigVars();
-    };
-    $app.watch.progressPie = saveVRCXPyPyOption;
-    $app.watch.videoNotification = saveVRCXPyPyOption;
-    $app.watch.volumeNormalize = saveVRCXPyPyOption;
 
     var downloadProgressStateChange = function () {
         this.updateVRConfigVars();
@@ -9650,6 +9635,20 @@ speechSynthesis.getVoices();
         var notificationTheme = 'relax';
         if (this.isDarkMode) {
             notificationTheme = 'sunset';
+        }
+        var progressPie = false;
+        if (this.progressPie) {
+            progressPie = true;
+            if (this.progressPieFilter) {
+                var L = API.parseLocation(this.lastLocation.location);
+                var danceWorlds = [
+                    'wrld_f20326da-f1ac-45fc-a062-609723b097b1',
+                    'wrld_42377cf1-c54f-45ed-8996-5875b0573a83'
+                ];
+                if (!danceWorlds.includes(L.worldId)) {
+                    progressPie = false;
+                }
+            }
         }
         var VRConfigVars = {
             notificationTTS: this.notificationTTS,
@@ -9664,7 +9663,7 @@ speechSynthesis.getVoices();
             isGameRunning: this.isGameRunning,
             isGameNoVR: this.isGameNoVR,
             downloadProgress: this.downloadProgress,
-            progressPie: this.progressPie
+            progressPie
         };
         var json = JSON.stringify(VRConfigVars);
         AppApi.ExecuteVrFeedFunction('configUpdate', json);
@@ -14950,6 +14949,12 @@ speechSynthesis.getVoices();
 
     $app.methods.changeYouTubeApi = function () {
         configRepository.setBool('VRCX_youtubeAPI', this.youTubeApi);
+        configRepository.setBool('VRCX_progressPie', this.progressPie);
+        configRepository.setBool(
+            'VRCX_progressPieFilter',
+            this.progressPieFilter
+        );
+        this.updateVRConfigVars();
     };
 
     $app.methods.showYouTubeApiDialog = function () {
