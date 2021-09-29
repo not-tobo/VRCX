@@ -1438,6 +1438,9 @@ speechSynthesis.getVoices();
                     ref,
                     props
                 });
+                if (this.debugDiff) {
+                    console.log('>', ref.displayName, props);
+                }
             }
         }
         return ref;
@@ -4069,6 +4072,7 @@ speechSynthesis.getVoices();
     $app.data.debug = false;
     $app.data.debugWebRequests = false;
     $app.data.debugWebSocket = false;
+    $app.data.debugDiff = false;
 
     $app.data.APILastOnline = new Map();
 
@@ -16055,7 +16059,12 @@ speechSynthesis.getVoices();
 
     $app.methods.showConsole = function () {
         AppApi.ShowDevTools();
-        if (this.debug || this.debugWebRequests || this.debugWebSocket) {
+        if (
+            this.debug ||
+            this.debugWebRequests ||
+            this.debugWebSocket ||
+            this.debugDiff
+        ) {
             return;
         }
         console.log(
