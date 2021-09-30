@@ -1006,6 +1006,7 @@ speechSynthesis.getVoices();
             allowAvatarCopying: json.allowAvatarCopying,
             userIcon: json.userIcon,
             fallbackAvatar: json.fallbackAvatar,
+            profilePicOverride: json.profilePicOverride,
             isFriend: false,
             location: $app.lastLocation.location
         });
