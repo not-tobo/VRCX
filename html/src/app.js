@@ -9461,7 +9461,7 @@ speechSynthesis.getVoices();
                 Location: 'Off',
                 OnPlayerJoined: 'VIP',
                 OnPlayerLeft: 'VIP',
-                OnPlayerJoining: 'Off',
+                OnPlayerJoining: 'VIP',
                 Online: 'VIP',
                 Offline: 'VIP',
                 GPS: 'Off',
@@ -10192,7 +10192,9 @@ speechSynthesis.getVoices();
             ownerId: '',
             avatarName: '',
             fileCreatedAt: ''
-        }
+        },
+        lastSeen: '',
+        joinCount: 0
     };
 
     $app.watch['userDialog.memo'] = function () {
@@ -10392,6 +10394,8 @@ speechSynthesis.getVoices();
         D.avatars = [];
         D.worlds = [];
         D.instance = {};
+        D.lastSeen = '';
+        D.joinCount = 0;
         API.getCachedUser({
             userId
         })
@@ -10479,6 +10483,16 @@ speechSynthesis.getVoices();
                             instanceId: L.instanceId
                         });
                     }
+                    database.getLastSeen(D.ref).then((ref1) => {
+                        if (ref1.userId === D.id) {
+                            D.lastSeen = ref1.created_at;
+                        }
+                    });
+                    database.getJoinCount(D.ref).then((ref2) => {
+                        if (ref2.userId === D.id) {
+                            D.joinCount = ref2.joinCount;
+                        }
+                    });
                 }
                 return args;
             });
@@ -10979,7 +10993,9 @@ speechSynthesis.getVoices();
         fileSize: '',
         inCache: false,
         cacheSize: 0,
-        cacheLocked: false
+        cacheLocked: false,
+        lastVisit: '',
+        visitCount: 0
     };
 
     API.$on('LOGOUT', function () {
@@ -11076,6 +11092,18 @@ speechSynthesis.getVoices();
         D.cacheSize = 0;
         D.cacheLocked = false;
         D.rooms = [];
+        D.lastVisit = '';
+        D.visitCount = '';
+        database.getLastVisit(D.id).then((ref) => {
+            if (ref.worldId === D.id) {
+                D.lastVisit = ref.created_at;
+            }
+        });
+        database.getVisitCount(D.id).then((ref) => {
+            if (ref.worldId === D.id) {
+                D.visitCount = ref.visitCount;
+            }
+        });
         API.getCachedWorld({
             worldId: L.worldId
         })
@@ -15874,7 +15902,7 @@ speechSynthesis.getVoices();
         this.$nextTick(() => adjustDialogZ(this.$refs.VRCXUpdateDialog.$el));
         var D = this.VRCXUpdateDialog;
         D.visible = true;
-        D.updatePending = await AppApi.CheckForUpdateZip();
+        D.updatePending = await AppApi.CheckForUpdateExe();
         this.loadBranchVersions();
     };
 
@@ -15965,7 +15993,7 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.checkForVRCXUpdate = async function () {
-        if (await AppApi.CheckForUpdateZip()) {
+        if (await AppApi.CheckForUpdateExe()) {
             return;
         }
         var url = this.branches[this.branch].urlLatest;
@@ -16106,6 +16134,24 @@ speechSynthesis.getVoices();
         });
 
         API.cachedAvatarNames = new Map();
+    };
+
+    $app.data.sqliteTableSizes = {};
+
+    $app.methods.getSqliteTableSizes = async function () {
+        this.sqliteTableSizes = {
+            gps: await database.getGpsTableSize(),
+            status: await database.getStatusTableSize(),
+            avatar: await database.getAvatarTableSize(),
+            onlineOffline: await database.getOnlineOfflineTableSize(),
+            friendLogHistory: await database.getFriendLogHistoryTableSize(),
+            notification: await database.getNotificationTableSize(),
+            location: await database.getLocationTableSize(),
+            joinLeave: await database.getJoinLeaveTableSize(),
+            portalSpawn: await database.getPortalSpawnTableSize(),
+            videoPlay: await database.getVideoPlayTableSize(),
+            event: await database.getEventTableSize()
+        };
     };
 
     $app.methods.ipcEvent = function (json) {
