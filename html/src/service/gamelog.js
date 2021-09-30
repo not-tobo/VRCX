@@ -47,6 +47,10 @@ class GameLogService {
                 gameLog.data = args[0];
                 break;
 
+            case 'photon-event':
+                gameLog.json = args[0];
+                break;
+
             default:
                 break;
         }

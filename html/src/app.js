@@ -7203,6 +7203,7 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.lastLocationReset = function () {
+        this.photonLobby = new Map();
         var playerList = Array.from(this.lastLocation.playerList.values());
         for (var ref of playerList) {
             var time = new Date().getTime() - ref.joinTime;
@@ -7441,6 +7442,9 @@ speechSynthesis.getVoices();
             rawLogs[2],
             rawLogs.slice(3)
         );
+        if (gameLog.type !== 'photon-event') {
+            console.log('gameLog:', gameLog);
+        }
         var pushToTable = true;
         this.addGameLogEntry(gameLog, this.lastLocation.location, pushToTable);
     };
@@ -7574,6 +7578,59 @@ speechSynthesis.getVoices();
                     this.addGameLogPyPyDance(gameLog, location, pushToTable);
                 }
                 return;
+            case 'photon-event':
+                try {
+                    var data = JSON.parse(gameLog.json);
+                    if (data.Code === 6) {
+                        // RPC/VRC Event
+                        return;
+                    } else if (data.Code === 253) {
+                        // SetUserProperties
+                        var userRef = this.parsePhotonUser(
+                            data.Parameters[251].user
+                        );
+                        this.photonLobby.set(data.Parameters[253], userRef);
+                        this.parsePhotonAvatar(data.Parameters[251].avatarDict);
+                        this.parsePhotonAvatar(
+                            data.Parameters[251].favatarDict
+                        );
+                    } else if (data.Code === 255) {
+                        // Join
+                        var userRef = this.parsePhotonUser(
+                            data.Parameters[249].user
+                        );
+                        this.photonLobby.set(data.Parameters[254], userRef);
+                        this.parsePhotonAvatar(data.Parameters[249].avatarDict);
+                        this.parsePhotonAvatar(
+                            data.Parameters[249].favatarDict
+                        );
+                        this.parsePhotonLobbyIds(data.Parameters[252].$values);
+                    } else if (data.Code === 254) {
+                        // Leave
+                        this.photonLobby.delete(data.Parameters[254]);
+                        this.parsePhotonLobbyIds(data.Parameters[252].$values);
+                    } else if (data.Code === 33) {
+                        // Moderation
+                        if (
+                            data.Parameters[245]['0'] === 21 &&
+                            data.Parameters[245]['1']
+                        ) {
+                            console.log(
+                                `photon 33 moderation: ID:${data.Parameters[245]['1']} Block:${data.Parameters[245]['10']} Mute:${data.Parameters[245]['11']}`
+                            );
+                        }
+                    } else if (data.Code === 202) {
+                        // Instantiate
+                        if (!this.photonLobby.has(data.Parameters[254])) {
+                            this.photonLobby.set(data.Parameters[254]);
+                        }
+                    } else {
+                        console.log('photonEvent:', data);
+                    }
+                } catch {
+                    console.error('error parsing photon json', gameLog.json);
+                }
+                return;
             case 'notification':
                 var entry = {
                     created_at: gameLog.dt,
@@ -7597,6 +7654,57 @@ speechSynthesis.getVoices();
             this.notifyMenu('gameLog');
             this.sweepGameLog();
         }
+    };
+
+    $app.data.photonLobby = new Map();
+
+    $app.methods.parsePhotonLobbyIds = function (lobbyIds) {
+        lobbyIds.forEach((id) => {
+            if (!this.photonLobby.has(id)) {
+                this.photonLobby.set(id);
+            }
+        });
+        for (var id of this.photonLobby.keys()) {
+            if (!lobbyIds.includes(id)) {
+                this.photonLobby.delete(id);
+            }
+        }
+    };
+
+    $app.methods.parsePhotonUser = function (user) {
+        return API.applyUser({
+            id: user.id,
+            username: user.username,
+            displayName: user.displayName,
+            developerType: user.developerType,
+            profilePicOverride: user.profilePicOverride,
+            currentAvatarImageUrl: user.currentAvatarImageUrl,
+            currentAvatarThumbnailImageUrl: user.currentAvatarThumbnailImageUrl,
+            userIcon: user.currentAvatarThumbnailImageUrl,
+            last_platform: user.last_platform,
+            allowAvatarCopying: user.allowAvatarCopying,
+            status: user.status,
+            statusDescription: user.statusDescription,
+            bio: user.bio,
+            tags: user.tags.$values
+        });
+    };
+
+    $app.methods.parsePhotonAvatar = function (avatar) {
+        API.applyAvatar({
+            id: avatar.id,
+            authorId: avatar.authorId,
+            authorName: avatar.authorName,
+            updated_at: avatar.updated_at,
+            description: avatar.description,
+            featured: avatar.featured,
+            imageUrl: avatar.imageUrl,
+            thumbnailImageUrl: avatar.thumbnailImageUrl,
+            name: avatar.name,
+            releaseStatus: avatar.releaseStatus,
+            version: avatar.version,
+            tags: avatar.tags.$values
+        });
     };
 
     $app.methods.addGameLogVideo = async function (

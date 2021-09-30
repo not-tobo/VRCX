@@ -33,6 +33,10 @@ namespace VRCX
         private bool m_ResetLog;
         private bool m_FirstRun = true;
         private static DateTime tillDate = DateTime.Now;
+        private static bool incomingJson;
+        private static string jsonChunk;
+        private static string jsonDate;
+        private static string photonEvent;
 
         // NOTE
         // FileSystemWatcher() is unreliable
@@ -183,6 +187,21 @@ namespace VRCX
                                 break;
                             }
 
+                            if (incomingJson)
+                            {
+                                jsonChunk += line;
+                                if (line == "}}")
+                                {
+                                    var data = jsonChunk.Replace("{{", "{").Replace("}}", "}");
+                                    ParseLogPhotonEvent(fileInfo, data, jsonDate, photonEvent);
+                                    incomingJson = false;
+                                    jsonChunk = String.Empty;
+                                    jsonDate = String.Empty;
+                                    photonEvent = String.Empty;
+                                }
+                                continue;
+                            }
+
                             // 2020.10.31 23:36:28 Log        -  [VRCFlowManagerVRC] Destination fetching: wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd
                             // 2021.02.03 10:18:58 Log        -  [ǄǄǅǅǅǄǄǅǅǄǅǅǅǅǄǄǄǅǅǄǄǅǅǅǅǄǅǅǅǅǄǄǄǄǄǅǄǅǄǄǄǅǅǄǅǅǅ] Destination fetching: wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd
 
@@ -209,7 +228,21 @@ namespace VRCX
                             var offset = 34;
                             if (line[offset] == '[')
                             {
-                                if (ParseLogOnPlayerJoinedOrLeft(fileInfo, logContext, line, offset) == true ||
+                                if (string.Compare(line, offset, "[Network Data] OnEvent: PLAYER:  ", 0, 33, StringComparison.Ordinal) == 0)
+                                {
+                                    photonEvent = line.Substring(offset + 33);
+                                    incomingJson = true;
+                                    jsonChunk = String.Empty;
+                                    jsonDate = ConvertLogTimeToISO8601(line);
+                                }
+                                else if (string.Compare(line, offset, "[Network Data] OnEvent: SYSTEM ", 0, 31, StringComparison.Ordinal) == 0)
+                                {
+                                    photonEvent = line.Substring(offset + 31);
+                                    incomingJson = true;
+                                    jsonChunk = String.Empty;
+                                    jsonDate = ConvertLogTimeToISO8601(line);
+                                }
+                                else if (ParseLogOnPlayerJoinedOrLeft(fileInfo, logContext, line, offset) == true ||
                                     ParseLogLocation(fileInfo, logContext, line, offset) == true ||
                                     ParseLogLocationDestination(fileInfo, logContext, line, offset) == true ||
                                     ParseLogPortalSpawn(fileInfo, logContext, line, offset) == true ||
@@ -646,6 +679,25 @@ namespace VRCX
             });
 
             return true;
+        }
+
+        private void ParseLogPhotonEvent(FileInfo fileInfo, string data, string date, string photonEvent)
+        {
+            // 2021.09.30 04:27:11 Log        -  [Network Data] OnEvent: PLAYER:  253
+            // 2021.09.30 04:27:40 Log        -  [Network Data] OnEvent: SYSTEM 255
+
+            if (photonEvent == "1" || photonEvent == "7" || photonEvent == "8" || photonEvent == "9" || photonEvent == "210" || photonEvent == "6")
+            {
+                return;
+            }
+
+            AppendLog(new[]
+            {
+                fileInfo.Name,
+                date,
+                "photon-event",
+                data
+            });
         }
 
         public string[][] Get()
