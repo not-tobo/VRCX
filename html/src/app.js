@@ -7695,7 +7695,7 @@ speechSynthesis.getVoices();
             profilePicOverride: user.profilePicOverride,
             currentAvatarImageUrl: user.currentAvatarImageUrl,
             currentAvatarThumbnailImageUrl: user.currentAvatarThumbnailImageUrl,
-            userIcon: user.currentAvatarThumbnailImageUrl,
+            userIcon: user.userIcon,
             last_platform: user.last_platform,
             allowAvatarCopying: user.allowAvatarCopying,
             status: user.status,
