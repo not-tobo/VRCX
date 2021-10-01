@@ -7672,6 +7672,9 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.parsePhotonUser = function (user) {
+        if (user.id === API.currentUser.id) {
+            user.tags.$values = API.currentUser.tags;
+        }
         return API.applyUser({
             id: user.id,
             username: user.username,
