@@ -16148,6 +16148,13 @@ speechSynthesis.getVoices();
         this.checkingForVRCXUpdate = false;
         var json = JSON.parse(response.data);
         var releases = [];
+        if (typeof json !== 'object' || json.message) {
+            $app.$message({
+                message: `Failed to check for update, "${json.message}"`,
+                type: 'error'
+            });
+            return;
+        }
         for (var release of json) {
             for (var asset of release.assets) {
                 if (
