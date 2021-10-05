@@ -4101,6 +4101,7 @@ speechSynthesis.getVoices();
                 );
             }
         } catch (err) {
+            API.isRefreshFriendsLoading = false;
             console.error(err);
         }
         setTimeout(() => this.updateLoop(), 500);
@@ -7453,7 +7454,7 @@ speechSynthesis.getVoices();
         if (length > 1) {
             this.updateGameLog(this.gameLogTable.data[length - 1].created_at);
         } else {
-            this.refreshEntireGameLog();
+            this.updateGameLog('1970-01-01');
         }
     };
 
@@ -7619,14 +7620,14 @@ speechSynthesis.getVoices();
                     var urlParams = new URLSearchParams(gameLog.url);
                     if (url.pathname.substring(0, 13) === '/api/1/users/') {
                         var pathArray = url.pathname.split('/');
-                        userId = pathArray[4]
+                        userId = pathArray[4];
                     } else if (urlParams.has('userId')) {
                         userId = urlParams.get('userId');
                     }
                 } catch (err) {
                     console.error(err);
                 }
-                if (userId && !API.cachedUsers.has(userId)) {;
+                if (userId && !API.cachedUsers.has(userId)) {
                     API.getUser({userId});
                 }
                 return;
