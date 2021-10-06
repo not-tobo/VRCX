@@ -939,7 +939,7 @@ speechSynthesis.getVoices();
                 this.avatarName = '';
                 this.avatarType = '';
                 this.color = '';
-                if (this.imageurl === $app.robotUrl) {
+                if (!this.imageurl) {
                     this.avatarName = '-';
                     return;
                 } else if (this.hintownerid) {
@@ -966,7 +966,7 @@ speechSynthesis.getVoices();
                 }
             },
             confirm() {
-                if (this.imageurl === $app.robotUrl) {
+                if (!this.imageurl) {
                     return;
                 }
                 $app.showAvatarAuthorDialog(this.userid, this.imageurl);
@@ -1384,6 +1384,10 @@ speechSynthesis.getVoices();
         if (typeof json.bio !== 'undefined') {
             json.bio = $app.replaceBioSymbols(json.bio);
         }
+        if (json.currentAvatarImageUrl === $app.robotUrl) {
+            delete json.currentAvatarImageUrl;
+            delete json.currentAvatarThumbnailImageUrl;
+        }
         if (typeof ref === 'undefined') {
             ref = {
                 id: '',
@@ -1429,10 +1433,6 @@ speechSynthesis.getVoices();
             this.applyUserLanguage(ref);
             this.cachedUsers.set(ref.id, ref);
         } else {
-            if (json.currentAvatarImageUrl === $app.robotUrl) {
-                delete json.currentAvatarImageUrl;
-                delete json.currentAvatarThumbnailImageUrl;
-            }
             var props = {};
             for (var prop in ref) {
                 if (ref[prop] !== Object(ref[prop])) {
@@ -3993,6 +3993,7 @@ speechSynthesis.getVoices();
             nextAppUpdateCheck: 0,
             isGameRunning: false,
             isGameNoVR: false,
+            isSteamVRRunning: false,
             appVersion,
             latestAppVersion: '',
             ossDialog: false,
@@ -4075,8 +4076,12 @@ speechSynthesis.getVoices();
                     }
                 }
                 AppApi.CheckGameRunning().then(
-                    ([isGameRunning, isGameNoVR]) => {
-                        this.updateOpenVR(isGameRunning, isGameNoVR);
+                    ([isGameRunning, isGameNoVR, isSteamVRRunning]) => {
+                        this.updateOpenVR(
+                            isGameRunning,
+                            isGameNoVR,
+                            isSteamVRRunning
+                        );
                         if (isGameRunning !== this.isGameRunning) {
                             this.isGameRunning = isGameRunning;
                             if (isGameRunning) {
@@ -4095,6 +4100,9 @@ speechSynthesis.getVoices();
                         if (isGameNoVR !== this.isGameNoVR) {
                             this.isGameNoVR = isGameNoVR;
                             this.updateVRConfigVars();
+                        }
+                        if (isSteamVRRunning !== this.isSteamVRRunning) {
+                            this.isSteamVRRunning = isSteamVRRunning;
                         }
                         this.updateDiscord();
                     }
@@ -7067,9 +7075,8 @@ speechSynthesis.getVoices();
             $app.feedDownloadWorldCache(ref.id, props.location[0]);
         }
         if (
-            (props.currentAvatarImageUrl ||
-                props.currentAvatarThumbnailImageUrl) &&
-            props.currentAvatarImageUrl !== this.robotUrl
+            props.currentAvatarImageUrl ||
+            props.currentAvatarThumbnailImageUrl
         ) {
             var currentAvatarImageUrl = '';
             var previousCurrentAvatarImageUrl = '';
@@ -9954,10 +9961,15 @@ speechSynthesis.getVoices();
         });
     };
 
-    $app.methods.updateOpenVR = function (isGameRunning, isGameNoVR) {
+    $app.methods.updateOpenVR = function (
+        isGameRunning,
+        isGameNoVR,
+        isSteamVRRunning
+    ) {
         if (
             this.openVR &&
             !isGameNoVR &&
+            isSteamVRRunning &&
             (isGameRunning || this.openVRAlways)
         ) {
             AppApi.StartVR();
@@ -10668,7 +10680,7 @@ speechSynthesis.getVoices();
                     });
                     database.getTimeSpent(D.ref).then((ref3) => {
                         if (ref3.userId === D.id) {
-                            D.timeSpent = timeToTextMin(ref3.timeSpent);
+                            D.timeSpent = ref3.timeSpent;
                         }
                     });
                 }
@@ -13516,10 +13528,31 @@ speechSynthesis.getVoices();
                     continue;
                 }
             }
+            this.getJoinCount(ctx.ref);
+            this.getLastSeen(ctx.ref);
+            this.getTimeSpent(ctx.ref);
             ctx.ref.$friendNum = ctx.no;
             results.push(ctx.ref);
         }
         this.friendsListTable.data = results;
+    };
+
+    $app.methods.getJoinCount = async function (ctx) {
+        var ref = await database.getJoinCount(ctx);
+        // eslint-disable-next-line require-atomic-updates
+        ctx.$joinCount = ref.joinCount;
+    };
+
+    $app.methods.getLastSeen = async function (ctx) {
+        var ref = await database.getLastSeen(ctx);
+        // eslint-disable-next-line require-atomic-updates
+        ctx.$lastSeen = ref.created_at;
+    };
+
+    $app.methods.getTimeSpent = async function (ctx) {
+        var ref = await database.getTimeSpent(ctx);
+        // eslint-disable-next-line require-atomic-updates
+        ctx.$timeSpent = ref.timeSpent;
     };
 
     $app.watch.friendsListSearch = $app.methods.friendsListSearchChange;

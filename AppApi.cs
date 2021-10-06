@@ -104,6 +104,7 @@ namespace VRCX
         {
             var isGameRunning = false;
             var isGameNoVR = false;
+            var isSteamVRRunning = false;
 
             var hwnd = WinApi.FindWindow("UnityWndClass", "VRChat");
             if (hwnd != IntPtr.Zero)
@@ -127,10 +128,17 @@ namespace VRCX
                 isGameRunning = true;
             }
 
+            Process[] processList = Process.GetProcessesByName("vrserver");
+            if (processList.Length > 0)
+            {
+                isSteamVRRunning = true;
+            }
+
             return new bool[]
             {
                 isGameRunning,
-                isGameNoVR
+                isGameNoVR,
+                isSteamVRRunning
             };
         }
 
