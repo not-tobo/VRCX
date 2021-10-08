@@ -8134,7 +8134,11 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.updateDiscord = function () {
-        if (!this.discordActive || !this.isGameRunning) {
+        if (
+            !this.discordActive ||
+            !this.isGameRunning ||
+            (!this.lastLocation.location && !this.lastLocation$.tag)
+        ) {
             return;
         }
         var L = this.lastLocation$;
@@ -8147,6 +8151,7 @@ speechSynthesis.getVoices();
             L.worldName = '';
             L.worldCapacity = 0;
             L.joinUrl = '';
+            L.accessName = '';
             if (L.worldId) {
                 var ref = API.cachedWorlds.get(L.worldId);
                 if (ref) {
@@ -8164,19 +8169,19 @@ speechSynthesis.getVoices();
                 switch (L.accessType) {
                     case 'public':
                         L.joinUrl = getLaunchURL(L.worldId, L.instanceId);
-                        L.accessType = `Public #${L.instanceName}`;
+                        L.accessName = `Public #${L.instanceName}`;
                         break;
                     case 'invite+':
-                        L.accessType = `Invite+ #${L.instanceName}`;
+                        L.accessName = `Invite+ #${L.instanceName}`;
                         break;
                     case 'invite':
-                        L.accessType = `Invite #${L.instanceName}`;
+                        L.accessName = `Invite #${L.instanceName}`;
                         break;
                     case 'friends':
-                        L.accessType = `Friends #${L.instanceName}`;
+                        L.accessName = `Friends #${L.instanceName}`;
                         break;
                     case 'friends+':
-                        L.accessType = `Friends+ #${L.instanceName}`;
+                        L.accessName = `Friends+ #${L.instanceName}`;
                         break;
                 }
             }
@@ -8184,8 +8189,8 @@ speechSynthesis.getVoices();
         }
         var hidePrivate = false;
         if (
-            (this.discordHideInvite && L.accessType === 'Invite') ||
-            L.accessType === 'Invite+'
+            this.discordHideInvite &&
+            (L.accessType === 'invite' || L.accessType === 'invite+')
         ) {
             hidePrivate = true;
         }
@@ -8275,7 +8280,7 @@ speechSynthesis.getVoices();
             Discord.SetText('Private', '');
             Discord.SetTimestamps(0, 0);
         } else if (this.discordInstance) {
-            Discord.SetText(L.worldName, L.accessType);
+            Discord.SetText(L.worldName, L.accessName);
         } else {
             Discord.SetText(L.worldName, '');
         }
