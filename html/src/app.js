@@ -7263,6 +7263,7 @@ speechSynthesis.getVoices();
 
     $app.methods.lastLocationReset = function () {
         this.photonLobby = new Map();
+        this.photonLobbyAvatars = new Map();
         var playerList = Array.from(this.lastLocation.playerList.values());
         for (var ref of playerList) {
             var time = new Date().getTime() - ref.joinTime;
@@ -7604,6 +7605,7 @@ speechSynthesis.getVoices();
                         gameLog.userDisplayName
                     );
                 }
+                this.photonLobbyAvatars.delete(userId);
                 this.updateVRLastLocation();
                 var entry = {
                     created_at: gameLog.dt,
@@ -7659,56 +7661,72 @@ speechSynthesis.getVoices();
                 }
                 return;
             case 'photon-event':
+                if (!this.isGameRunning) {
+                    return;
+                }
                 try {
                     var data = JSON.parse(gameLog.json);
-                    if (data.Code === 6) {
-                        // RPC/VRC Event
-                        return;
-                    } else if (data.Code === 253) {
-                        // SetUserProperties
-                        var userRef = this.parsePhotonUser(
-                            data.Parameters[251].user
-                        );
-                        this.photonLobby.set(data.Parameters[253], userRef);
-                        this.parsePhotonAvatar(data.Parameters[251].avatarDict);
-                        this.parsePhotonAvatar(
-                            data.Parameters[251].favatarDict
-                        );
-                    } else if (data.Code === 255) {
-                        // Join
-                        var userRef = this.parsePhotonUser(
+                } catch {
+                    console.error('error parsing photon json:', gameLog.json);
+                    return;
+                }
+                if (data.Code === 253) {
+                    // SetUserProperties
+                    this.parsePhotonUser(
+                        data.Parameters[253],
+                        data.Parameters[251].user
+                    );
+                    this.parsePhotonAvatarChange(
+                        data.Parameters[251].user,
+                        data.Parameters[251].avatarDict
+                    );
+                    this.parsePhotonAvatar(data.Parameters[251].avatarDict);
+                    this.parsePhotonAvatar(data.Parameters[251].favatarDict);
+                } else if (data.Code === 255) {
+                    // Join
+                    if (typeof data.Parameters[249] !== 'undefined') {
+                        this.parsePhotonUser(
+                            data.Parameters[254],
                             data.Parameters[249].user
                         );
-                        this.photonLobby.set(data.Parameters[254], userRef);
+                        this.parsePhotonAvatarChange(
+                            data.Parameters[249].user,
+                            data.Parameters[249].avatarDict
+                        );
                         this.parsePhotonAvatar(data.Parameters[249].avatarDict);
                         this.parsePhotonAvatar(
                             data.Parameters[249].favatarDict
                         );
-                        this.parsePhotonLobbyIds(data.Parameters[252].$values);
-                    } else if (data.Code === 254) {
-                        // Leave
-                        this.photonLobby.delete(data.Parameters[254]);
-                        this.parsePhotonLobbyIds(data.Parameters[252].$values);
-                    } else if (data.Code === 33) {
-                        // Moderation
-                        if (
-                            data.Parameters[245]['0'] === 21 &&
-                            data.Parameters[245]['1']
-                        ) {
-                            console.log(
-                                `photon 33 moderation: ID:${data.Parameters[245]['1']} Block:${data.Parameters[245]['10']} Mute:${data.Parameters[245]['11']}`
-                            );
-                        }
-                    } else if (data.Code === 202) {
-                        // Instantiate
-                        if (!this.photonLobby.has(data.Parameters[254])) {
-                            this.photonLobby.set(data.Parameters[254]);
-                        }
-                    } else {
-                        console.log('photonEvent:', data);
                     }
-                } catch {
-                    console.error('error parsing photon json', gameLog.json);
+                    this.parsePhotonLobbyIds(data.Parameters[252].$values);
+                } else if (data.Code === 254) {
+                    // Leave
+                    this.photonLobby.delete(data.Parameters[254]);
+                    this.parsePhotonLobbyIds(data.Parameters[252].$values);
+                } else if (data.Code === 33) {
+                    // Moderation
+                    if (
+                        data.Parameters[245]['0'] === 21 &&
+                        data.Parameters[245]['1']
+                    ) {
+                        var ref = this.photonLobby.get(
+                            data.Parameters[245]['1']
+                        );
+                        var displayName = '';
+                        if (ref) {
+                            displayName = ref.displayName;
+                        }
+                        console.log(
+                            `photon 33 moderation: ID:${data.Parameters[245]['1']} Name:${displayName} Block:${data.Parameters[245]['10']} Mute:${data.Parameters[245]['11']}`
+                        );
+                    }
+                } else if (data.Code === 202) {
+                    // Instantiate
+                    if (!this.photonLobby.has(data.Parameters[254])) {
+                        this.photonLobby.set(data.Parameters[254]);
+                    }
+                } else {
+                    console.log('photonEvent:', data);
                 }
                 return;
             case 'notification':
@@ -7737,6 +7755,7 @@ speechSynthesis.getVoices();
     };
 
     $app.data.photonLobby = new Map();
+    $app.data.photonLobbyAvatars = new Map();
 
     $app.methods.parsePhotonLobbyIds = function (lobbyIds) {
         lobbyIds.forEach((id) => {
@@ -7751,11 +7770,8 @@ speechSynthesis.getVoices();
         }
     };
 
-    $app.methods.parsePhotonUser = function (user) {
-        if (user.id === API.currentUser.id) {
-            user.tags.$values = API.currentUser.tags;
-        }
-        return API.applyUser({
+    $app.methods.parsePhotonUser = async function (photonId, user) {
+        var photonUser = {
             id: user.id,
             username: user.username,
             displayName: user.displayName,
@@ -7770,7 +7786,48 @@ speechSynthesis.getVoices();
             statusDescription: user.statusDescription,
             bio: user.bio,
             tags: user.tags.$values
-        });
+        };
+        this.photonLobby.set(photonId, photonUser);
+
+        var ref = API.cachedUsers.get(user.id);
+        if (typeof ref === 'undefined') {
+            ref = await API.getUser({
+                userId: user.id
+            });
+        } else if (ref.currentAvatarImageUrl !== user.currentAvatarImageUrl) {
+            API.applyUser({
+                ...ref,
+                currentAvatarImageUrl: user.currentAvatarImageUrl,
+                currentAvatarThumbnailImageUrl:
+                    user.currentAvatarThumbnailImageUrl
+            });
+        }
+        this.photonLobby.set(photonId, ref);
+    };
+
+    $app.methods.parsePhotonAvatarChange = function (user, avatar) {
+        var oldAvatarId = this.photonLobbyAvatars.get(user.id);
+        if (oldAvatarId && oldAvatarId !== avatar.id) {
+            var entry = {
+                created_at: new Date().toJSON(),
+                type: 'AvatarChange',
+                userId: user.userId,
+                displayName: user.displayName,
+                name: avatar.name,
+                description: avatar.description,
+                avatarId: avatar.id,
+                authorId: avatar.authorId,
+                releaseStatus: avatar.releaseStatus,
+                imageUrl: avatar.imageUrl,
+                thumbnailImageUrl: avatar.thumbnailImageUrl
+            };
+            this.queueGameLogNoty(entry);
+            this.gameLogTable.data.push(entry);
+            this.updateSharedFeed(false);
+            this.notifyMenu('gameLog');
+            this.sweepGameLog();
+        }
+        this.photonLobbyAvatars.set(user.id, avatar.id);
     };
 
     $app.methods.parsePhotonAvatar = function (avatar) {
