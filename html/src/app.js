@@ -9380,7 +9380,6 @@ speechSynthesis.getVoices();
     $app.data.VRCPlusIconsTable = [];
     $app.data.galleryTable = [];
     $app.data.inviteMessageTable = {
-        visible: false,
         data: [],
         tableProps: {
             stripe: true,
@@ -9389,7 +9388,6 @@ speechSynthesis.getVoices();
         layout: 'table'
     };
     $app.data.inviteResponseMessageTable = {
-        visible: false,
         data: [],
         tableProps: {
             stripe: true,
@@ -9398,7 +9396,6 @@ speechSynthesis.getVoices();
         layout: 'table'
     };
     $app.data.inviteRequestMessageTable = {
-        visible: false,
         data: [],
         tableProps: {
             stripe: true,
@@ -9407,7 +9404,6 @@ speechSynthesis.getVoices();
         layout: 'table'
     };
     $app.data.inviteRequestResponseMessageTable = {
-        visible: false,
         data: [],
         tableProps: {
             stripe: true,
@@ -9416,7 +9412,6 @@ speechSynthesis.getVoices();
         layout: 'table'
     };
     $app.data.friendsListTable = {
-        visible: false,
         data: [],
         tableProps: {
             stripe: true,
