@@ -1427,6 +1427,7 @@ speechSynthesis.getVoices();
                 $joinCount: 0,
                 $timeSpent: 0,
                 $lastSeen: '',
+                $nickName: '',
                 //
                 ...json
             };
@@ -5987,6 +5988,11 @@ speechSynthesis.getVoices();
         var ref = this.friends.get(id);
         if (ref) {
             ref.memo = String(memo || '');
+            ref.$nickName = '';
+            if (memo) {
+                var array = memo.split('\n');
+                ref.$nickName = array[0];
+            }
         }
     };
 
@@ -6194,10 +6200,16 @@ speechSynthesis.getVoices();
             ref,
             name: '',
             no: ++this.friendsNo,
-            memo: ''
+            memo: '',
+            $nickName: ''
         };
         this.getMemo(id).then((memo) => {
             ctx.memo = memo;
+            ctx.$nickName = '';
+            if (memo) {
+                var array = memo.split('\n');
+                ctx.$nickName = array[0];
+            }
         });
         if (typeof ref === 'undefined') {
             ref = this.friendLog.get(id);
@@ -10643,6 +10655,11 @@ speechSynthesis.getVoices();
             var ref = this.friends.get(userId);
             if (ref) {
                 ref.memo = String(memo || '');
+                ref.$nickName = '';
+                if (memo) {
+                    var array = memo.split('\n');
+                    ref.$nickName = array[0];
+                }
             }
         });
         D.visible = true;
