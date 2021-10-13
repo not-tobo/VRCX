@@ -7097,8 +7097,9 @@ speechSynthesis.getVoices();
             $app.feedDownloadWorldCache(ref.id, props.location[0]);
         }
         if (
-            props.currentAvatarImageUrl ||
-            props.currentAvatarThumbnailImageUrl
+            (props.currentAvatarImageUrl ||
+                props.currentAvatarThumbnailImageUrl) &&
+            !ref.profilePicOverride
         ) {
             var currentAvatarImageUrl = '';
             var previousCurrentAvatarImageUrl = '';
@@ -7950,7 +7951,10 @@ speechSynthesis.getVoices();
         }
         var videoName = text2.slice(0, -1);
         var userId = '';
-        if (displayName && displayName !== 'Random') {
+        if (displayName === 'Random') {
+            displayName = '';
+        }
+        if (displayName) {
             for (var ref of API.cachedUsers.values()) {
                 if (ref.displayName === displayName) {
                     userId = ref.id;
@@ -10650,6 +10654,7 @@ speechSynthesis.getVoices();
         D.userIcon = '';
         D.id = userId;
         D.treeData = [];
+        D.memo = '';
         this.getMemo(userId).then((memo) => {
             D.memo = memo;
             var ref = this.friends.get(userId);
