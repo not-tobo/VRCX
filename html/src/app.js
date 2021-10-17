@@ -7841,7 +7841,7 @@ speechSynthesis.getVoices();
                     console.error('error parsing photon json:', gameLog.json);
                     return;
                 }
-                this.parsePhotonEvent(data, gameLog.dt);
+                this.parsePhotonEvent(data);
                 return;
             case 'notification':
                 // var entry = {
@@ -7865,7 +7865,7 @@ speechSynthesis.getVoices();
         }
     };
 
-    $app.methods.parsePhotonEvent = function (data, gameLogDate) {
+    $app.methods.parsePhotonEvent = function (data) {
         if (data.Code === 253) {
             // SetUserProperties
             this.parsePhotonUser(
@@ -7890,9 +7890,7 @@ speechSynthesis.getVoices();
                     data.Parameters[249].avatarDict
                 );
                 this.parsePhotonAvatar(data.Parameters[249].avatarDict);
-                this.parsePhotonAvatar(
-                    data.Parameters[249].favatarDict
-                );
+                this.parsePhotonAvatar(data.Parameters[249].favatarDict);
             }
             this.parsePhotonLobbyIds(data.Parameters[252].$values);
         } else if (data.Code === 254) {
@@ -7901,10 +7899,7 @@ speechSynthesis.getVoices();
             this.parsePhotonLobbyIds(data.Parameters[252].$values);
         } else if (data.Code === 33) {
             // Moderation
-            if (
-                data.Parameters[245]['0'] === 21 &&
-                data.Parameters[245]['1']
-            ) {
+            if (data.Parameters[245]['0'] === 21 && data.Parameters[245]['1']) {
                 var photonId = data.Parameters[245]['1'];
                 var block = data.Parameters[245]['10'];
                 var mute = data.Parameters[245]['11'];
@@ -7924,7 +7919,7 @@ speechSynthesis.getVoices();
                 this.photonLobby.set(data.Parameters[254]);
             }
         } else if (data.Code === 6) {
-            return;
+            // VRC Event
         } else {
             console.log('photonEvent:', data);
         }
