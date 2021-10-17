@@ -4887,7 +4887,14 @@ speechSynthesis.getVoices();
                 );
                 break;
             case 'Online':
-                this.speak(`${noty.displayName} has logged in`);
+                var locationName = '';
+                if (noty.worldName) {
+                    locationName = ` to ${this.displayLocation(
+                        noty.location,
+                        noty.worldName
+                    )}`;
+                }
+                this.speak(`${noty.displayName} has logged in${locationName}`);
                 break;
             case 'Offline':
                 this.speak(`${noty.displayName} has logged out`);
@@ -5020,9 +5027,16 @@ speechSynthesis.getVoices();
                 );
                 break;
             case 'Online':
+                var locationName = '';
+                if (noty.worldName) {
+                    locationName = ` to ${this.displayLocation(
+                        noty.location,
+                        noty.worldName
+                    )}`;
+                }
                 AppApi.XSNotification(
                     'VRCX',
-                    `${noty.displayName} has logged in`,
+                    `${noty.displayName} has logged in${locationName}`,
                     timeout,
                     image
                 );
@@ -5219,9 +5233,16 @@ speechSynthesis.getVoices();
                 );
                 break;
             case 'Online':
+                var locationName = '';
+                if (noty.worldName) {
+                    locationName = ` to ${this.displayLocation(
+                        noty.location,
+                        noty.worldName
+                    )}`;
+                }
                 AppApi.DesktopNotification(
                     noty.displayName,
-                    'has logged in',
+                    `has logged in${locationName}`,
                     image
                 );
                 break;
