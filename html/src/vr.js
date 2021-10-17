@@ -447,6 +447,18 @@ import configRepository from './repository/config.js';
             case 'MutedOnPlayerLeft':
                 text = `Muted user <strong>${noty.displayName}</strong> has left`;
                 break;
+            case 'Blocked':
+                text = `<strong>${noty.displayName}</strong> has blocked you`;
+                break;
+            case 'Unblocked':
+                text = `<strong>${noty.displayName}</strong> has unblocked you`;
+                break;
+            case 'Muted':
+                text = `<strong>${noty.displayName}</strong> has muted you`;
+                break;
+            case 'Unmuted':
+                text = `<strong>${noty.displayName}</strong> has unmuted you`;
+                break;
             default:
                 break;
         }

@@ -4681,6 +4681,19 @@ speechSynthesis.getVoices();
         }
     };
 
+    $app.methods.queueModerationNoty = function (noty) {
+        noty.isFriend = false;
+        noty.isFavorite = false;
+        if (noty.userId) {
+            noty.isFriend = this.friends.has(noty.userId);
+            noty.isFavorite = API.cachedFavoritesByObjectId.has(noty.userId);
+        }
+        var notyFilter = this.sharedFeedFilters.noty;
+        if (notyFilter[noty.type] && notyFilter[noty.type] === 'On') {
+            this.playNoty(noty);
+        }
+    };
+
     $app.data.notyMap = [];
 
     $app.methods.playNoty = function (noty) {
@@ -4985,6 +4998,18 @@ speechSynthesis.getVoices();
             case 'MutedOnPlayerLeft':
                 this.speak(`Muted user ${noty.displayName} has left`);
                 break;
+            case 'Blocked':
+                this.speak(`${noty.displayName} has blocked you`);
+                break;
+            case 'Unblocked':
+                this.speak(`${noty.displayName} has unblocked you`);
+                break;
+            case 'Muted':
+                this.speak(`${noty.displayName} has muted you`);
+                break;
+            case 'Unmuted':
+                this.speak(`${noty.displayName} has unmuted you`);
+                break;
         }
     };
 
@@ -5200,6 +5225,38 @@ speechSynthesis.getVoices();
                     image
                 );
                 break;
+            case 'Blocked':
+                AppApi.XSNotification(
+                    'VRCX',
+                    `${noty.displayName} has blocked you`,
+                    timeout,
+                    image
+                );
+                break;
+            case 'Unblocked':
+                AppApi.XSNotification(
+                    'VRCX',
+                    `${noty.displayName} has unblocked you`,
+                    timeout,
+                    image
+                );
+                break;
+            case 'Muted':
+                AppApi.XSNotification(
+                    'VRCX',
+                    `${noty.displayName} has muted you`,
+                    timeout,
+                    image
+                );
+                break;
+            case 'Unmuted':
+                AppApi.XSNotification(
+                    'VRCX',
+                    `${noty.displayName} has unmuted you`,
+                    timeout,
+                    image
+                );
+                break;
         }
     };
 
@@ -5378,6 +5435,34 @@ speechSynthesis.getVoices();
                 AppApi.DesktopNotification(
                     noty.displayName,
                     'muted user has left',
+                    image
+                );
+                break;
+            case 'Blocked':
+                AppApi.DesktopNotification(
+                    noty.displayName,
+                    'has blocked you',
+                    image
+                );
+                break;
+            case 'Unblocked':
+                AppApi.DesktopNotification(
+                    noty.displayName,
+                    'has unblocked you',
+                    image
+                );
+                break;
+            case 'Muted':
+                AppApi.DesktopNotification(
+                    noty.displayName,
+                    'has muted you',
+                    image
+                );
+                break;
+            case 'Unmuted':
+                AppApi.DesktopNotification(
+                    noty.displayName,
+                    'has unmuted you',
                     image
                 );
                 break;
@@ -7338,6 +7423,9 @@ speechSynthesis.getVoices();
     $app.methods.lastLocationReset = function () {
         this.photonLobby = new Map();
         this.photonLobbyAvatars = new Map();
+        this.moderationEventQueue = new Map();
+        this.lastPortalId = '';
+        this.lastPortalList = new Map();
         var playerList = Array.from(this.lastLocation.playerList.values());
         for (var ref of playerList) {
             var time = new Date().getTime() - ref.joinTime;
@@ -7585,7 +7673,7 @@ speechSynthesis.getVoices();
             rawLogs[2],
             rawLogs.slice(3)
         );
-        if (gameLog.type !== 'photon-event') {
+        if (gameLog.type !== 'photon-event' && gameLog.type !== 'api-request') {
             console.log('gameLog:', gameLog);
         }
         var pushToTable = true;
@@ -7594,6 +7682,9 @@ speechSynthesis.getVoices();
 
     $app.data.lastLocationDestination = '';
     $app.data.lastLocationDestinationTime = 0;
+    $app.data.lastPortalId = '';
+    $app.data.lastPortalList = new Map();
+    $app.data.moderationEventQueue = new Map();
 
     $app.methods.addGameLogEntry = function (gameLog, location, pushToTable) {
         var userId = '';
@@ -7750,64 +7841,7 @@ speechSynthesis.getVoices();
                     console.error('error parsing photon json:', gameLog.json);
                     return;
                 }
-                if (data.Code === 253) {
-                    // SetUserProperties
-                    this.parsePhotonUser(
-                        data.Parameters[253],
-                        data.Parameters[251].user
-                    );
-                    this.parsePhotonAvatarChange(
-                        data.Parameters[251].user,
-                        data.Parameters[251].avatarDict
-                    );
-                    this.parsePhotonAvatar(data.Parameters[251].avatarDict);
-                    this.parsePhotonAvatar(data.Parameters[251].favatarDict);
-                } else if (data.Code === 255) {
-                    // Join
-                    if (typeof data.Parameters[249] !== 'undefined') {
-                        this.parsePhotonUser(
-                            data.Parameters[254],
-                            data.Parameters[249].user
-                        );
-                        this.parsePhotonAvatarChange(
-                            data.Parameters[249].user,
-                            data.Parameters[249].avatarDict
-                        );
-                        this.parsePhotonAvatar(data.Parameters[249].avatarDict);
-                        this.parsePhotonAvatar(
-                            data.Parameters[249].favatarDict
-                        );
-                    }
-                    this.parsePhotonLobbyIds(data.Parameters[252].$values);
-                } else if (data.Code === 254) {
-                    // Leave
-                    this.photonLobby.delete(data.Parameters[254]);
-                    this.parsePhotonLobbyIds(data.Parameters[252].$values);
-                } else if (data.Code === 33) {
-                    // Moderation
-                    if (
-                        data.Parameters[245]['0'] === 21 &&
-                        data.Parameters[245]['1']
-                    ) {
-                        var ref = this.photonLobby.get(
-                            data.Parameters[245]['1']
-                        );
-                        var displayName = '';
-                        if (ref) {
-                            displayName = ref.displayName;
-                        }
-                        console.log(
-                            `photon 33 moderation: ID:${data.Parameters[245]['1']} Name:${displayName} Block:${data.Parameters[245]['10']} Mute:${data.Parameters[245]['11']}`
-                        );
-                    }
-                } else if (data.Code === 202) {
-                    // Instantiate
-                    if (!this.photonLobby.has(data.Parameters[254])) {
-                        this.photonLobby.set(data.Parameters[254]);
-                    }
-                } else {
-                    console.log('photonEvent:', data);
-                }
+                this.parsePhotonEvent(data, gameLog.dt);
                 return;
             case 'notification':
                 // var entry = {
@@ -7828,6 +7862,108 @@ speechSynthesis.getVoices();
         if (pushToTable && entry) {
             this.queueGameLogNoty(entry);
             this.addGameLog(entry);
+        }
+    };
+
+    $app.methods.parsePhotonEvent = function (data, gameLogDate) {
+        if (data.Code === 253) {
+            // SetUserProperties
+            this.parsePhotonUser(
+                data.Parameters[253],
+                data.Parameters[251].user
+            );
+            this.parsePhotonAvatarChange(
+                data.Parameters[251].user,
+                data.Parameters[251].avatarDict
+            );
+            this.parsePhotonAvatar(data.Parameters[251].avatarDict);
+            this.parsePhotonAvatar(data.Parameters[251].favatarDict);
+        } else if (data.Code === 255) {
+            // Join
+            if (typeof data.Parameters[249] !== 'undefined') {
+                this.parsePhotonUser(
+                    data.Parameters[254],
+                    data.Parameters[249].user
+                );
+                this.parsePhotonAvatarChange(
+                    data.Parameters[249].user,
+                    data.Parameters[249].avatarDict
+                );
+                this.parsePhotonAvatar(data.Parameters[249].avatarDict);
+                this.parsePhotonAvatar(
+                    data.Parameters[249].favatarDict
+                );
+            }
+            this.parsePhotonLobbyIds(data.Parameters[252].$values);
+        } else if (data.Code === 254) {
+            // Leave
+            this.photonLobby.delete(data.Parameters[254]);
+            this.parsePhotonLobbyIds(data.Parameters[252].$values);
+        } else if (data.Code === 33) {
+            // Moderation
+            if (
+                data.Parameters[245]['0'] === 21 &&
+                data.Parameters[245]['1']
+            ) {
+                var photonId = data.Parameters[245]['1'];
+                var block = data.Parameters[245]['10'];
+                var mute = data.Parameters[245]['11'];
+                var ref = this.photonLobby.get(photonId);
+                if (ref && ref.id) {
+                    this.photonModerationUpdate(ref, block, mute);
+                } else {
+                    this.moderationEventQueue.set(photonId, {block, mute});
+                }
+                console.log(
+                    `photon 33 moderation: ID:${data.Parameters[245]['1']} Block:${data.Parameters[245]['10']} Mute:${data.Parameters[245]['11']}`
+                );
+            }
+        } else if (data.Code === 202) {
+            // Instantiate
+            if (!this.photonLobby.has(data.Parameters[254])) {
+                this.photonLobby.set(data.Parameters[254]);
+            }
+        } else if (data.Code === 6) {
+            return;
+        } else {
+            console.log('photonEvent:', data);
+        }
+    };
+
+    $app.methods.parsePhotonPortalSpawn = async function (
+        created_at,
+        instanceId,
+        photonId
+    ) {
+        var ref = this.photonLobby.get(photonId);
+        var L = API.parseLocation(instanceId);
+        var args = await API.getCachedWorld({
+            worldId: L.worldId
+        });
+        var displayName = `ID: ${photonId}`;
+        var userId = '';
+        if (ref && ref.id) {
+            displayName = ref.displayName;
+            userId = ref.id;
+        }
+        this.addPhotonEventToGameLog({
+            created_at,
+            type: 'PortalSpawn',
+            displayName,
+            location: this.lastLocation.location,
+            userId,
+            instanceId,
+            worldName: args.ref.name
+        });
+    };
+
+    $app.methods.addPhotonEventToGameLog = function (entry) {
+        this.queueGameLogNoty(entry);
+        this.addGameLog(entry);
+        if (entry.type === 'PortalSpawn') {
+            database.addGamelogPortalSpawnToDatabase(entry);
+        } else if (entry.type === 'Event') {
+            database.addGamelogEventToDatabase(entry);
         }
     };
 
@@ -7880,6 +8016,52 @@ speechSynthesis.getVoices();
             });
         }
         this.photonLobby.set(photonId, ref);
+
+        // check moderation queue
+        if (this.moderationEventQueue.has(photonId)) {
+            var {block, mute} = this.moderationEventQueue.get(photonId);
+            this.moderationEventQueue.delete(photonId);
+            this.photonModerationUpdate(ref, block, mute);
+        }
+    };
+
+    $app.methods.photonModerationUpdate = function (ref, block, mute) {
+        database.getModeration(ref.id).then((row) => {
+            var noty = {
+                created_at: new Date().toJSON(),
+                userId: ref.id,
+                displayName: ref.displayName
+            };
+            if (block) {
+                noty.type = 'Blocked';
+            } else if (mute) {
+                noty.type = 'Muted';
+            }
+            if (row.userId) {
+                if (block === row.block && mute === row.mute) {
+                    return;
+                }
+                if (!block && row.block) {
+                    noty.type = 'Unblocked';
+                } else if (!mute && row.mute) {
+                    noty.type = 'Unmuted';
+                }
+            }
+            if (noty.type) {
+                this.queueModerationNoty(noty);
+            }
+            if (block || mute) {
+                database.setModeration({
+                    userId: ref.id,
+                    updatedAt: new Date().toJSON(),
+                    displayName: ref.displayName,
+                    block,
+                    mute
+                });
+            } else {
+                database.deleteModeration(ref.id);
+            }
+        });
     };
 
     $app.methods.parsePhotonAvatarChange = function (user, avatar) {
@@ -9800,13 +9982,17 @@ speechSynthesis.getVoices();
                 DisplayName: 'VIP',
                 TrustLevel: 'VIP',
                 PortalSpawn: 'Everyone',
-                AvatarChange: 'Off',
                 Event: 'On',
                 VideoPlay: 'Off',
                 BlockedOnPlayerJoined: 'Off',
                 BlockedOnPlayerLeft: 'Off',
                 MutedOnPlayerJoined: 'Off',
-                MutedOnPlayerLeft: 'Off'
+                MutedOnPlayerLeft: 'Off',
+                AvatarChange: 'Off',
+                Blocked: 'Off',
+                Unblocked: 'Off',
+                Muted: 'Off',
+                Unmuted: 'Off'
             },
             wrist: {
                 Location: 'On',
@@ -9827,13 +10013,17 @@ speechSynthesis.getVoices();
                 DisplayName: 'Friends',
                 TrustLevel: 'Friends',
                 PortalSpawn: 'Everyone',
-                AvatarChange: 'Everyone',
                 Event: 'On',
                 VideoPlay: 'On',
                 BlockedOnPlayerJoined: 'Off',
                 BlockedOnPlayerLeft: 'Off',
                 MutedOnPlayerJoined: 'Off',
-                MutedOnPlayerLeft: 'Off'
+                MutedOnPlayerLeft: 'Off',
+                AvatarChange: 'Everyone',
+                Blocked: 'On',
+                Unblocked: 'On',
+                Muted: 'On',
+                Unmuted: 'On'
             }
         };
         configRepository.setString(
@@ -9844,6 +10034,18 @@ speechSynthesis.getVoices();
     $app.data.sharedFeedFilters = JSON.parse(
         configRepository.getString('sharedFeedFilters')
     );
+    if (!$app.data.sharedFeedFilters.noty.AvatarChange) {
+        $app.data.sharedFeedFilters.noty.AvatarChange = 'Off';
+        $app.data.sharedFeedFilters.noty.Blocked = 'Off';
+        $app.data.sharedFeedFilters.noty.Unblocked = 'Off';
+        $app.data.sharedFeedFilters.noty.Muted = 'Off';
+        $app.data.sharedFeedFilters.noty.Unmuted = 'Off';
+        $app.data.sharedFeedFilters.wrist.AvatarChange = 'Everyone';
+        $app.data.sharedFeedFilters.wrist.Blocked = 'On';
+        $app.data.sharedFeedFilters.wrist.Unblocked = 'On';
+        $app.data.sharedFeedFilters.wrist.Muted = 'On';
+        $app.data.sharedFeedFilters.wrist.Unmuted = 'On';
+    }
 
     if (!configRepository.getString('VRCX_trustColor')) {
         configRepository.setString(
