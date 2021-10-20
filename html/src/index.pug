@@ -207,7 +207,10 @@ html
                             location(v-if="scope.row.type === 'Location'" :location="scope.row.location" :hint="scope.row.worldName")
                             location(v-else-if="scope.row.type === 'PortalSpawn'" :location="scope.row.instanceId" :hint="scope.row.worldName")
                             template(v-else-if="scope.row.type === 'AvatarChange'")
-                                span.x-link(@click="showAvatarDialog(scope.row.avatarId)" v-text="scope.row.name")
+                                span.x-link(v-text="scope.row.name" @click="showAvatarDialog(scope.row.avatarId)")
+                                |  
+                                span.avatar-info-public(v-if="scope.row.releaseStatus === 'public'") ({{scope.row.releaseStatus}})
+                                span.avatar-info-own(v-else-if="scope.row.releaseStatus === 'private'") ({{scope.row.releaseStatus}})
                                 template(v-if="scope.row.description && scope.row.name !== scope.row.description")
                                     |  - {{ scope.row.description }}
                             template(v-else-if="scope.row.type === 'Event'")
@@ -442,7 +445,7 @@ html
                     template(#tool)
                         div(style="margin:0 0 10px;display:flex;align-items:center")
                             el-select(v-model="playerModerationTable.filters[0].value" @change="saveTableFilters" multiple clearable collapse-tags style="flex:1" placeholder="Filter")
-                                el-option(v-once v-for="type in ['block', 'mute', 'unmute', 'hideAvatar', 'showAvatar']" :key="type" :label="type" :value="type")
+                                el-option(v-once v-for="type in ['block', 'unblock', 'mute', 'unmute', 'hideAvatar', 'showAvatar']" :key="type" :label="type" :value="type")
                             el-input(v-model="playerModerationTable.filters[1].value" placeholder="Search" style="flex:none;width:150px;margin:0 10px")
                             el-tooltip(placement="bottom" content="Refresh" :disabled="hideTooltips")
                                 el-button(type="default" :loading="API.isPlayerModerationsLoading" @click="API.refreshPlayerModerations()" icon="el-icon-refresh" circle style="flex:none")
@@ -2309,26 +2312,26 @@ html
                             el-radio-button(label="VIP")
                             el-radio-button(label="Friends")
                             el-radio-button(label="Everyone")
-                    //- .toggle-item
-                    //-     span.toggle-name Blocked
-                    //-     el-radio-group(v-model="sharedFeedFilters.wrist.Blocked" size="mini")
-                    //-         el-radio-button(label="Off")
-                    //-         el-radio-button(label="On")
-                    //- .toggle-item
-                    //-     span.toggle-name Unblocked
-                    //-     el-radio-group(v-model="sharedFeedFilters.wrist.Unblocked" size="mini")
-                    //-         el-radio-button(label="Off")
-                    //-         el-radio-button(label="On")
-                    //- .toggle-item
-                    //-     span.toggle-name Muted
-                    //-     el-radio-group(v-model="sharedFeedFilters.wrist.Muted" size="mini")
-                    //-         el-radio-button(label="Off")
-                    //-         el-radio-button(label="On")
-                    //- .toggle-item
-                    //-     span.toggle-name Unmuted
-                    //-     el-radio-group(v-model="sharedFeedFilters.wrist.Unmuted" size="mini")
-                    //-         el-radio-button(label="Off")
-                    //-         el-radio-button(label="On")
+                    .toggle-item
+                        span.toggle-name Blocked
+                        el-radio-group(v-model="sharedFeedFilters.wrist.Blocked" size="mini")
+                            el-radio-button(label="Off")
+                            el-radio-button(label="On")
+                    .toggle-item
+                        span.toggle-name Unblocked
+                        el-radio-group(v-model="sharedFeedFilters.wrist.Unblocked" size="mini")
+                            el-radio-button(label="Off")
+                            el-radio-button(label="On")
+                    .toggle-item
+                        span.toggle-name Muted
+                        el-radio-group(v-model="sharedFeedFilters.wrist.Muted" size="mini")
+                            el-radio-button(label="Off")
+                            el-radio-button(label="On")
+                    .toggle-item
+                        span.toggle-name Unmuted
+                        el-radio-group(v-model="sharedFeedFilters.wrist.Unmuted" size="mini")
+                            el-radio-button(label="Off")
+                            el-radio-button(label="On")
                 template(#footer)
                     el-button(type="small" @click="cancelSharedFeedFilters") Cancel
                     el-button(type="primary" size="small" @click="saveSharedFeedFilters") Save

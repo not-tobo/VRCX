@@ -159,22 +159,22 @@ html
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
                                         | ◀️ 🔇 #[span.name(v-text="feed.displayName")]
-                            div(v-else-if="feed.type === 'Block'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
+                            div(v-else-if="feed.type === 'Blocked'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
                                 .detail
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
                                         | 🚫 #[span.name(v-text="feed.displayName")]
-                            div(v-else-if="feed.type === 'Unblock'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
+                            div(v-else-if="feed.type === 'Unblocked'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
                                 .detail
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
                                         | ⭕ #[span.name(v-text="feed.displayName")]
-                            div(v-else-if="feed.type === 'Mute'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
+                            div(v-else-if="feed.type === 'Muted'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
                                 .detail
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
                                         | 🔇 #[span.name(v-text="feed.displayName")]
-                            div(v-else-if="feed.type === 'Unmute'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
+                            div(v-else-if="feed.type === 'Unmuted'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
                                 .detail
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
@@ -322,22 +322,22 @@ html
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
                                         | Muted user #[span.name(v-text="feed.displayName")] has left
-                            div(v-else-if="feed.type === 'Block'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
+                            div(v-else-if="feed.type === 'Blocked'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
                                 .detail
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
                                         | #[span.name(v-text="feed.displayName")] has blocked you
-                            div(v-else-if="feed.type === 'Unblock'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
+                            div(v-else-if="feed.type === 'Unblocked'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
                                 .detail
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
                                         | #[span.name(v-text="feed.displayName")] has unblocked you
-                            div(v-else-if="feed.type === 'Mute'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
+                            div(v-else-if="feed.type === 'Muted'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
                                 .detail
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}
                                         | #[span.name(v-text="feed.displayName")] has muted you
-                            div(v-else-if="feed.type === 'Unmute'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
+                            div(v-else-if="feed.type === 'Unmuted'" class="x-friend-item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }")
                                 .detail
                                     span.extra
                                         span.time {{ feed.created_at | formatDate('HH:MI') }}

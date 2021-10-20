@@ -4140,6 +4140,10 @@ speechSynthesis.getVoices();
             wrist: [],
             lastEntryDate: ''
         },
+        moderationAgainstTable: {
+            wrist: [],
+            lastEntryDate: ''
+        },
         pendingUpdate: false
     };
 
@@ -4151,6 +4155,7 @@ speechSynthesis.getVoices();
         this.updateSharedFeedFeedTable(forceUpdate);
         this.updateSharedFeedNotificationTable(forceUpdate);
         this.updateSharedFeedFriendLogTable(forceUpdate);
+        this.updateSharedFeedModerationAgainstTable(forceUpdate);
         var feeds = this.sharedFeed;
         if (!feeds.pendingUpdate) {
             return;
@@ -4160,7 +4165,8 @@ speechSynthesis.getVoices();
             feeds.gameLog.wrist,
             feeds.feedTable.wrist,
             feeds.notificationTable.wrist,
-            feeds.friendLogTable.wrist
+            feeds.friendLogTable.wrist,
+            feeds.moderationAgainstTable.wrist
         );
         // OnPlayerJoining
         var L = API.parseLocation(this.lastLocation.location); // WebSocket dosen't update friend only instances
@@ -4680,6 +4686,53 @@ speechSynthesis.getVoices();
         ) {
             this.playNoty(noty);
         }
+    };
+
+    $app.methods.updateSharedFeedModerationAgainstTable = function (
+        forceUpdate
+    ) {
+        // Unblocked, Blocked, Muted, Unmuted
+        var data = this.moderationAgainstTable;
+        var i = data.length;
+        if (i > 0) {
+            if (
+                data[i - 1].created_at ===
+                    this.sharedFeed.moderationAgainstTable.lastEntryDate &&
+                forceUpdate === false
+            ) {
+                return;
+            }
+            this.sharedFeed.moderationAgainstTable.lastEntryDate =
+                data[i - 1].created_at;
+        } else {
+            return;
+        }
+        var bias = new Date(Date.now() - 86400000).toJSON(); // 24 hours
+        var wristArr = [];
+        var w = 0;
+        var wristFilter = this.sharedFeedFilters.wrist;
+        for (var i = data.length - 1; i > -1; i--) {
+            var ctx = data[i];
+            if (ctx.created_at < bias) {
+                break;
+            }
+            var isFriend = this.friends.has(ctx.userId);
+            var isFavorite = API.cachedFavoritesByObjectId.has(ctx.userId);
+            if (
+                w < 20 &&
+                wristFilter[ctx.type] &&
+                wristFilter[ctx.type] === 'On'
+            ) {
+                wristArr.push({
+                    ...ctx,
+                    isFriend,
+                    isFavorite
+                });
+                ++w;
+            }
+        }
+        this.sharedFeed.moderationAgainstTable.wrist = wristArr;
+        this.sharedFeed.pendingUpdate = true;
     };
 
     $app.methods.queueModerationNoty = function (noty) {
@@ -7427,6 +7480,7 @@ speechSynthesis.getVoices();
         this.moderationEventQueue = new Map();
         this.lastPortalId = '';
         this.lastPortalList = new Map();
+        this.portalQueue = '';
         var playerList = Array.from(this.lastLocation.playerList.values());
         for (var ref of playerList) {
             var time = new Date().getTime() - ref.joinTime;
@@ -7683,9 +7737,6 @@ speechSynthesis.getVoices();
 
     $app.data.lastLocationDestination = '';
     $app.data.lastLocationDestinationTime = 0;
-    $app.data.lastPortalId = '';
-    $app.data.lastPortalList = new Map();
-    $app.data.moderationEventQueue = new Map();
 
     $app.methods.addGameLogEntry = function (gameLog, location, pushToTable) {
         var userId = '';
@@ -7790,6 +7841,19 @@ speechSynthesis.getVoices();
                 database.addGamelogJoinLeaveToDatabase(entry);
                 break;
             case 'portal-spawn':
+                if (this.portalQueue && gameLog.userDisplayName) {
+                    var ref = {
+                        id: userId,
+                        displayName: gameLog.userDisplayName
+                    };
+                    this.parsePhotonPortalSpawn(
+                        gameLog.dt,
+                        this.portalQueue,
+                        ref
+                    );
+                    this.portalQueue = '';
+                    return;
+                }
                 var entry = {
                     created_at: gameLog.dt,
                     type: 'PortalSpawn',
@@ -7842,7 +7906,7 @@ speechSynthesis.getVoices();
                     console.error('error parsing photon json:', gameLog.json);
                     return;
                 }
-                this.parsePhotonEvent(data);
+                this.parsePhotonEvent(data, gameLog.dt);
                 return;
             case 'notification':
                 // var entry = {
@@ -7866,7 +7930,15 @@ speechSynthesis.getVoices();
         }
     };
 
-    $app.methods.parsePhotonEvent = function (data) {
+    $app.data.lastPortalId = '';
+    $app.data.lastPortalList = new Map();
+    $app.data.portalQueue = '';
+    $app.data.moderationEventQueue = new Map();
+    $app.data.moderationAgainstTable = [];
+    $app.data.photonLobby = new Map();
+    $app.data.photonLobbyAvatars = new Map();
+
+    $app.methods.parsePhotonEvent = function (data, gameLogDate) {
         if (data.Code === 253) {
             // SetUserProperties
             this.parsePhotonUser(
@@ -7906,9 +7978,13 @@ speechSynthesis.getVoices();
                 var mute = data.Parameters[245]['11'];
                 var ref = this.photonLobby.get(photonId);
                 if (ref && ref.id) {
-                    this.photonModerationUpdate(ref, block, mute);
+                    this.photonModerationUpdate(ref, block, mute, gameLogDate);
                 } else {
-                    this.moderationEventQueue.set(photonId, {block, mute});
+                    this.moderationEventQueue.set(photonId, {
+                        block,
+                        mute,
+                        gameLogDate
+                    });
                 }
                 console.log(
                     `photon 33 moderation: ID:${data.Parameters[245]['1']} Block:${data.Parameters[245]['10']} Mute:${data.Parameters[245]['11']}`
@@ -7929,25 +8005,18 @@ speechSynthesis.getVoices();
     $app.methods.parsePhotonPortalSpawn = async function (
         created_at,
         instanceId,
-        photonId
+        ref
     ) {
-        var ref = this.photonLobby.get(photonId);
         var L = API.parseLocation(instanceId);
         var args = await API.getCachedWorld({
             worldId: L.worldId
         });
-        var displayName = `ID: ${photonId}`;
-        var userId = '';
-        if (ref && ref.id) {
-            displayName = ref.displayName;
-            userId = ref.id;
-        }
         this.addPhotonEventToGameLog({
             created_at,
             type: 'PortalSpawn',
-            displayName,
+            displayName: ref.displayName,
             location: this.lastLocation.location,
-            userId,
+            userId: ref.id,
             instanceId,
             worldName: args.ref.name
         });
@@ -7962,9 +8031,6 @@ speechSynthesis.getVoices();
             database.addGamelogEventToDatabase(entry);
         }
     };
-
-    $app.data.photonLobby = new Map();
-    $app.data.photonLobbyAvatars = new Map();
 
     $app.methods.parsePhotonLobbyIds = function (lobbyIds) {
         lobbyIds.forEach((id) => {
@@ -8015,36 +8081,57 @@ speechSynthesis.getVoices();
 
         // check moderation queue
         if (this.moderationEventQueue.has(photonId)) {
-            var {block, mute} = this.moderationEventQueue.get(photonId);
+            var {block, mute, gameLogDate} =
+                this.moderationEventQueue.get(photonId);
             this.moderationEventQueue.delete(photonId);
-            this.photonModerationUpdate(ref, block, mute);
+            this.photonModerationUpdate(ref, block, mute, gameLogDate);
         }
     };
 
-    $app.methods.photonModerationUpdate = function (ref, block, mute) {
+    $app.methods.photonModerationUpdate = function (
+        ref,
+        block,
+        mute,
+        gameLogDate
+    ) {
         database.getModeration(ref.id).then((row) => {
-            var noty = {
-                created_at: new Date().toJSON(),
-                userId: ref.id,
-                displayName: ref.displayName
-            };
+            var type = '';
             if (block) {
-                noty.type = 'Blocked';
+                type = 'Blocked';
             } else if (mute) {
-                noty.type = 'Muted';
+                type = 'Muted';
             }
             if (row.userId) {
                 if (block === row.block && mute === row.mute) {
                     return;
                 }
                 if (!block && row.block) {
-                    noty.type = 'Unblocked';
+                    type = 'Unblocked';
                 } else if (!mute && row.mute) {
-                    noty.type = 'Unmuted';
+                    type = 'Unmuted';
                 }
             }
-            if (noty.type) {
+            if (type) {
+                var noty = {
+                    created_at: new Date().toJSON(),
+                    userId: ref.id,
+                    displayName: ref.displayName,
+                    type
+                };
                 this.queueModerationNoty(noty);
+                var entry = {
+                    created_at: gameLogDate,
+                    userId: ref.id,
+                    displayName: ref.displayName,
+                    type
+                };
+                this.moderationAgainstTable.forEach((item) => {
+                    if (item.userId === ref.id && item.type === type) {
+                        removeFromArray(this.moderationAgainstTable, item);
+                    }
+                });
+                this.moderationAgainstTable.push(entry);
+                this.updateSharedFeed(false);
             }
             if (block || mute) {
                 database.setModeration({
