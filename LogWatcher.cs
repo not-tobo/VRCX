@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading;
 
 namespace VRCX
@@ -725,14 +726,60 @@ namespace VRCX
             return true;
         }
 
+        public class VrcEvent
+        {
+            public int Code { get; set; }
+            public Parameters Parameters { get; set; }
+            public int SenderKey { get; set; }
+            public int CustomDataKey { get; set; }
+            public int Type { get; set; }
+            public string EventType { get; set; }
+            public Object Data { get; set; }
+        }
+
+        public class Parameters
+        {
+            [JsonPropertyName("245")]
+            public _245 _245 { get; set; }
+            [JsonPropertyName("254")]
+            public int _254 { get; set; }
+        }
+
+        public class _245
+        {
+            [JsonPropertyName("$type")]
+            public string Type { get; set; }
+            [JsonPropertyName("$value")]
+            public string Value { get; set; }
+        }
+
         private void ParseLogPhotonEvent(FileInfo fileInfo, string data, string date, string photonEvent)
         {
             // 2021.09.30 04:27:11 Log        -  [Network Data] OnEvent: PLAYER:  253
             // 2021.09.30 04:27:40 Log        -  [Network Data] OnEvent: SYSTEM 255
 
-            if (photonEvent == "1" || photonEvent == "7" || photonEvent == "8" || photonEvent == "9" || photonEvent == "210" || photonEvent == "6")
+            if (photonEvent == "1" || photonEvent == "8" || photonEvent == "9" || photonEvent == "210")
             {
                 return;
+            }
+
+            if (photonEvent == "6")
+            {
+                var json = System.Text.Json.JsonSerializer.Deserialize<VrcEvent>(data);
+                byte[] bytes = Convert.FromBase64String(json.Parameters._245.Value);
+                try
+                {
+                    var deserialization = new VRCEventDeserialization();
+                    var eventData = deserialization.DeserializeData(bytes);
+                    json.Data = eventData.Data;
+                    json.Type = eventData.Type;
+                    json.EventType = eventData.EventType;
+                    data = System.Text.Json.JsonSerializer.Serialize<VrcEvent>(json);
+                }
+                catch(Exception ex)
+                {
+                    data = ex.ToString();
+                }
             }
 
             AppendLog(new[]

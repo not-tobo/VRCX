@@ -7482,6 +7482,8 @@ speechSynthesis.getVoices();
 
     $app.methods.lastLocationReset = function () {
         this.photonLobby = new Map();
+        this.photonLobbyIkUpdate = new Map();
+        this.photonLobbyWatcherLoop = false;
         this.photonLobbyAvatars = new Map();
         this.moderationEventQueue = new Map();
         this.lastPortalId = '';
@@ -7847,7 +7849,10 @@ speechSynthesis.getVoices();
                 database.addGamelogJoinLeaveToDatabase(entry);
                 break;
             case 'portal-spawn':
-                if (this.portalQueue && gameLog.userDisplayName) {
+                if (this.portalQueue === 'skip') {
+                    this.portalQueue = '';
+                    return;
+                } else if (this.portalQueue && gameLog.userDisplayName) {
                     var ref = {
                         id: userId,
                         displayName: gameLog.userDisplayName
@@ -7903,7 +7908,7 @@ speechSynthesis.getVoices();
                 }
                 return;
             case 'photon-event':
-                if (!this.isGameRunning) {
+                if (!this.isGameRunning || !this.friendLogInitStatus) {
                     return;
                 }
                 try {
@@ -7943,9 +7948,94 @@ speechSynthesis.getVoices();
     $app.data.moderationAgainstTable = [];
     $app.data.photonLobby = new Map();
     $app.data.photonLobbyAvatars = new Map();
+    $app.data.photonLobbyIkUpdate = new Map();
+    $app.data.photonLobbyWatcherLoop = false;
+
+    $app.data.photonEventType = [
+        'MeshVisibility',
+        'AnimationFloat',
+        'AnimationBool',
+        'AnimationTrigger',
+        'AudioTrigger',
+        'PlayAnimation',
+        'SendMessage',
+        'SetParticlePlaying',
+        'TeleportPlayer',
+        'RunConsoleCommand',
+        'SetGameObjectActive',
+        'SetWebPanelURI',
+        'SetWebPanelVolume',
+        'SpawnObject',
+        'SendRPC',
+        'ActivateCustomTrigger',
+        'DestroyObject',
+        'SetLayer',
+        'SetMaterial',
+        'AddHealth',
+        'AddDamage',
+        'SetComponentActive',
+        'AnimationInt',
+        'AnimationIntAdd',
+        'AnimationIntSubtract',
+        'AnimationIntMultiply',
+        'AnimationIntDivide',
+        'AddVelocity',
+        'SetVelocity',
+        'AddAngularVelocity',
+        'SetAngularVelocity',
+        'AddForce',
+        'SetUIText',
+        'CallUdonMethod'
+    ];
+
+    $app.methods.startLobbyWatcherLoop = function () {
+        if (!this.photonLobbyWatcherLoop) {
+            this.photonLobbyWatcherLoop = true;
+            this.photonLobbyWatcher();
+        }
+    };
+
+    $app.methods.photonLobbyWatcher = function () {
+        if (!this.photonLobbyWatcherLoop) {
+            return;
+        }
+        if (this.photonLobbyIkUpdate.size === 0) {
+            this.photonLobbyWatcherLoop = false;
+            return;
+        }
+        var dtNow = Date.now();
+        var bias = this.lastLocationDestinationTime + 5 * 1000;
+        var bias1 = this.lastLocation.date + 30 * 1000;
+        if (dtNow < bias || dtNow < bias1) {
+            this.photonLobbyWatcherLoop = false;
+            return;
+        }
+        this.photonLobbyIkUpdate.forEach(function (dt, id) {
+            var timeSinceLastEvent = dtNow - dt;
+            if (timeSinceLastEvent > 3000) {
+                var displayName = '';
+                var ref = $app.photonLobby.get(id);
+                displayName = `ID:${id}`;
+                if (ref && ref.id) {
+                    displayName = ref.displayName;
+                }
+                var feed = `${displayName} is timing out ${
+                    Math.round((timeSinceLastEvent / 1000) * 10) / 10
+                }`;
+                console.log(feed);
+            }
+        });
+        setTimeout(() => this.photonLobbyWatcher(), 500);
+    };
 
     $app.methods.parsePhotonEvent = function (data, gameLogDate) {
-        if (data.Code === 253) {
+        if (data.Code === 7) {
+            // IK update
+            this.photonLobbyIkUpdate.set(
+                data.Parameters[254],
+                Date.parse(gameLogDate)
+            );
+        } else if (data.Code === 253) {
             // SetUserProperties
             this.parsePhotonUser(
                 data.Parameters[253],
@@ -7972,9 +8062,11 @@ speechSynthesis.getVoices();
                 this.parsePhotonAvatar(data.Parameters[249].favatarDict);
             }
             this.parsePhotonLobbyIds(data.Parameters[252].$values);
+            this.startLobbyWatcherLoop();
         } else if (data.Code === 254) {
             // Leave
             this.photonLobby.delete(data.Parameters[254]);
+            this.photonLobbyIkUpdate.delete(data.Parameters[254]);
             this.parsePhotonLobbyIds(data.Parameters[252].$values);
         } else if (data.Code === 33) {
             // Moderation
@@ -7992,9 +8084,6 @@ speechSynthesis.getVoices();
                         gameLogDate
                     });
                 }
-                console.log(
-                    `photon 33 moderation: ID:${data.Parameters[245]['1']} Block:${data.Parameters[245]['10']} Mute:${data.Parameters[245]['11']}`
-                );
             }
         } else if (data.Code === 202) {
             // Instantiate
@@ -8002,7 +8091,110 @@ speechSynthesis.getVoices();
                 this.photonLobby.set(data.Parameters[254]);
             }
         } else if (data.Code === 6) {
+            var senderId = data.Parameters[254];
             // VRC Event
+            if (
+                data.EventType === 'ReceiveVoiceStatsSyncRPC' ||
+                data.EventType === 'initUSpeakSenderRPC' ||
+                data.EventType === 'SanityCheck' ||
+                data.EventType === 'UdonSyncRunProgramAsRPC'
+            ) {
+                return;
+            }
+            var displayName = '';
+            if (senderId) {
+                var ref = this.photonLobby.get(senderId);
+                displayName = `ID:${senderId}`;
+                if (ref && ref.id) {
+                    displayName = ref.displayName;
+                }
+            }
+            if (
+                data.EventType === '_InstantiateObject' &&
+                data.Data[0] === 'Portals/PortalInternalDynamic'
+            ) {
+                this.lastPortalId = data.Data[3];
+            } else if (
+                data.EventType === '_DestroyObject' &&
+                this.lastPortalList.has(data.Data[0])
+            ) {
+                var portalId = data.Data[0];
+                var date = this.lastPortalList.get(portalId);
+                var time = timeToText(Date.parse(gameLogDate) - date);
+                var entry = {
+                    created_at: gameLogDate,
+                    type: 'Event',
+                    data: `${displayName} deleted portal after ${time}`
+                };
+                this.addPhotonEventToGameLog(entry);
+                this.lastPortalList.delete(portalId);
+            } else if (data.EventType === 'ConfigurePortal') {
+                var instanceId = `${data.Data[0]}:${data.Data[1]}`;
+                if (this.lastPortalId) {
+                    this.lastPortalList.set(
+                        this.lastPortalId,
+                        Date.parse(gameLogDate)
+                    );
+                    this.lastPortalId = '';
+                }
+                var ref = this.photonLobby.get(senderId);
+                if (ref && ref.id) {
+                    this.portalQueue = 'skip';
+                    this.parsePhotonPortalSpawn(gameLogDate, instanceId, ref);
+                } else {
+                    this.portalQueue = instanceId;
+                }
+            } else if (data.Type > 34) {
+                var entry = {
+                    created_at: gameLogDate,
+                    type: 'Event',
+                    data: `${displayName} called non existent RPC ${data.Type}`
+                };
+                this.addPhotonEventToGameLog(entry);
+            }
+            if (data.Type === 14) {
+                if (
+                    data.EventType === 'InformOfBadConnection' ||
+                    data.EventType === 'SetTimerRPC' ||
+                    data.EventType === 'IncrementPortalPlayerCountRPC' ||
+                    data.EventType === 'PlayEffect' ||
+                    data.EventType === 'ConfigurePortal' ||
+                    data.EventType === 'PlayEmoteRPC ' ||
+                    data.EventType === 'CancelRPC'
+                ) {
+                    return;
+                }
+                if (data.EventType === 'ChangeVisibility') {
+                    if (data.Data) {
+                        var feed = `RPC ${displayName} Enabled their camera`;
+                    } else {
+                        var feed = `RPC ${displayName} Disabled their camera`;
+                    }
+                } else {
+                    var eventData = '';
+                    if (data.Data) {
+                        if (Array.isArray(data.Data)) {
+                            eventData = ` ${data.Data.toString()}`;
+                        } else {
+                            eventData = ` ${data.Data}`;
+                        }
+                    }
+                    var feed = `RPC ${displayName} ${data.EventType}${eventData}`;
+                }
+            } else {
+                var eventType = '';
+                if (data.EventType) {
+                    if (Array.isArray(data.EventType)) {
+                        eventType = ` ${data.EventType.toString()}`;
+                    } else {
+                        eventType = ` ${data.EventType}`;
+                    }
+                }
+                var feed = `RPC SDK2 ${displayName} ${
+                    this.photonEventType[data.Type]
+                }${eventType}`;
+            }
+            console.log(feed);
         } else {
             console.log('photonEvent:', data);
         }
