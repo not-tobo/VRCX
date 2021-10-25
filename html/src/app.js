@@ -5854,11 +5854,15 @@ speechSynthesis.getVoices();
             );
         }
         if (this.saveCredentials) {
-            savedCredentials[currentUser.username].loginParmas =
-                this.saveCredentials;
+            var credentialsToSave = {
+                user: currentUser,
+                loginParmas: this.saveCredentials
+            };
+            savedCredentials[currentUser.username] = credentialsToSave;
             delete this.saveCredentials;
-        }
-        if (typeof savedCredentials[currentUser.username] !== 'undefined') {
+        } else if (
+            typeof savedCredentials[currentUser.username] !== 'undefined'
+        ) {
             savedCredentials[currentUser.username].user = currentUser;
             savedCredentials[currentUser.username].cookies =
                 await webApiService.getCookies();
@@ -11963,9 +11967,6 @@ speechSynthesis.getVoices();
             case 'Rename':
                 this.promptRenameWorld(D);
                 break;
-            case 'Upload Image':
-                document.getElementById('WorldImageUploadButton').click();
-                break;
             case 'Change Image':
                 this.displayPreviousImages('World', 'Change');
                 break;
@@ -11974,6 +11975,9 @@ speechSynthesis.getVoices();
                 break;
             case 'Change Description':
                 this.promptChangeWorldDescription(D);
+                break;
+            case 'Download Unity Package':
+                this.openExternalLink(this.worldDialog.ref.unityPackageUrl);
                 break;
             default:
                 this.$confirm(`Continue? ${command}`, 'Confirm', {
@@ -12179,9 +12183,6 @@ speechSynthesis.getVoices();
         switch (command) {
             case 'Rename':
                 this.promptRenameAvatar(D);
-                break;
-            case 'Upload Image':
-                document.getElementById('AvatarImageUploadButton').click();
                 break;
             case 'Change Image':
                 this.displayPreviousImages('Avatar', 'Change');
@@ -13066,6 +13067,12 @@ speechSynthesis.getVoices();
     });
 
     $app.methods.setVRCPlusIcon = function (fileId) {
+        if (!API.currentUser.$isVRCPlus) {
+            this.$message({
+                message: 'VRCPlus required',
+                type: 'error'
+            });
+        }
         var userIcon = '';
         if (fileId) {
             userIcon = `https://api.vrchat.cloud/api/1/file/${fileId}/1`;
@@ -13109,6 +13116,18 @@ speechSynthesis.getVoices();
             var args = {
                 json,
                 fileId
+            };
+            return args;
+        });
+    };
+
+    API.deleteFileVersion = function (params) {
+        return this.call(`file/${params.fileId}/${params.version}`, {
+            method: 'DELETE'
+        }).then((json) => {
+            var args = {
+                json,
+                params
             };
             return args;
         });
@@ -14140,6 +14159,7 @@ speechSynthesis.getVoices();
             return;
         }
         this.avatarDialog.loading = true;
+        this.changeAvatarImageDialogLoading = true;
         var r = new FileReader();
         r.onload = async function (file) {
             var base64File = btoa(r.result);
@@ -14215,6 +14235,7 @@ speechSynthesis.getVoices();
             method: 'PUT'
         });
         $app.avatarDialog.loading = false;
+        $app.changeAvatarImageDialogLoading = false;
     };
 
     API.$on('AVATARIMAGE:INIT', function (args) {
@@ -14275,6 +14296,7 @@ speechSynthesis.getVoices();
             .then((json) => {
                 if (json.status !== 200) {
                     $app.avatarDialog.loading = false;
+                    $app.changeAvatarImageDialogLoading = false;
                     this.$throw('Avatar image upload failed', json);
                 }
                 var args = {
@@ -14371,6 +14393,7 @@ speechSynthesis.getVoices();
             .then((json) => {
                 if (json.status !== 200) {
                     $app.avatarDialog.loading = false;
+                    $app.changeAvatarImageDialogLoading = false;
                     this.$throw('Avatar image upload failed', json);
                 }
                 var args = {
@@ -14470,6 +14493,7 @@ speechSynthesis.getVoices();
             return;
         }
         this.worldDialog.loading = true;
+        this.changeWorldImageDialogLoading = true;
         var r = new FileReader();
         r.onload = async function (file) {
             var base64File = btoa(r.result);
@@ -14545,6 +14569,7 @@ speechSynthesis.getVoices();
             method: 'PUT'
         });
         $app.worldDialog.loading = false;
+        $app.changeWorldImageDialogLoading = false;
     };
 
     API.$on('WORLDIMAGE:INIT', function (args) {
@@ -14605,6 +14630,7 @@ speechSynthesis.getVoices();
             .then((json) => {
                 if (json.status !== 200) {
                     $app.worldDialog.loading = false;
+                    $app.changeWorldImageDialogLoading = false;
                     this.$throw('World image upload failed', json);
                 }
                 var args = {
@@ -14701,6 +14727,7 @@ speechSynthesis.getVoices();
             .then((json) => {
                 if (json.status !== 200) {
                     $app.worldDialog.loading = false;
+                    $app.changeWorldImageDialogLoading = false;
                     this.$throw('World image upload failed', json);
                 }
                 var args = {
@@ -14767,11 +14794,13 @@ speechSynthesis.getVoices();
 
     API.$on('AVATARIMAGE:SET', function (args) {
         $app.avatarDialog.loading = false;
+        $app.changeAvatarImageDialogLoading = false;
         if (args.json.imageUrl === args.params.imageUrl) {
             $app.$message({
                 message: 'Avatar image changed',
                 type: 'success'
             });
+            $app.displayPreviousImages('Avatar', 'Change');
         } else {
             this.$throw(0, 'Avatar image change failed');
         }
@@ -14794,11 +14823,13 @@ speechSynthesis.getVoices();
 
     API.$on('WORLDIMAGE:SET', function (args) {
         $app.worldDialog.loading = false;
+        $app.changeWorldImageDialogLoading = false;
         if (args.json.imageUrl === args.params.imageUrl) {
             $app.$message({
                 message: 'World image changed',
                 type: 'success'
             });
+            $app.displayPreviousImages('World', 'Change');
         } else {
             this.$throw(0, 'World image change failed');
         }
@@ -14839,7 +14870,12 @@ speechSynthesis.getVoices();
             }
             API.getAvatarImages(params).then((args) => {
                 this.previousImagesTableFileId = args.json.id;
-                var images = args.json.versions.reverse();
+                var images = [];
+                args.json.versions.forEach((item) => {
+                    if (!item.deleted) {
+                        images.unshift(item);
+                    }
+                });
                 this.checkPreviousImageAvailable(images);
             });
         } else if (type === 'World') {
@@ -14851,13 +14887,23 @@ speechSynthesis.getVoices();
             }
             API.getWorldImages(params).then((args) => {
                 this.previousImagesTableFileId = args.json.id;
-                var images = args.json.versions.reverse();
+                var images = [];
+                args.json.versions.forEach((item) => {
+                    if (!item.deleted) {
+                        images.unshift(item);
+                    }
+                });
                 this.checkPreviousImageAvailable(images);
             });
         } else if (type === 'User') {
             API.getAvatarImages(params).then((args) => {
                 this.previousImagesTableFileId = args.json.id;
-                var images = args.json.versions.reverse();
+                var images = [];
+                args.json.versions.forEach((item) => {
+                    if (!item.deleted) {
+                        images.unshift(item);
+                    }
+                });
                 this.checkPreviousImageAvailable(images);
             });
         }
@@ -14957,6 +15003,32 @@ speechSynthesis.getVoices();
         });
     };
 
+    $app.methods.uploadAvatarImage = function () {
+        document.getElementById('AvatarImageUploadButton').click();
+    };
+
+    $app.methods.deleteAvatarImage = function () {
+        this.changeAvatarImageDialogLoading = true;
+        var parmas = {
+            fileId: this.previousImagesTableFileId,
+            version: this.previousImagesTable[0].version
+        };
+        API.deleteFileVersion(parmas)
+            .then((args) => {
+                this.previousImagesTableFileId = args.json.id;
+                var images = [];
+                args.json.versions.forEach((item) => {
+                    if (!item.deleted) {
+                        images.unshift(item);
+                    }
+                });
+                this.checkPreviousImageAvailable(images);
+            })
+            .finally(() => {
+                this.changeAvatarImageDialogLoading = false;
+            });
+    };
+
     $app.methods.setWorldImage = function (image) {
         this.changeWorldImageDialogLoading = true;
         var parmas = {
@@ -14967,6 +15039,32 @@ speechSynthesis.getVoices();
             this.changeWorldImageDialogLoading = false;
             this.changeWorldImageDialogVisible = false;
         });
+    };
+
+    $app.methods.uploadWorldImage = function () {
+        document.getElementById('WorldImageUploadButton').click();
+    };
+
+    $app.methods.deleteWorldImage = function () {
+        this.changeWorldImageDialogLoading = true;
+        var parmas = {
+            fileId: this.previousImagesTableFileId,
+            version: this.previousImagesTable[0].version
+        };
+        API.deleteFileVersion(parmas)
+            .then((args) => {
+                this.previousImagesTableFileId = args.json.id;
+                var images = [];
+                args.json.versions.forEach((item) => {
+                    if (!item.deleted) {
+                        images.unshift(item);
+                    }
+                });
+                this.checkPreviousImageAvailable(images);
+            })
+            .finally(() => {
+                this.changeWorldImageDialogLoading = false;
+            });
     };
 
     $app.methods.compareCurrentImage = function (image) {
@@ -16401,6 +16499,12 @@ speechSynthesis.getVoices();
     });
 
     $app.methods.setProfilePicOverride = function (fileId) {
+        if (!API.currentUser.$isVRCPlus) {
+            this.$message({
+                message: 'VRCPlus required',
+                type: 'error'
+            });
+        }
         var profilePicOverride = '';
         if (fileId) {
             profilePicOverride = `https://api.vrchat.cloud/api/1/file/${fileId}/1`;
@@ -16814,7 +16918,6 @@ speechSynthesis.getVoices();
                 key !== API.currentUser.id
             ) {
                 API.cachedUsers.delete(key);
-                console.log(key);
             }
         });
         API.cachedWorlds.forEach((value, key) => {
@@ -16823,7 +16926,6 @@ speechSynthesis.getVoices();
                 value.authorId !== API.currentUser.id
             ) {
                 API.cachedWorlds.delete(key);
-                console.log(key);
             }
         });
         API.cachedAvatars.forEach((value, key) => {
@@ -16832,7 +16934,6 @@ speechSynthesis.getVoices();
                 value.authorId !== API.currentUser.id
             ) {
                 API.cachedAvatars.delete(key);
-                console.log(key);
             }
         });
 
