@@ -7522,8 +7522,9 @@ speechSynthesis.getVoices();
     $app.methods.lastLocationReset = function () {
         this.photonLobby = new Map();
         this.photonLobbyIkUpdate = new Map();
-        this.photonLobbyWatcherLoop = false;
+        this.photonLobbyWatcherLoopStop();
         this.photonLobbyAvatars = new Map();
+        this.photonLobbyJointime = new Map();
         this.moderationEventQueue = new Map();
         this.lastPortalId = '';
         this.lastPortalList = new Map();
@@ -7994,6 +7995,8 @@ speechSynthesis.getVoices();
     $app.data.photonLobbyAvatars = new Map();
     $app.data.photonLobbyIkUpdate = new Map();
     $app.data.photonLobbyWatcherLoop = false;
+    $app.data.photonLobbyTimeout = [];
+    $app.data.photonLobbyJointime = new Map();
 
     $app.data.photonEventType = [
         'MeshVisibility',
@@ -8039,36 +8042,66 @@ speechSynthesis.getVoices();
         }
     };
 
+    $app.methods.photonLobbyWatcherLoopStop = function () {
+        this.photonLobbyWatcherLoop = false;
+        this.photonLobbyTimeout = [];
+        AppApi.ExecuteVrOverlayFunction('updateHudTimeout', '[]');
+    };
+
     $app.methods.photonLobbyWatcher = function () {
         if (!this.photonLobbyWatcherLoop) {
             return;
         }
         if (this.photonLobbyIkUpdate.size === 0) {
-            this.photonLobbyWatcherLoop = false;
+            this.photonLobbyWatcherLoopStop();
             return;
         }
         var dtNow = Date.now();
         var bias = this.lastLocationDestinationTime + 5 * 1000;
         var bias1 = this.lastLocation.date + 30 * 1000;
         if (dtNow < bias || dtNow < bias1) {
-            this.photonLobbyWatcherLoop = false;
+            this.photonLobbyWatcherLoopStop();
             return;
         }
+        var hudTimeout = [];
         this.photonLobbyIkUpdate.forEach(function (dt, id) {
             var timeSinceLastEvent = dtNow - dt;
             if (timeSinceLastEvent > 3000) {
-                var displayName = '';
-                var ref = $app.photonLobby.get(id);
-                displayName = `ID:${id}`;
-                if (ref && ref.id) {
-                    displayName = ref.displayName;
+                var joinTime = $app.photonLobbyJointime.get(id);
+                if (!joinTime || joinTime + 30000 < dtNow) {
+                    var displayName = '';
+                    var ref = $app.photonLobby.get(id);
+                    displayName = `ID:${id}`;
+                    if (ref && ref.id) {
+                        displayName = ref.displayName;
+                    }
+                    var time = Math.round(timeSinceLastEvent / 1000);
+                    var feed = {
+                        displayName,
+                        time
+                    };
+                    hudTimeout.unshift(feed);
                 }
-                var feed = `${displayName} is timing out ${
-                    Math.round((timeSinceLastEvent / 1000) * 10) / 10
-                }`;
-                console.log(feed);
             }
         });
+        if (this.photonLobbyTimeout.length > 0 || hudTimeout.length > 0) {
+            hudTimeout.sort(function (a, b) {
+                if (a.time > b.time) {
+                    return 1;
+                }
+                if (a.time < b.time) {
+                    return -1;
+                }
+                return 0;
+            });
+            if (this.timeoutHudOverlay) {
+                AppApi.ExecuteVrOverlayFunction(
+                    'updateHudTimeout',
+                    JSON.stringify(hudTimeout)
+                );
+            }
+            this.photonLobbyTimeout = hudTimeout;
+        }
         setTimeout(() => this.photonLobbyWatcher(), 500);
     };
 
@@ -8083,7 +8116,8 @@ speechSynthesis.getVoices();
             // SetUserProperties
             this.parsePhotonUser(
                 data.Parameters[253],
-                data.Parameters[251].user
+                data.Parameters[251].user,
+                gameLogDate
             );
             this.parsePhotonAvatarChange(
                 data.Parameters[251].user,
@@ -8096,7 +8130,8 @@ speechSynthesis.getVoices();
             if (typeof data.Parameters[249] !== 'undefined') {
                 this.parsePhotonUser(
                     data.Parameters[254],
-                    data.Parameters[249].user
+                    data.Parameters[249].user,
+                    gameLogDate
                 );
                 this.parsePhotonAvatarChange(
                     data.Parameters[249].user,
@@ -8106,26 +8141,61 @@ speechSynthesis.getVoices();
                 this.parsePhotonAvatar(data.Parameters[249].favatarDict);
             }
             this.parsePhotonLobbyIds(data.Parameters[252].$values);
+            this.photonLobbyJointime.set(
+                data.Parameters[254],
+                Date.parse(gameLogDate)
+            );
             this.startLobbyWatcherLoop();
         } else if (data.Code === 254) {
             // Leave
             this.photonLobby.delete(data.Parameters[254]);
             this.photonLobbyIkUpdate.delete(data.Parameters[254]);
+            this.photonLobbyJointime.delete(data.Parameters[254]);
             this.parsePhotonLobbyIds(data.Parameters[252].$values);
         } else if (data.Code === 33) {
             // Moderation
-            if (data.Parameters[245]['0'] === 21 && data.Parameters[245]['1']) {
-                var photonId = data.Parameters[245]['1'];
-                var block = data.Parameters[245]['10'];
-                var mute = data.Parameters[245]['11'];
-                var ref = this.photonLobby.get(photonId);
-                if (ref && ref.id) {
-                    this.photonModerationUpdate(ref, block, mute, gameLogDate);
+            if (data.Parameters[245]['0'] === 21) {
+                if (data.Parameters[245]['1']) {
+                    var photonId = data.Parameters[245]['1'];
+                    var block = data.Parameters[245]['10'];
+                    var mute = data.Parameters[245]['11'];
+                    var ref = this.photonLobby.get(photonId);
+                    if (ref && ref.id) {
+                        this.photonModerationUpdate(ref, block, mute, gameLogDate);
+                    } else {
+                        this.moderationEventQueue.set(photonId, {
+                            block,
+                            mute,
+                            gameLogDate
+                        });
+                    }
                 } else {
-                    this.moderationEventQueue.set(photonId, {
-                        block,
-                        mute,
-                        gameLogDate
+                    var blockArray = data.Parameters[245]['10'].$values;
+                    var muteArray = data.Parameters[245]['11'].$values;
+                    var idList = new Map();
+                    blockArray.forEach((photonId) => {
+                        if (muteArray.includes(photonId)) {
+                            idList.set(photonId, {mute: true, block: true});
+                        } else {
+                            idList.set(photonId, {mute: true, block: false});
+                        }
+                    });
+                    muteArray.forEach((photonId) => {
+                        if (!idList.has(photonId)) {
+                            idList.set(photonId, {mute: false, block: true});
+                        }
+                    });
+                    idList.forEach(({mute, block}, photonId) => {
+                        var ref = this.photonLobby.get(photonId);
+                        if (ref && ref.id) {
+                            this.photonModerationUpdate(ref, block, mute, gameLogDate);
+                        } else {
+                            this.moderationEventQueue.set(photonId, {
+                                block,
+                                mute,
+                                gameLogDate
+                            });
+                        }
                     });
                 }
             }
@@ -8141,7 +8211,8 @@ speechSynthesis.getVoices();
                 data.EventType === 'ReceiveVoiceStatsSyncRPC' ||
                 data.EventType === 'initUSpeakSenderRPC' ||
                 data.EventType === 'SanityCheck' ||
-                data.EventType === 'UdonSyncRunProgramAsRPC'
+                (data.EventType === 'UdonSyncRunProgramAsRPC' &&
+                    data.Data[0] !== 'Beep')
             ) {
                 return;
             }
@@ -8203,16 +8274,16 @@ speechSynthesis.getVoices();
                     data.EventType === 'IncrementPortalPlayerCountRPC' ||
                     data.EventType === 'PlayEffect' ||
                     data.EventType === 'ConfigurePortal' ||
-                    data.EventType === 'PlayEmoteRPC ' ||
+                    data.EventType === 'PlayEmoteRPC' ||
                     data.EventType === 'CancelRPC'
                 ) {
                     return;
                 }
                 if (data.EventType === 'ChangeVisibility') {
-                    if (data.Data) {
-                        var feed = `RPC ${displayName} Enabled their camera`;
-                    } else {
-                        var feed = `RPC ${displayName} Disabled their camera`;
+                    if (data.Data[0] === true) {
+                        var feed = `${displayName} EnableCamera`;
+                    } else if (data.Data[0] === false) {
+                        var feed = `${displayName} DisableCamera`;
                     }
                 } else {
                     var eventData = '';
@@ -8223,7 +8294,10 @@ speechSynthesis.getVoices();
                             eventData = ` ${data.Data}`;
                         }
                     }
-                    var feed = `RPC ${displayName} ${data.EventType}${eventData}`;
+                    var feed = `${displayName} ${data.EventType}${eventData}`;
+                }
+                if (this.photonEventOverlay) {
+                    AppApi.ExecuteVrOverlayFunction('addEntryHudFeed', feed);
                 }
             } else {
                 var eventType = '';
@@ -8234,7 +8308,7 @@ speechSynthesis.getVoices();
                         eventType = ` ${data.EventType}`;
                     }
                 }
-                var feed = `RPC SDK2 ${displayName} ${
+                var feed = `RPC ${displayName} ${
                     this.photonEventType[data.Type]
                 }${eventType}`;
             }
@@ -8287,7 +8361,11 @@ speechSynthesis.getVoices();
         }
     };
 
-    $app.methods.parsePhotonUser = async function (photonId, user) {
+    $app.methods.parsePhotonUser = async function (
+        photonId,
+        user,
+        gameLogDate
+    ) {
         var photonUser = {
             id: user.id,
             username: user.username,
@@ -8305,28 +8383,33 @@ speechSynthesis.getVoices();
             tags: user.tags.$values
         };
         this.photonLobby.set(photonId, photonUser);
-
         var ref = API.cachedUsers.get(user.id);
-        if (typeof ref === 'undefined') {
-            ref = await API.getUser({
-                userId: user.id
-            });
-        } else if (ref.currentAvatarImageUrl !== user.currentAvatarImageUrl) {
-            API.applyUser({
-                ...ref,
-                currentAvatarImageUrl: user.currentAvatarImageUrl,
-                currentAvatarThumbnailImageUrl:
-                    user.currentAvatarThumbnailImageUrl
-            });
+        var bias = Date.parse(gameLogDate) + 60 * 1000; // 1min
+        if (bias > Date.now()) {
+            if (typeof ref === 'undefined') {
+                ref = await API.getUser({
+                    userId: user.id
+                });
+            } else if (
+                ref.currentAvatarImageUrl !== user.currentAvatarImageUrl
+            ) {
+                API.applyUser({
+                    ...ref,
+                    currentAvatarImageUrl: user.currentAvatarImageUrl,
+                    currentAvatarThumbnailImageUrl:
+                        user.currentAvatarThumbnailImageUrl
+                });
+            }
         }
-        this.photonLobby.set(photonId, ref);
-
-        // check moderation queue
-        if (this.moderationEventQueue.has(photonId)) {
-            var {block, mute, gameLogDate} =
-                this.moderationEventQueue.get(photonId);
-            this.moderationEventQueue.delete(photonId);
-            this.photonModerationUpdate(ref, block, mute, gameLogDate);
+        if (typeof ref !== 'undefined' && typeof ref.id !== 'undefined') {
+            this.photonLobby.set(photonId, ref);
+            // check moderation queue
+            if (this.moderationEventQueue.has(photonId)) {
+                var {block, mute, gameLogDate} =
+                    this.moderationEventQueue.get(photonId);
+                this.moderationEventQueue.delete(photonId);
+                this.photonModerationUpdate(ref, block, mute, gameLogDate);
+            }
         }
     };
 
@@ -8373,12 +8456,12 @@ speechSynthesis.getVoices();
                     }
                 });
                 this.moderationAgainstTable.push(entry);
-                this.updateSharedFeed(false);
+                this.updateSharedFeed(true);
             }
             if (block || mute) {
                 database.setModeration({
                     userId: ref.id,
-                    updatedAt: new Date().toJSON(),
+                    updatedAt: gameLogDate,
                     displayName: ref.displayName,
                     block,
                     mute
@@ -8391,7 +8474,11 @@ speechSynthesis.getVoices();
 
     $app.methods.parsePhotonAvatarChange = function (user, avatar) {
         var oldAvatarId = this.photonLobbyAvatars.get(user.id);
-        if (oldAvatarId && oldAvatarId !== avatar.id) {
+        if (
+            oldAvatarId &&
+            oldAvatarId !== avatar.id &&
+            user.userId !== API.currentUser.id
+        ) {
             var entry = {
                 created_at: new Date().toJSON(),
                 type: 'AvatarChange',
@@ -8407,13 +8494,25 @@ speechSynthesis.getVoices();
             };
             this.queueGameLogNoty(entry);
             this.addGameLog(entry);
+            var feed = `${user.displayName} ChangeAvatar ${avatar.name}`;
+            if (this.photonEventOverlay) {
+                AppApi.ExecuteVrOverlayFunction('addEntryHudFeed', feed);
+            }
         }
         this.photonLobbyAvatars.set(user.id, avatar.id);
     };
 
     $app.methods.parsePhotonAvatar = function (avatar) {
+        var tags = [];
+        if (
+            typeof avatar.tags !== 'undefined' &&
+            typeof avatar.tags.$values !== 'undefined'
+        ) {
+            tags = avatar.tags.$values;
+        }
         API.applyAvatar({
             id: avatar.id,
+            assetUrl: avatar.assetUrl, // remove this
             authorId: avatar.authorId,
             authorName: avatar.authorName,
             updated_at: avatar.updated_at,
@@ -8424,7 +8523,7 @@ speechSynthesis.getVoices();
             name: avatar.name,
             releaseStatus: avatar.releaseStatus,
             version: avatar.version,
-            tags: avatar.tags.$values
+            tags
         });
     };
 
@@ -10208,6 +10307,16 @@ speechSynthesis.getVoices();
     $app.watch.isStartAtWindowsStartup = saveVRCXWindowOption;
     $app.watch.isStartAsMinimizedState = saveVRCXWindowOption;
     $app.watch.isCloseToTray = saveVRCXWindowOption;
+    $app.data.photonEventOverlay = configRepository.getBool('VRCX_PhotonEventOverlay');
+    $app.data.timeoutHudOverlay = configRepository.getBool('VRCX_TimeoutHudOverlay');
+    $app.methods.saveEventOverlay = function () {
+        configRepository.setBool('VRCX_PhotonEventOverlay', this.photonEventOverlay);
+        configRepository.setBool('VRCX_TimeoutHudOverlay', this.timeoutHudOverlay);
+        if (!this.timeoutHudOverlay) {
+            AppApi.ExecuteVrOverlayFunction('updateHudTimeout', '[]');
+        }
+    };
+
 
     // setting defaults
     if (!configRepository.getString('VRCX_notificationPosition')) {

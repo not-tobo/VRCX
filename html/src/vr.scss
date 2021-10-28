@@ -350,3 +350,38 @@ i.x-user-status.busy {
         transform: rotate(359deg);
     }
 }
+
+.hud-feed {
+    position: absolute;
+    right: 0;
+    width: 100%;
+}
+
+.hud-feed .item,
+.hud-timeout .item {
+    margin: 0;
+    text-align: right;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    font-size: 40px;
+}
+
+.hud-timeout {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+}
+
+.hud-timeout-feed {
+    position: absolute;
+    bottom: 150px;
+    right: 0;
+    color: #ed1b24;
+}
+
+.hud-timeout svg {
+    position: absolute;
+    right: -160px;
+    bottom: 0;
+}

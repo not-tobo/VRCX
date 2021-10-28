@@ -300,6 +300,8 @@ import configRepository from './repository/config.js';
 
     $app.methods.configUpdate = function (json) {
         this.config = JSON.parse(json);
+        this.hudFeed = [];
+        this.hudTimeout = [];
     };
 
     $app.methods.updateDownloadProgress = function (progress) {
@@ -528,6 +530,51 @@ import configRepository from './repository/config.js';
 
     $app.methods.notyClear = function () {
         Noty.closeAll();
+    };
+
+    $app.data.hudFeed = [];
+    $app.data.cleanHudFeedLoopStatus = false;
+
+    $app.methods.cleanHudFeedLoop = function () {
+        if (!this.cleanHudFeedLoopStatus) {
+            return;
+        }
+        this.cleanHudFeed();
+        if (this.hudFeed.length === 0) {
+            this.cleanHudFeedLoopStatus = false;
+            return;
+        }
+        setTimeout(() => this.cleanHudFeedLoop(), 500);
+    };
+
+    $app.methods.cleanHudFeed = function () {
+        var dt = Date.now();
+        this.hudFeed.forEach((item) => {
+            if (item.time + 8000 < dt) {
+                removeFromArray(this.hudFeed, item);
+            }
+        });
+        if (this.hudFeed.length > 10) {
+            this.hudFeed.length = 10;
+        }
+        if (!this.cleanHudFeedLoopStatus) {
+            this.cleanHudFeedLoopStatus = true;
+            this.cleanHudFeedLoop();
+        }
+    };
+
+    $app.methods.addEntryHudFeed = function (text) {
+        this.hudFeed.unshift({
+            time: Date.now(),
+            text
+        });
+        this.cleanHudFeed();
+    };
+
+    $app.data.hudTimeout = [];
+
+    $app.methods.updateHudTimeout = function (json) {
+        this.hudTimeout = JSON.parse(json);
     };
 
     $app = new Vue($app);

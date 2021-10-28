@@ -1023,6 +1023,16 @@ html
                         span.name Dance worlds only
                         el-switch(v-model="progressPieFilter" @change="changeYouTubeApi")
                 div.options-container
+                    span.header WIP Photon Logging Stuff
+                    el-tooltip(placement="top" style="margin-left:5px" content="Requires '--log-debug-levels=API;NetworkData' steam launch option")
+                        i.el-icon-warning
+                    div.options-container-item
+                        span.name Photon event overlay
+                        el-switch(v-model="photonEventOverlay" @change="saveEventOverlay")
+                    div.options-container-item
+                        span.name User timeout HUD overlay
+                        el-switch(v-model="timeoutHudOverlay" @change="saveEventOverlay")
+                div.options-container
                     span.header VRCX Instance Cache/Debug
                     div.options-container-item
                         span.name User cache: #[span(v-text="API.cachedUsers.size")]
