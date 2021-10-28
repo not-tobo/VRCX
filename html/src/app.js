@@ -8161,7 +8161,12 @@ speechSynthesis.getVoices();
                     var mute = data.Parameters[245]['11'];
                     var ref = this.photonLobby.get(photonId);
                     if (ref && ref.id) {
-                        this.photonModerationUpdate(ref, block, mute, gameLogDate);
+                        this.photonModerationUpdate(
+                            ref,
+                            block,
+                            mute,
+                            gameLogDate
+                        );
                     } else {
                         this.moderationEventQueue.set(photonId, {
                             block,
@@ -8173,26 +8178,31 @@ speechSynthesis.getVoices();
                     var blockArray = data.Parameters[245]['10'].$values;
                     var muteArray = data.Parameters[245]['11'].$values;
                     var idList = new Map();
-                    blockArray.forEach((photonId) => {
-                        if (muteArray.includes(photonId)) {
-                            idList.set(photonId, {mute: true, block: true});
+                    blockArray.forEach((photonId1) => {
+                        if (muteArray.includes(photonId1)) {
+                            idList.set(photonId1, {mute: true, block: true});
                         } else {
-                            idList.set(photonId, {mute: true, block: false});
+                            idList.set(photonId1, {mute: true, block: false});
                         }
                     });
-                    muteArray.forEach((photonId) => {
-                        if (!idList.has(photonId)) {
-                            idList.set(photonId, {mute: false, block: true});
+                    muteArray.forEach((photonId2) => {
+                        if (!idList.has(photonId2)) {
+                            idList.set(photonId2, {mute: false, block: true});
                         }
                     });
-                    idList.forEach(({mute, block}, photonId) => {
-                        var ref = this.photonLobby.get(photonId);
-                        if (ref && ref.id) {
-                            this.photonModerationUpdate(ref, block, mute, gameLogDate);
+                    idList.forEach(({isMute, isBlock}, photonId3) => {
+                        var ref1 = this.photonLobby.get(photonId3);
+                        if (ref1 && ref1.id) {
+                            this.photonModerationUpdate(
+                                ref1,
+                                isBlock,
+                                isMute,
+                                gameLogDate
+                            );
                         } else {
-                            this.moderationEventQueue.set(photonId, {
-                                block,
-                                mute,
+                            this.moderationEventQueue.set(photonId3, {
+                                block: isBlock,
+                                mute: isMute,
                                 gameLogDate
                             });
                         }
@@ -10307,16 +10317,25 @@ speechSynthesis.getVoices();
     $app.watch.isStartAtWindowsStartup = saveVRCXWindowOption;
     $app.watch.isStartAsMinimizedState = saveVRCXWindowOption;
     $app.watch.isCloseToTray = saveVRCXWindowOption;
-    $app.data.photonEventOverlay = configRepository.getBool('VRCX_PhotonEventOverlay');
-    $app.data.timeoutHudOverlay = configRepository.getBool('VRCX_TimeoutHudOverlay');
+    $app.data.photonEventOverlay = configRepository.getBool(
+        'VRCX_PhotonEventOverlay'
+    );
+    $app.data.timeoutHudOverlay = configRepository.getBool(
+        'VRCX_TimeoutHudOverlay'
+    );
     $app.methods.saveEventOverlay = function () {
-        configRepository.setBool('VRCX_PhotonEventOverlay', this.photonEventOverlay);
-        configRepository.setBool('VRCX_TimeoutHudOverlay', this.timeoutHudOverlay);
+        configRepository.setBool(
+            'VRCX_PhotonEventOverlay',
+            this.photonEventOverlay
+        );
+        configRepository.setBool(
+            'VRCX_TimeoutHudOverlay',
+            this.timeoutHudOverlay
+        );
         if (!this.timeoutHudOverlay) {
             AppApi.ExecuteVrOverlayFunction('updateHudTimeout', '[]');
         }
     };
-
 
     // setting defaults
     if (!configRepository.getString('VRCX_notificationPosition')) {
