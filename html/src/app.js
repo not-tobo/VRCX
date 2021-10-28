@@ -4134,11 +4134,11 @@ speechSynthesis.getVoices();
                             }
                             this.lastLocationReset();
                             this.clearNowPlaying();
-                            this.updateVRConfigVars();
+                            this.updateVRLastLocation();
                         }
                         if (isGameNoVR !== this.isGameNoVR) {
                             this.isGameNoVR = isGameNoVR;
-                            this.updateVRConfigVars();
+                            this.updateVRLastLocation();
                         }
                         if (isSteamVRRunning !== this.isSteamVRRunning) {
                             this.isSteamVRRunning = isSteamVRRunning;
@@ -6186,10 +6186,11 @@ speechSynthesis.getVoices();
         var ref = this.friends.get(id);
         if (ref) {
             ref.memo = String(memo || '');
-            ref.$nickName = '';
             if (memo) {
                 var array = memo.split('\n');
                 ref.$nickName = array[0];
+            } else {
+                ref.$nickName = '';
             }
         }
     };
@@ -7695,6 +7696,10 @@ speechSynthesis.getVoices();
         ) {
             return;
         }
+        if (entry.type === 'VideoPlay') {
+            // event time can be before last gameLog entry
+            this.updateSharedFeed(true);
+        }
         this.gameLogTable.data.push(entry);
         this.sweepGameLog();
         this.updateSharedFeed(false);
@@ -7866,7 +7871,7 @@ speechSynthesis.getVoices();
                     gameLog.userDisplayName
                 );
                 if (typeof ref !== 'undefined') {
-                    time = new Date().getTime() - ref.joinTime;
+                    time = Date.now() - ref.joinTime;
                     this.lastLocation.playerList.delete(
                         gameLog.userDisplayName
                     );
@@ -7918,7 +7923,8 @@ speechSynthesis.getVoices();
                 this.addGameLogVideo(gameLog, location, userId, pushToTable);
                 return;
             case 'api-request':
-                if (!this.isGameRunning) {
+                var bias = Date.parse(gameLog.dt) + 60 * 1000;
+                if (!this.isGameRunning || bias < Date.now()) {
                     return;
                 }
                 var userId = '';
@@ -10479,7 +10485,10 @@ speechSynthesis.getVoices();
     );
 
     var downloadProgressStateChange = function () {
-        this.updateVRConfigVars();
+        AppApi.ExecuteVrFeedFunction(
+            'updateDownloadProgress',
+            `${$app.downloadProgress}`
+        );
     };
     $app.watch.downloadProgress = downloadProgressStateChange;
 
@@ -10510,9 +10519,6 @@ speechSynthesis.getVoices();
             notificationTimeout: this.notificationTimeout,
             notificationTheme,
             backgroundEnabled: this.vrBackgroundEnabled,
-            isGameRunning: this.isGameRunning,
-            isGameNoVR: this.isGameNoVR,
-            downloadProgress: this.downloadProgress,
             progressPie
         };
         var json = JSON.stringify(VRConfigVars);
@@ -10521,7 +10527,6 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.updateVRLastLocation = function () {
-        this.updateVRConfigVars();
         var lastLocation = {
             date: this.lastLocation.date,
             location: this.lastLocation.location,
@@ -11354,10 +11359,11 @@ speechSynthesis.getVoices();
             var ref = this.friends.get(userId);
             if (ref) {
                 ref.memo = String(memo || '');
-                ref.$nickName = '';
                 if (memo) {
                     var array = memo.split('\n');
                     ref.$nickName = array[0];
+                } else {
+                    ref.$nickName = '';
                 }
             }
         });
@@ -13240,7 +13246,7 @@ speechSynthesis.getVoices();
 
     $app.methods.saveSetWorldTagsDialog = function () {
         var D = this.setWorldTagsDialog;
-        var oldTags = D.tags.split(',');;
+        var oldTags = D.tags.split(',');
         var tags = [];
         oldTags.forEach((tag) => {
             if (tag) {
@@ -16319,7 +16325,7 @@ speechSynthesis.getVoices();
             return;
         }
         if (
-            this.downloadCurrent.type !== 'Auto' &&
+            this.downloadCurrent.type !== 'Auto' ||
             !this.cacheAutoDownloadHistory.has(assetUrl)
         ) {
             this.cacheAutoDownloadHistory.add(assetUrl);
