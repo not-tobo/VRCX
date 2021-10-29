@@ -191,6 +191,7 @@ import configRepository from './repository/config.js';
             cpuUsage: 0,
             config: {},
             downloadProgress: 0,
+            photonLobbySize: 0,
             nowPlaying: {
                 url: '',
                 name: '',
@@ -306,6 +307,10 @@ import configRepository from './repository/config.js';
 
     $app.methods.updateDownloadProgress = function (progress) {
         this.downloadProgress = parseInt(progress, 10);
+    };
+
+    $app.methods.updatePhotonLobbySize = function (size) {
+        this.photonLobbySize = parseInt(size, 10);
     };
 
     $app.methods.nowPlayingUpdate = function (json) {
@@ -550,7 +555,7 @@ import configRepository from './repository/config.js';
     $app.methods.cleanHudFeed = function () {
         var dt = Date.now();
         this.hudFeed.forEach((item) => {
-            if (item.time + 8000 < dt) {
+            if (item.time + 6000 < dt) {
                 removeFromArray(this.hudFeed, item);
             }
         });
@@ -564,9 +569,17 @@ import configRepository from './repository/config.js';
     };
 
     $app.methods.addEntryHudFeed = function (text) {
+        var combo = 1;
+        this.hudFeed.forEach((item) => {
+            if (item.text === text) {
+                combo = item.combo + 1;
+                removeFromArray(this.hudFeed, item);
+            }
+        });
         this.hudFeed.unshift({
             time: Date.now(),
-            text
+            text,
+            combo
         });
         this.cleanHudFeed();
     };

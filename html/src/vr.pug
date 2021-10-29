@@ -397,6 +397,7 @@ html
                             span(style="float:right") {{ lastLocationTimer }}
                             span(style="display:inline-block") {{ lastLocation.playerList.length }} 
                             span(style="display:inline-block;font-weight:bold") {{ lastLocation.friendList.length !== 0 ? `‎‎‎‎‎‎‎‎‏‏‎ ‎(${lastLocation.friendList.length})` : ''}}
+                            span(v-if="photonLobbySize > 0 && lastLocation.playerList.length > 0 && photonLobbySize !== lastLocation.playerList.length" style="display:inline-block;color:red;margin-left:5px") {{ photonLobbySize - lastLocation.playerList.length }}
                     template(v-else)
                         template(v-if="downloadProgress === 100")
                             span(style="display:inline-block;margin-right:5px") Downloading: #[i.el-icon-loading]
@@ -406,6 +407,7 @@ html
                             span(style="float:right") Timer: {{ lastLocationTimer }}
                             span(style="display:inline-block") Players: {{ lastLocation.playerList.length }} 
                             span(style="display:inline-block;font-weight:bold") {{ lastLocation.friendList.length !== 0 ? `‎‎‎‎‎‎‎‎‏‏‎ ‎(${lastLocation.friendList.length})` : ''}}
+                            span(v-if="photonLobbySize > 0 && lastLocation.playerList.length > 0 && photonLobbySize !== lastLocation.playerList.length" style="display:inline-block;color:red;margin-left:5px") {{ photonLobbySize - lastLocation.playerList.length }}
                     br
                     span(style="float:right") {{ currentTime | formatDate('YYYY-MM-DD HH:MI:SS AMPM') }}
                     span CPU {{ cpuUsage }}%
@@ -414,7 +416,9 @@ html
                     circle(class="np-progress-circle-stroke" cx="60" cy="60" stroke="white" r="30" fill="transparent" stroke-width="60")
                 .hud-feed
                     div(v-for="feed in hudFeed")
-                        p.item(v-text="feed.text")
+                        p.item {{ feed.text }}  
+                            template(v-if="feed.combo > 1")
+                                span.combo x{{ feed.combo }}
                 .hud-timeout(v-if="hudTimeout.length > 0")
                     .hud-timeout-feed
                         div(v-for="feed in hudTimeout")

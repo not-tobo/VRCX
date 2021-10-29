@@ -7521,6 +7521,7 @@ speechSynthesis.getVoices();
 
     $app.methods.lastLocationReset = function () {
         this.photonLobby = new Map();
+        this.updatePhotonLobbySize();
         this.photonLobbyIkUpdate = new Map();
         this.photonLobbyWatcherLoopStop();
         this.photonLobbyAvatars = new Map();
@@ -8064,13 +8065,13 @@ speechSynthesis.getVoices();
             return;
         }
         var hudTimeout = [];
-        this.photonLobbyIkUpdate.forEach(function (dt, id) {
+        this.photonLobbyIkUpdate.forEach((dt, id) => {
             var timeSinceLastEvent = dtNow - dt;
             if (timeSinceLastEvent > 3000) {
-                var joinTime = $app.photonLobbyJointime.get(id);
+                var joinTime = this.photonLobbyJointime.get(id);
                 if (!joinTime || joinTime + 30000 < dtNow) {
                     var displayName = '';
-                    var ref = $app.photonLobby.get(id);
+                    var ref = this.photonLobby.get(id);
                     displayName = `ID:${id}`;
                     if (ref && ref.id) {
                         displayName = ref.displayName;
@@ -8103,6 +8104,13 @@ speechSynthesis.getVoices();
             this.photonLobbyTimeout = hudTimeout;
         }
         setTimeout(() => this.photonLobbyWatcher(), 500);
+    };
+
+    $app.methods.updatePhotonLobbySize = function () {
+        AppApi.ExecuteVrFeedFunction(
+            'updatePhotonLobbySize',
+            `${this.photonLobby.size}`
+        );
     };
 
     $app.methods.parsePhotonEvent = function (data, gameLogDate) {
@@ -8149,6 +8157,7 @@ speechSynthesis.getVoices();
         } else if (data.Code === 254) {
             // Leave
             this.photonLobby.delete(data.Parameters[254]);
+            this.updatePhotonLobbySize();
             this.photonLobbyIkUpdate.delete(data.Parameters[254]);
             this.photonLobbyJointime.delete(data.Parameters[254]);
             this.parsePhotonLobbyIds(data.Parameters[252].$values);
@@ -8173,6 +8182,15 @@ speechSynthesis.getVoices();
                             mute,
                             gameLogDate
                         });
+                        if (block || mute) {
+                            var feed = `ID:${photonId} mute:${mute} block:${block}`;
+                            if (this.photonEventOverlay) {
+                                AppApi.ExecuteVrOverlayFunction(
+                                    'addEntryHudFeed',
+                                    feed
+                                );
+                            }
+                        }
                     }
                 } else {
                     var blockArray = data.Parameters[245]['10'].$values;
@@ -8213,6 +8231,7 @@ speechSynthesis.getVoices();
             // Instantiate
             if (!this.photonLobby.has(data.Parameters[254])) {
                 this.photonLobby.set(data.Parameters[254]);
+                this.updatePhotonLobbySize();
             }
         } else if (data.Code === 6) {
             var senderId = data.Parameters[254];
@@ -8251,7 +8270,11 @@ speechSynthesis.getVoices();
                     type: 'Event',
                     data: `${displayName} deleted portal after ${time}`
                 };
-                this.addPhotonEventToGameLog(entry);
+                // this.addPhotonEventToGameLog(entry);
+                var feed = `${displayName} deleted portal after ${time}`;
+                if (this.photonEventOverlay) {
+                    AppApi.ExecuteVrOverlayFunction('addEntryHudFeed', feed);
+                }
                 this.lastPortalList.delete(portalId);
             } else if (data.EventType === 'ConfigurePortal') {
                 var instanceId = `${data.Data[0]}:${data.Data[1]}`;
@@ -8295,6 +8318,11 @@ speechSynthesis.getVoices();
                     } else if (data.Data[0] === false) {
                         var feed = `${displayName} DisableCamera`;
                     }
+                } else if (
+                    data.EventType === 'UdonSyncRunProgramAsRPC' &&
+                    data.Data[0] === 'Beep'
+                ) {
+                    var feed = `${displayName} Beep`;
                 } else {
                     var eventData = '';
                     if (data.Data) {
@@ -8369,6 +8397,7 @@ speechSynthesis.getVoices();
                 this.photonLobby.delete(id);
             }
         }
+        this.updatePhotonLobbySize();
     };
 
     $app.methods.parsePhotonUser = async function (
@@ -8393,6 +8422,7 @@ speechSynthesis.getVoices();
             tags: user.tags.$values
         };
         this.photonLobby.set(photonId, photonUser);
+        this.updatePhotonLobbySize();
         var ref = API.cachedUsers.get(user.id);
         var bias = Date.parse(gameLogDate) + 60 * 1000; // 1min
         if (bias > Date.now()) {

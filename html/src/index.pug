@@ -1028,10 +1028,10 @@ html
                         i.el-icon-warning
                     div.options-container-item
                         span.name Photon event overlay
-                        el-switch(v-model="photonEventOverlay" @change="saveEventOverlay")
+                        el-switch(v-model="photonEventOverlay" @change="saveEventOverlay" :disabled="!openVR")
                     div.options-container-item
                         span.name User timeout HUD overlay
-                        el-switch(v-model="timeoutHudOverlay" @change="saveEventOverlay")
+                        el-switch(v-model="timeoutHudOverlay" @change="saveEventOverlay" :disabled="!openVR")
                 div.options-container
                     span.header VRCX Instance Cache/Debug
                     div.options-container-item

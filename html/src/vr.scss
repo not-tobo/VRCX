@@ -364,6 +364,17 @@ i.x-user-status.busy {
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
+}
+
+.hud-feed .item {
+    font-size: 32px;
+}
+
+.hud-feed .combo {
+    color: grey;
+}
+
+.hud-timeout .item {
     font-size: 40px;
 }
 
