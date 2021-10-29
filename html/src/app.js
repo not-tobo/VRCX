@@ -9008,6 +9008,9 @@ speechSynthesis.getVoices();
             this.showUserDialog(ref.userId);
             return;
         }
+        if (!ref.displayname) {
+            return;
+        }
         for (var ctx of API.cachedUsers.values()) {
             if (ctx.displayName === ref.displayName) {
                 this.showUserDialog(ctx.id);
@@ -10655,6 +10658,21 @@ speechSynthesis.getVoices();
         if (this.isDarkMode) {
             notificationTheme = 'sunset';
         }
+        var VRConfigVars = {
+            overlayNotifications: this.overlayNotifications,
+            hideDevicesFromFeed: this.hideDevicesFromFeed,
+            minimalFeed: this.minimalFeed,
+            notificationPosition: this.notificationPosition,
+            notificationTimeout: this.notificationTimeout,
+            notificationTheme,
+            backgroundEnabled: this.vrBackgroundEnabled
+        };
+        var json = JSON.stringify(VRConfigVars);
+        AppApi.ExecuteVrFeedFunction('configUpdate', json);
+        AppApi.ExecuteVrOverlayFunction('configUpdate', json);
+    };
+
+    $app.methods.updateVRLastLocation = function () {
         var progressPie = false;
         if (this.progressPie) {
             progressPie = true;
@@ -10669,28 +10687,13 @@ speechSynthesis.getVoices();
                 }
             }
         }
-        var VRConfigVars = {
-            overlayNotifications: this.overlayNotifications,
-            hideDevicesFromFeed: this.hideDevicesFromFeed,
-            minimalFeed: this.minimalFeed,
-            notificationPosition: this.notificationPosition,
-            notificationTimeout: this.notificationTimeout,
-            notificationTheme,
-            backgroundEnabled: this.vrBackgroundEnabled,
-            progressPie
-        };
-        var json = JSON.stringify(VRConfigVars);
-        AppApi.ExecuteVrFeedFunction('configUpdate', json);
-        AppApi.ExecuteVrOverlayFunction('configUpdate', json);
-    };
-
-    $app.methods.updateVRLastLocation = function () {
         var lastLocation = {
             date: this.lastLocation.date,
             location: this.lastLocation.location,
             name: this.lastLocation.name,
             playerList: Array.from(this.lastLocation.playerList.values()),
-            friendList: Array.from(this.lastLocation.friendList.values())
+            friendList: Array.from(this.lastLocation.friendList.values()),
+            progressPie
         };
         var json = JSON.stringify(lastLocation);
         AppApi.ExecuteVrFeedFunction('lastLocationUpdate', json);
