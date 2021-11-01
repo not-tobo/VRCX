@@ -185,7 +185,7 @@ html
                     template(#tool)
                         div(style="margin:0 0 10px;display:flex;align-items:center")
                             el-select(v-model="gameLogTable.filter" @change="gameLogTableLookup" multiple clearable collapse-tags style="flex:1" placeholder="Filter")
-                                el-option(v-once v-for="type in ['Location', 'OnPlayerJoined', 'OnPlayerLeft', 'PortalSpawn', 'AvatarChange', 'Event', 'VideoPlay']" :key="type" :label="type" :value="type")
+                                el-option(v-once v-for="type in ['Location', 'OnPlayerJoined', 'OnPlayerLeft', 'PortalSpawn', 'Event', 'VideoPlay']" :key="type" :label="type" :value="type")
                             el-input(v-model="gameLogTable.search" placeholder="Search" @keyup.native.13="gameLogTableLookup" @change="gameLogTableLookup" clearable style="flex:none;width:150px;margin:0 10px")
                             //- el-tooltip(placement="bottom" content="Reload game log" :disabled="hideTooltips")
                             //-     el-button(type="default" @click="resetGameLog" icon="el-icon-refresh" circle style="flex:none")
@@ -206,13 +206,6 @@ html
                         template(v-once #default="scope")
                             location(v-if="scope.row.type === 'Location'" :location="scope.row.location" :hint="scope.row.worldName")
                             location(v-else-if="scope.row.type === 'PortalSpawn'" :location="scope.row.instanceId" :hint="scope.row.worldName")
-                            template(v-else-if="scope.row.type === 'AvatarChange'")
-                                span.x-link(v-text="scope.row.name" @click="showAvatarDialog(scope.row.avatarId)")
-                                |  
-                                span.avatar-info-public(v-if="scope.row.releaseStatus === 'public'") ({{scope.row.releaseStatus}})
-                                span.avatar-info-own(v-else-if="scope.row.releaseStatus === 'private'") ({{scope.row.releaseStatus}})
-                                template(v-if="scope.row.description && scope.row.name !== scope.row.description")
-                                    |  - {{ scope.row.description }}
                             template(v-else-if="scope.row.type === 'Event'")
                                 span(v-text="scope.row.data")
                             template(v-else-if="scope.row.type === 'VideoPlay'")

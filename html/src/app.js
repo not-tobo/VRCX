@@ -1479,7 +1479,7 @@ speechSynthesis.getVoices();
                     ref,
                     props
                 });
-                if (this.debugDiff) {
+                if ($app.debugUserDiff) {
                     console.log('>', ref.displayName, props);
                 }
             }
@@ -4157,7 +4157,7 @@ speechSynthesis.getVoices();
     $app.data.debug = false;
     $app.data.debugWebRequests = false;
     $app.data.debugWebSocket = false;
-    $app.data.debugDiff = false;
+    $app.data.debugUserDiff = false;
 
     $app.data.APILastOnline = new Map();
 
@@ -7618,11 +7618,6 @@ speechSynthesis.getVoices();
                     return true;
                 }
                 return false;
-            // case 'AvatarChange':
-            //     if (String(row.name).toUpperCase().includes(value)) {
-            //         return true;
-            //     }
-            //     return false;
             case 'Event':
                 if (String(row.data).toUpperCase().includes(value)) {
                     return true;
@@ -7682,20 +7677,21 @@ speechSynthesis.getVoices();
     $app.methods.addGameLog = function (entry) {
         this.gameLogSessionTable.push(entry);
         if (
+            entry.type === 'LocationDestination' ||
+            entry.type === 'AvatarChange' ||
+            (entry.userId === API.currentUser.id &&
+                (entry.type === 'OnPlayerJoined' ||
+                    entry.type === 'OnPlayerLeft'))
+        ) {
+            return;
+        }
+        if (
             this.gameLogTable.filter.length > 0 &&
             !this.gameLogTable.filter.includes(entry.type)
         ) {
             return;
         }
         if (!this.gameLogSearch(entry)) {
-            return;
-        }
-        if (
-            entry.type === 'LocationDestination' ||
-            (entry.userId === API.currentUser.id &&
-                (entry.type === 'OnPlayerJoined' ||
-                    entry.type === 'OnPlayerLeft'))
-        ) {
             return;
         }
         if (entry.type === 'VideoPlay') {
@@ -9008,7 +9004,7 @@ speechSynthesis.getVoices();
             this.showUserDialog(ref.userId);
             return;
         }
-        if (!ref.displayname) {
+        if (!ref.displayName || ref.displayName.substring(0, 3) === 'ID:') {
             return;
         }
         for (var ctx of API.cachedUsers.values()) {
@@ -9218,7 +9214,21 @@ speechSynthesis.getVoices();
         if (!query) {
             for (var ref of API.cachedAvatars.values()) {
                 if (ref.authorId === API.currentUser.id) {
-                    avatars.push(ref);
+                    switch (this.searchAvatarFilter) {
+                        case 'all':
+                            avatars.push(ref);
+                            break;
+                        case 'public':
+                            if (ref.releaseStatus === 'public') {
+                                avatars.push(ref);
+                            }
+                            break;
+                        case 'private':
+                            if (ref.releaseStatus === 'private') {
+                                avatars.push(ref);
+                            }
+                            break;
+                    }
                 }
             }
         } else {
@@ -10701,6 +10711,7 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.vrInit = function () {
+        downloadProgressStateChange();
         this.updateVRConfigVars();
         this.updateVRLastLocation();
         this.updateVrNowPlaying();
@@ -16340,7 +16351,7 @@ speechSynthesis.getVoices();
             'VRCX_progressPieFilter',
             this.progressPieFilter
         );
-        this.updateVRConfigVars();
+        this.updateVRLastLocation();
     };
 
     $app.methods.showYouTubeApiDialog = function () {
@@ -17456,7 +17467,7 @@ speechSynthesis.getVoices();
             this.debug ||
             this.debugWebRequests ||
             this.debugWebSocket ||
-            this.debugDiff
+            this.debugUserDiff
         ) {
             return;
         }
