@@ -7738,12 +7738,11 @@ speechSynthesis.getVoices();
         await database.initTables();
         await this.resetGameLog();
         var location = '';
-        var pushToTable = false;
         for (var gameLog of await gameLogService.getAll()) {
             if (gameLog.type === 'location') {
                 location = gameLog.location;
             }
-            this.addGameLogEntry(gameLog, location, pushToTable);
+            this.addGameLogEntry(gameLog, location);
         }
         this.getGameLogTable();
     };
@@ -7762,12 +7761,11 @@ speechSynthesis.getVoices();
             setTimeout(resolve, 10000);
         });
         var location = '';
-        var pushToTable = true;
         for (var gameLog of await gameLogService.getAll()) {
             if (gameLog.type === 'location') {
                 location = gameLog.location;
             }
-            this.addGameLogEntry(gameLog, location, pushToTable);
+            this.addGameLogEntry(gameLog, location);
         }
     };
 
@@ -7778,17 +7776,13 @@ speechSynthesis.getVoices();
             rawLogs[2],
             rawLogs.slice(3)
         );
-        if (gameLog.type !== 'photon-event' && gameLog.type !== 'api-request') {
-            console.log('gameLog:', gameLog);
-        }
-        var pushToTable = true;
-        this.addGameLogEntry(gameLog, this.lastLocation.location, pushToTable);
+        this.addGameLogEntry(gameLog, this.lastLocation.location);
     };
 
     $app.data.lastLocationDestination = '';
     $app.data.lastLocationDestinationTime = 0;
 
-    $app.methods.addGameLogEntry = function (gameLog, location, pushToTable) {
+    $app.methods.addGameLogEntry = function (gameLog, location) {
         var userId = '';
         if (gameLog.userDisplayName) {
             for (var ref of API.cachedUsers.values()) {
@@ -7919,7 +7913,7 @@ speechSynthesis.getVoices();
                 database.addGamelogPortalSpawnToDatabase(entry);
                 break;
             case 'video-play':
-                this.addGameLogVideo(gameLog, location, userId, pushToTable);
+                this.addGameLogVideo(gameLog, location, userId);
                 return;
             case 'api-request':
                 var bias = Date.parse(gameLog.dt) + 60 * 1000;
@@ -7947,7 +7941,7 @@ speechSynthesis.getVoices();
                 // VideoPlay(PyPyDance) "https://jd.pypy.moe/api/v1/videos/jr1NX4Jo8GE.mp4",0.1001,239.606,"0905 : [J-POP] 【まなこ】金曜日のおはよう 踊ってみた (vernities)"
                 var type = gameLog.data.substr(0, gameLog.data.indexOf(' '));
                 if (type === 'VideoPlay(PyPyDance)') {
-                    this.addGameLogPyPyDance(gameLog, location, pushToTable);
+                    this.addGameLogPyPyDance(gameLog, location);
                 }
                 return;
             case 'photon-event':
@@ -7978,7 +7972,7 @@ speechSynthesis.getVoices();
                 database.addGamelogEventToDatabase(entry);
                 break;
         }
-        if (pushToTable && entry) {
+        if (entry) {
             this.queueGameLogNoty(entry);
             this.addGameLog(entry);
         }
@@ -8564,12 +8558,7 @@ speechSynthesis.getVoices();
         });
     };
 
-    $app.methods.addGameLogVideo = async function (
-        gameLog,
-        location,
-        userId,
-        pushToTable
-    ) {
+    $app.methods.addGameLogVideo = async function (gameLog, location, userId) {
         var videoUrl = gameLog.videoUrl;
         var youtubeVideoId = '';
         var videoId = '';
@@ -8624,20 +8613,11 @@ speechSynthesis.getVoices();
                 userId,
                 videoPos
             };
-            if (pushToTable) {
-                this.setNowPlaying(entry);
-                this.queueGameLogNoty(entry);
-                this.addGameLog(entry);
-            }
-            database.addGamelogVideoPlayToDatabase(entry);
+            this.setNowPlaying(entry);
         }
     };
 
-    $app.methods.addGameLogPyPyDance = function (
-        gameLog,
-        location,
-        pushToTable
-    ) {
+    $app.methods.addGameLogPyPyDance = function (gameLog, location) {
         var data =
             /VideoPlay\(PyPyDance\) "(.+?)",([\d.]+),([\d.]+),"(.+?)\s*(?:)?"/g.exec(
                 gameLog.data
@@ -8669,6 +8649,16 @@ speechSynthesis.getVoices();
                 }
             }
         }
+        if (videoUrl === this.nowPlaying.url) {
+            var entry = {
+                created_at: gameLog.dt,
+                videoUrl,
+                videoLength,
+                videoPos
+            };
+            this.setNowPlaying(entry);
+            return;
+        }
         if (videoId === 'YouTube') {
             var entry = {
                 dt: gameLog.dt,
@@ -8677,7 +8667,7 @@ speechSynthesis.getVoices();
                 videoPos,
                 videoId
             };
-            this.addGameLogVideo(entry, location, userId, pushToTable);
+            this.addGameLogVideo(entry, location, userId);
         } else {
             var entry = {
                 created_at: gameLog.dt,
@@ -8691,12 +8681,7 @@ speechSynthesis.getVoices();
                 userId,
                 videoPos
             };
-            if (pushToTable) {
-                this.setNowPlaying(entry);
-                this.queueGameLogNoty(entry);
-                this.addGameLog(entry);
-            }
-            database.addGamelogVideoPlayToDatabase(entry);
+            this.setNowPlaying(entry);
         }
     };
 
@@ -8753,21 +8738,37 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.setNowPlaying = function (ctx) {
-        var displayName = '';
-        if (ctx.displayName) {
-            displayName = ` (${ctx.displayName})`;
+        if (this.nowPlaying.url !== ctx.videoUrl) {
+            this.queueGameLogNoty(ctx);
+            this.addGameLog(ctx);
+            database.addGamelogVideoPlayToDatabase(ctx);
+
+            var displayName = '';
+            if (ctx.displayName) {
+                displayName = ` (${ctx.displayName})`;
+            }
+            var name = `${ctx.videoName}${displayName}`;
+            this.nowPlaying = {
+                url: ctx.videoUrl,
+                name,
+                length: ctx.videoLength,
+                startTime: Date.parse(ctx.created_at) / 1000 - ctx.videoPos,
+                elapsed: 0,
+                percentage: 0,
+                remainingText: ''
+            };
+        } else {
+            this.nowPlaying = {
+                ...this.nowPlaying,
+                length: ctx.videoLength,
+                startTime: Date.parse(ctx.created_at) / 1000 - ctx.videoPos,
+                elapsed: 0,
+                percentage: 0,
+                remainingText: ''
+            };
         }
-        var name = `${ctx.videoName}${displayName}`;
-        this.nowPlaying = {
-            url: ctx.videoUrl,
-            name,
-            length: ctx.videoLength,
-            startTime: Date.parse(ctx.created_at) / 1000 - ctx.videoPos,
-            elapsed: 0,
-            percentage: 0,
-            remainingText: ''
-        };
-        if (!this.nowPlaying.playing) {
+        this.updateVrNowPlaying();
+        if (!this.nowPlaying.playing && ctx.videoLength > 0) {
             this.nowPlaying.playing = true;
             this.updateNowPlaying();
         }
@@ -8775,7 +8776,7 @@ speechSynthesis.getVoices();
 
     $app.methods.updateNowPlaying = function () {
         var np = this.nowPlaying;
-        if (!np.url) {
+        if (!this.nowPlaying.playing) {
             this.nowPlaying.playing = false;
             return;
         }
@@ -8965,8 +8966,10 @@ speechSynthesis.getVoices();
                 appId = '846232616054030376';
                 bigIcon = 'vr_dancing';
             }
-            if (this.nowPlaying.playing) {
+            if (this.nowPlaying.name) {
                 L.worldName = this.nowPlaying.name;
+            }
+            if (this.nowPlaying.playing) {
                 Discord.SetTimestamps(
                     Date.now(),
                     (this.nowPlaying.startTime + this.nowPlaying.length) * 1000
