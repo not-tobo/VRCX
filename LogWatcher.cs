@@ -38,6 +38,8 @@ namespace VRCX
         private static string jsonChunk;
         private static string jsonDate;
         private static string photonEvent;
+        private static IDictionary<int, string> photonEvent7 = new Dictionary<int, string>();
+        private static string onJoinPhotonId;
 
         // NOTE
         // FileSystemWatcher() is unreliable
@@ -253,7 +255,8 @@ namespace VRCX
                                     ParseLogAvatarPedestalChange(fileInfo, logContext, line, offset) == true ||
                                     ParseLogVideoError(fileInfo, logContext, line, offset) == true ||
                                     ParseLogVideoChange(fileInfo, logContext, line, offset) == true ||
-                                    ParseLogWorldVRCX(fileInfo, logContext, line, offset) == true)
+                                    ParseLogWorldVRCX(fileInfo, logContext, line, offset) == true ||
+                                    ParseLogPhotonId(fileInfo, logContext, line, offset) == true)
                                 {
                                     continue;
                                 }
@@ -342,6 +345,8 @@ namespace VRCX
                     location,
                     logContext.RecentWorldName
                 });
+
+                photonEvent7 = new Dictionary<int, string>();
 
                 return true;
             }
@@ -726,6 +731,42 @@ namespace VRCX
             return true;
         }
 
+        private bool ParseLogPhotonId(FileInfo fileInfo, LogContext logContext, string line, int offset)
+        {
+            // 2021.11.02 02:21:41 Log        -  [Behaviour] Configuring remote player VRCPlayer[Remote] 22349737 1194
+            // 2021.11.02 02:21:41 Log        -  [Behaviour] Initialized player Natsumi-sama
+
+            if (string.Compare(line, offset, "[Behaviour] Configuring remote player VRCPlayer[Remote] ", 0, 56, StringComparison.Ordinal) == 0)
+            {
+                var pos = line.LastIndexOf(" ");
+                onJoinPhotonId = line.Substring(pos + 1);
+
+                return true;
+            }
+
+            if (string.Compare(line, offset, "[Behaviour] Initialized player ", 0, 31, StringComparison.Ordinal) == 0)
+            {
+                var data = line.Substring(offset + 31);
+
+                if (!String.IsNullOrEmpty(onJoinPhotonId))
+                {
+                    AppendLog(new[]
+                    {
+                        fileInfo.Name,
+                        ConvertLogTimeToISO8601(line),
+                        "photon-id",
+                        data,
+                        onJoinPhotonId
+                    });
+                    onJoinPhotonId = String.Empty;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
         public class VrcEvent
         {
             public int Code { get; set; }
@@ -763,6 +804,26 @@ namespace VRCX
                 return;
             }
 
+            if (photonEvent == "7")
+            {
+                var json = System.Text.Json.JsonSerializer.Deserialize<VrcEvent>(data);
+                var photonId = json.Parameters._254;
+                if (photonEvent7.ContainsKey(photonId))
+                {
+                    photonEvent7[photonId] = date;
+                } else
+                {
+                    photonEvent7.Add(photonId, date);
+                }
+                return;
+            }
+
+            if (photonEvent == "254")
+            {
+                var json = System.Text.Json.JsonSerializer.Deserialize<VrcEvent>(data);
+                photonEvent7.Remove(json.Parameters._254);
+            }
+
             if (photonEvent == "6")
             {
                 var json = System.Text.Json.JsonSerializer.Deserialize<VrcEvent>(data);
@@ -789,6 +850,16 @@ namespace VRCX
                 "photon-event",
                 data
             });
+        }
+
+        public IDictionary<int, string> GetEvent7()
+        {
+            return photonEvent7;
+        }
+
+        public void ClearEvent7()
+        {
+            photonEvent7 = new Dictionary<int, string>();
         }
 
         public string[][] Get()

@@ -1431,6 +1431,15 @@ speechSynthesis.getVoices();
                 //
                 ...json
             };
+            if (
+                !json.isFriend &&
+                $app.lastLocation.playerList.has(json.displayName)
+            ) {
+                var player = $app.lastLocation.playerList.get(json.displayName);
+                ref.location = 'offline';
+                ref.$location_at = player.joinTime;
+                ref.$online_for = player.joinTime;
+            }
             ref.$location = this.parseLocation(ref.location);
             ref.$isVRCPlus = ref.tags.includes('system_supporter');
             this.applyUserTrustLevel(ref);
@@ -7260,6 +7269,7 @@ speechSynthesis.getVoices();
                 break;
             }
         }
+        this.updateCurrentInstanceWorld(this.lastLocation.location);
         if (length > 0) {
             for (var i = length + 1; i < data.length; i++) {
                 var ctx = data[i];
@@ -7291,6 +7301,7 @@ speechSynthesis.getVoices();
                 }
             }
             this.updateVRLastLocation();
+            this.getCurrentInstanceUserList();
         }
     };
 
@@ -7522,8 +7533,7 @@ speechSynthesis.getVoices();
 
     $app.methods.lastLocationReset = function () {
         this.photonLobby = new Map();
-        this.updatePhotonLobbySize();
-        this.photonLobbyIkUpdate = new Map();
+        this.photonLobbyCurrent = new Map();
         this.photonLobbyWatcherLoopStop();
         this.photonLobbyAvatars = new Map();
         this.photonLobbyJointime = new Map();
@@ -7531,6 +7541,8 @@ speechSynthesis.getVoices();
         this.lastPortalId = '';
         this.lastPortalList = new Map();
         this.portalQueue = '';
+        this.photonEventTable.data = [];
+        this.updateCurrentInstanceWorld();
         var playerList = Array.from(this.lastLocation.playerList.values());
         for (var ref of playerList) {
             var time = new Date().getTime() - ref.joinTime;
@@ -7561,6 +7573,7 @@ speechSynthesis.getVoices();
             friendList: new Map()
         };
         this.updateVRLastLocation();
+        this.getCurrentInstanceUserList();
     };
 
     $app.data.lastLocation$ = {
@@ -7819,6 +7832,7 @@ speechSynthesis.getVoices();
                     };
                     this.updateVRLastLocation();
                     this.cancelVRChatCacheDownload(gameLog.location);
+                    this.updateCurrentInstanceWorld(gameLog.location);
                 }
                 var L = API.parseLocation(gameLog.location);
                 var entry = {
@@ -7841,13 +7855,22 @@ speechSynthesis.getVoices();
                     gameLog.userDisplayName,
                     userMap
                 );
-                if (this.friends.has(userId)) {
-                    this.lastLocation.friendList.set(
-                        gameLog.userDisplayName,
-                        userMap
-                    );
+                if (userId) {
+                    if (this.friends.has(userId)) {
+                        this.lastLocation.friendList.set(
+                            gameLog.userDisplayName,
+                            userMap
+                        );
+                    } else {
+                        var ref = API.cachedUsers.get(userId);
+                        if (typeof ref !== 'undefined') {
+                            var joinTime = Date.parse(gameLog.dt);
+                            ref.$location_at = joinTime;
+                        }
+                    }
                 }
                 this.updateVRLastLocation();
+                this.getCurrentInstanceUserList();
                 var entry = {
                     created_at: gameLog.dt,
                     type: 'OnPlayerJoined',
@@ -7874,6 +7897,7 @@ speechSynthesis.getVoices();
                 }
                 this.photonLobbyAvatars.delete(userId);
                 this.updateVRLastLocation();
+                this.getCurrentInstanceUserList();
                 var entry = {
                     created_at: gameLog.dt,
                     type: 'OnPlayerLeft',
@@ -7956,6 +7980,27 @@ speechSynthesis.getVoices();
                 }
                 this.parsePhotonEvent(data, gameLog.dt);
                 return;
+            case 'photon-id':
+                if (!this.isGameRunning || !this.friendLogInitStatus) {
+                    return;
+                }
+                var photonId = parseInt(gameLog.photonId, 10);
+                var ref = this.photonLobby.get(photonId);
+                if (typeof ref === 'undefined') {
+                    for (var ctx of API.cachedUsers.values()) {
+                        if (ctx.displayName === gameLog.displayName) {
+                            this.photonLobby.set(photonId, ctx);
+                            this.photonLobbyCurrent.set(photonId, ctx);
+                            return;
+                        }
+                    }
+                    var ctx = {
+                        displayName: gameLog.displayName
+                    };
+                    this.photonLobby.set(photonId, ctx);
+                    this.photonLobbyCurrent.set(photonId, ctx);
+                }
+                return;
             case 'notification':
                 // var entry = {
                 //     created_at: gameLog.dt,
@@ -7984,11 +8029,12 @@ speechSynthesis.getVoices();
     $app.data.moderationEventQueue = new Map();
     $app.data.moderationAgainstTable = [];
     $app.data.photonLobby = new Map();
+    $app.data.photonLobbyCurrent = new Map();
     $app.data.photonLobbyAvatars = new Map();
-    $app.data.photonLobbyIkUpdate = new Map();
     $app.data.photonLobbyWatcherLoop = false;
     $app.data.photonLobbyTimeout = [];
     $app.data.photonLobbyJointime = new Map();
+    $app.data.photonLobbyBots = [];
 
     $app.data.photonEventType = [
         'MeshVisibility',
@@ -8037,81 +8083,197 @@ speechSynthesis.getVoices();
     $app.methods.photonLobbyWatcherLoopStop = function () {
         this.photonLobbyWatcherLoop = false;
         this.photonLobbyTimeout = [];
+        this.photonLobbyBots = [];
         AppApi.ExecuteVrOverlayFunction('updateHudTimeout', '[]');
+        LogWatcher.ClearEvent7();
+        this.updatePhotonLobbyBotSize(0);
     };
 
     $app.methods.photonLobbyWatcher = function () {
         if (!this.photonLobbyWatcherLoop) {
             return;
         }
-        if (this.photonLobbyIkUpdate.size === 0) {
+        if (this.photonLobbyCurrent.size <= 1) {
             this.photonLobbyWatcherLoopStop();
             return;
         }
         var dtNow = Date.now();
         var bias = this.lastLocationDestinationTime + 5 * 1000;
         var bias1 = this.lastLocation.date + 30 * 1000;
-        if (dtNow < bias || dtNow < bias1) {
-            this.photonLobbyWatcherLoopStop();
+        if (
+            dtNow < bias ||
+            dtNow < bias1 ||
+            this.lastLocation.playerList.size <= 1
+        ) {
+            setTimeout(() => this.photonLobbyWatcher(), 500);
             return;
         }
-        var hudTimeout = [];
-        this.photonLobbyIkUpdate.forEach((dt, id) => {
-            var timeSinceLastEvent = dtNow - dt;
-            if (timeSinceLastEvent > 3000) {
-                var joinTime = this.photonLobbyJointime.get(id);
-                if (!joinTime || joinTime + 30000 < dtNow) {
-                    var displayName = '';
-                    var ref = this.photonLobby.get(id);
-                    displayName = `ID:${id}`;
-                    if (ref && ref.id) {
-                        displayName = ref.displayName;
+        LogWatcher.GetEvent7().then((event7List) => {
+            var hudTimeout = [];
+            Object.entries(event7List).forEach(([photonId, dt]) => {
+                var id = parseInt(photonId, 10);
+                var timeSinceLastEvent = dtNow - Date.parse(dt);
+                if (timeSinceLastEvent > this.photonLobbyTimeoutThreshold) {
+                    var joinTime = this.photonLobbyJointime.get(id);
+                    if (!joinTime || joinTime + 60000 < dtNow) {
+                        // wait 1min for user to load in
+                        var displayName = '';
+                        var ref = this.photonLobby.get(id);
+                        displayName = `ID:${id}`;
+                        if (
+                            typeof ref !== 'undefined' &&
+                            typeof ref.displayName !== 'undefined'
+                        ) {
+                            displayName = ref.displayName;
+                        }
+                        var time = Math.round(timeSinceLastEvent / 1000);
+                        var feed = {
+                            displayName,
+                            time
+                        };
+                        hudTimeout.unshift(feed);
                     }
-                    var time = Math.round(timeSinceLastEvent / 1000);
-                    var feed = {
-                        displayName,
-                        time
-                    };
-                    hudTimeout.unshift(feed);
                 }
-            }
-        });
-        if (this.photonLobbyTimeout.length > 0 || hudTimeout.length > 0) {
-            hudTimeout.sort(function (a, b) {
-                if (a.time > b.time) {
-                    return 1;
-                }
-                if (a.time < b.time) {
-                    return -1;
-                }
-                return 0;
             });
-            if (this.timeoutHudOverlay) {
-                AppApi.ExecuteVrOverlayFunction(
-                    'updateHudTimeout',
-                    JSON.stringify(hudTimeout)
-                );
+            if (this.photonLobbyTimeout.length > 0 || hudTimeout.length > 0) {
+                hudTimeout.sort(function (a, b) {
+                    if (a.time > b.time) {
+                        return 1;
+                    }
+                    if (a.time < b.time) {
+                        return -1;
+                    }
+                    return 0;
+                });
+                if (this.timeoutHudOverlay) {
+                    AppApi.ExecuteVrOverlayFunction(
+                        'updateHudTimeout',
+                        JSON.stringify(hudTimeout)
+                    );
+                }
+                this.photonLobbyTimeout = hudTimeout;
             }
-            this.photonLobbyTimeout = hudTimeout;
-        }
+            this.photonBotCheck(event7List);
+        });
         setTimeout(() => this.photonLobbyWatcher(), 500);
     };
 
-    $app.methods.updatePhotonLobbySize = function () {
-        AppApi.ExecuteVrFeedFunction(
-            'updatePhotonLobbySize',
-            `${this.photonLobby.size}`
-        );
+    $app.methods.photonBotCheck = function (event7List) {
+        var dtNow = Date.now();
+        var event7PhotonIds = Object.keys(event7List);
+        var photonBots = [];
+        this.photonLobbyCurrent.forEach((ref, id) => {
+            var joinTime = this.photonLobbyJointime.get(id);
+            if (
+                (!joinTime || joinTime + 3000 < dtNow) &&
+                typeof ref === 'undefined' &&
+                !event7PhotonIds.includes(id.toString())
+            ) {
+                photonBots.unshift(id);
+            }
+        });
+        if (this.photonLobbyBots.length !== photonBots.length) {
+            this.updatePhotonLobbyBotSize(photonBots.length);
+            if (photonBots.length > 0) {
+                var text = `photonBotIds: ${photonBots.toString()}`;
+            } else {
+                var text = 'photonBotIds: 0';
+            }
+            this.addEntryPhotonEvent({
+                photonId: '',
+                displayName: '',
+                text,
+                created_at: new Date().toJSON()
+            });
+        }
+        this.photonLobbyBots = photonBots;
+    };
+
+    $app.methods.updatePhotonLobbyBotSize = function (size) {
+        AppApi.ExecuteVrFeedFunction('updatePhotonLobbyBotSize', `${size}`);
+    };
+
+    $app.data.photonEventTable = {
+        data: [],
+        tableProps: {
+            stripe: true,
+            size: 'mini'
+        },
+        pageSize: 10,
+        paginationProps: {
+            small: true,
+            layout: 'sizes,prev,pager,next,total',
+            pageSizes: [5, 10, 15, 25, 50]
+        }
+    };
+
+    $app.methods.addEntryPhotonEvent = function (feed) {
+        this.photonEventTable.data.unshift(feed);
+        if (this.photonEventOverlay) {
+            AppApi.ExecuteVrOverlayFunction(
+                'addEntryHudFeed',
+                JSON.stringify(feed)
+            );
+        }
+    };
+
+    $app.methods.getDisplayNameFromPhotonId = function (photonId) {
+        var displayName = '';
+        if (photonId) {
+            var ref = this.photonLobby.get(photonId);
+            displayName = `ID:${photonId}`;
+            if (
+                typeof ref !== 'undefined' &&
+                typeof ref.displayName !== 'undefined'
+            ) {
+                displayName = ref.displayName;
+            }
+        }
+        return displayName;
+    };
+
+    $app.methods.showUserFromPhotonId = function (photonId) {
+        if (photonId) {
+            var ref = this.photonLobby.get(photonId);
+            if (typeof ref !== 'undefined') {
+                if (typeof ref.id !== 'undefined') {
+                    this.showUserDialog(ref.id);
+                } else if (typeof ref.displayName !== 'undefined') {
+                    this.lookupUser(ref.displayName);
+                }
+            }
+        }
+    };
+
+    $app.methods.getPhotonIdFromDisplayName = function (displayName) {
+        var photonId = '';
+        if (displayName) {
+            this.photonLobbyCurrent.forEach((ref, id) => {
+                if (
+                    typeof ref !== 'undefined' &&
+                    ref.displayName === displayName
+                ) {
+                    photonId = id;
+                }
+            });
+        }
+        return photonId;
+    };
+
+    $app.methods.sortPhotonId = function (a, b, field) {
+        var id1 = this.getPhotonIdFromDisplayName(a[field]);
+        var id2 = this.getPhotonIdFromDisplayName(b[field]);
+        if (id1 < id2) {
+            return 1;
+        }
+        if (id1 > id2) {
+            return -1;
+        }
+        return 0;
     };
 
     $app.methods.parsePhotonEvent = function (data, gameLogDate) {
-        if (data.Code === 7) {
-            // IK update
-            this.photonLobbyIkUpdate.set(
-                data.Parameters[254],
-                Date.parse(gameLogDate)
-            );
-        } else if (data.Code === 253) {
+        if (data.Code === 253) {
             // SetUserProperties
             this.parsePhotonUser(
                 data.Parameters[253],
@@ -8119,8 +8281,10 @@ speechSynthesis.getVoices();
                 gameLogDate
             );
             this.parsePhotonAvatarChange(
+                data.Parameters[253],
                 data.Parameters[251].user,
-                data.Parameters[251].avatarDict
+                data.Parameters[251].avatarDict,
+                gameLogDate
             );
             this.parsePhotonAvatar(data.Parameters[251].avatarDict);
             this.parsePhotonAvatar(data.Parameters[251].favatarDict);
@@ -8133,8 +8297,10 @@ speechSynthesis.getVoices();
                     gameLogDate
                 );
                 this.parsePhotonAvatarChange(
+                    data.Parameters[254],
                     data.Parameters[249].user,
-                    data.Parameters[249].avatarDict
+                    data.Parameters[249].avatarDict,
+                    gameLogDate
                 );
                 this.parsePhotonAvatar(data.Parameters[249].avatarDict);
                 this.parsePhotonAvatar(data.Parameters[249].favatarDict);
@@ -8147,9 +8313,7 @@ speechSynthesis.getVoices();
             this.startLobbyWatcherLoop();
         } else if (data.Code === 254) {
             // Leave
-            this.photonLobby.delete(data.Parameters[254]);
-            this.updatePhotonLobbySize();
-            this.photonLobbyIkUpdate.delete(data.Parameters[254]);
+            this.photonLobbyCurrent.delete(data.Parameters[254]);
             this.photonLobbyJointime.delete(data.Parameters[254]);
             this.parsePhotonLobbyIds(data.Parameters[252].$values);
         } else if (data.Code === 33) {
@@ -8160,7 +8324,10 @@ speechSynthesis.getVoices();
                     var block = data.Parameters[245]['10'];
                     var mute = data.Parameters[245]['11'];
                     var ref = this.photonLobby.get(photonId);
-                    if (ref && ref.id) {
+                    if (
+                        typeof ref !== 'undefined' &&
+                        typeof ref.id !== 'undefined'
+                    ) {
                         this.photonModerationUpdate(
                             ref,
                             block,
@@ -8174,13 +8341,19 @@ speechSynthesis.getVoices();
                             gameLogDate
                         });
                         if (block || mute) {
-                            var feed = `ID:${photonId} mute:${mute} block:${block}`;
-                            if (this.photonEventOverlay) {
-                                AppApi.ExecuteVrOverlayFunction(
-                                    'addEntryHudFeed',
-                                    feed
-                                );
+                            var displayName = `ID:${photonId}`;
+                            if (
+                                typeof ref !== 'undefined' &&
+                                typeof ref.displayName !== 'undefined'
+                            ) {
+                                displayName = ref.displayName;
                             }
+                            this.addEntryPhotonEvent({
+                                photonId,
+                                displayName,
+                                text: `mute:${mute} block:${block}`,
+                                created_at: gameLogDate
+                            });
                         }
                     }
                 } else {
@@ -8191,17 +8364,20 @@ speechSynthesis.getVoices();
                         if (muteArray.includes(photonId1)) {
                             idList.set(photonId1, {mute: true, block: true});
                         } else {
-                            idList.set(photonId1, {mute: true, block: false});
+                            idList.set(photonId1, {mute: false, block: true});
                         }
                     });
                     muteArray.forEach((photonId2) => {
                         if (!idList.has(photonId2)) {
-                            idList.set(photonId2, {mute: false, block: true});
+                            idList.set(photonId2, {mute: true, block: false});
                         }
                     });
                     idList.forEach(({isMute, isBlock}, photonId3) => {
                         var ref1 = this.photonLobby.get(photonId3);
-                        if (ref1 && ref1.id) {
+                        if (
+                            typeof ref1 !== 'undefined' &&
+                            typeof ref1.id !== 'undefined'
+                        ) {
                             this.photonModerationUpdate(
                                 ref1,
                                 isBlock,
@@ -8222,7 +8398,9 @@ speechSynthesis.getVoices();
             // Instantiate
             if (!this.photonLobby.has(data.Parameters[254])) {
                 this.photonLobby.set(data.Parameters[254]);
-                this.updatePhotonLobbySize();
+            }
+            if (!this.photonLobbyCurrent.has(data.Parameters[254])) {
+                this.photonLobbyCurrent.set(data.Parameters[254]);
             }
         } else if (data.Code === 6) {
             var senderId = data.Parameters[254];
@@ -8240,7 +8418,10 @@ speechSynthesis.getVoices();
             if (senderId) {
                 var ref = this.photonLobby.get(senderId);
                 displayName = `ID:${senderId}`;
-                if (ref && ref.id) {
+                if (
+                    typeof ref !== 'undefined' &&
+                    typeof ref.displayName !== 'undefined'
+                ) {
                     displayName = ref.displayName;
                 }
             }
@@ -8249,6 +8430,7 @@ speechSynthesis.getVoices();
                 data.Data[0] === 'Portals/PortalInternalDynamic'
             ) {
                 this.lastPortalId = data.Data[3];
+                return;
             } else if (
                 data.EventType === '_DestroyObject' &&
                 this.lastPortalList.has(data.Data[0])
@@ -8256,17 +8438,14 @@ speechSynthesis.getVoices();
                 var portalId = data.Data[0];
                 var date = this.lastPortalList.get(portalId);
                 var time = timeToText(Date.parse(gameLogDate) - date);
-                var entry = {
-                    created_at: gameLogDate,
-                    type: 'Event',
-                    data: `${displayName} deleted portal after ${time}`
-                };
-                // this.addPhotonEventToGameLog(entry);
-                var feed = `${displayName} deleted portal after ${time}`;
-                if (this.photonEventOverlay) {
-                    AppApi.ExecuteVrOverlayFunction('addEntryHudFeed', feed);
-                }
                 this.lastPortalList.delete(portalId);
+                this.addEntryPhotonEvent({
+                    photonId: senderId,
+                    displayName,
+                    text: `DeletedPortal ${time}`,
+                    created_at: gameLogDate
+                });
+                return;
             } else if (data.EventType === 'ConfigurePortal') {
                 var instanceId = `${data.Data[0]}:${data.Data[1]}`;
                 if (this.lastPortalId) {
@@ -8277,12 +8456,24 @@ speechSynthesis.getVoices();
                     this.lastPortalId = '';
                 }
                 var ref = this.photonLobby.get(senderId);
-                if (ref && ref.id) {
+                if (
+                    typeof ref !== 'undefined' &&
+                    typeof ref.displayName !== 'undefined'
+                ) {
+                    var userId = '';
+                    if (typeof ref.id !== 'undefined') {
+                        userId = ref.id;
+                    }
+                    var ref1 = {
+                        id: userId,
+                        displayName: ref.displayName
+                    };
                     this.portalQueue = 'skip';
-                    this.parsePhotonPortalSpawn(gameLogDate, instanceId, ref);
+                    this.parsePhotonPortalSpawn(gameLogDate, instanceId, ref1);
                 } else {
                     this.portalQueue = instanceId;
                 }
+                return;
             } else if (data.Type > 34) {
                 var entry = {
                     created_at: gameLogDate,
@@ -8305,15 +8496,24 @@ speechSynthesis.getVoices();
                 }
                 if (data.EventType === 'ChangeVisibility') {
                     if (data.Data[0] === true) {
-                        var feed = `${displayName} EnableCamera`;
+                        var text = 'EnableCamera';
                     } else if (data.Data[0] === false) {
-                        var feed = `${displayName} DisableCamera`;
+                        var text = 'DisableCamera';
                     }
                 } else if (
                     data.EventType === 'UdonSyncRunProgramAsRPC' &&
                     data.Data[0] === 'Beep'
                 ) {
-                    var feed = `${displayName} Beep`;
+                    var L = API.parseLocation(this.lastLocation.location);
+                    if (
+                        L.worldId !==
+                        'wrld_f20326da-f1ac-45fc-a062-609723b097b1'
+                    ) {
+                        return;
+                    }
+                    var text = 'Beep';
+                } else if (data.EventType === 'ReloadAvatarNetworkedRPC') {
+                    var text = 'AvatarReset';
                 } else {
                     var eventData = '';
                     if (data.Data) {
@@ -8323,11 +8523,14 @@ speechSynthesis.getVoices();
                             eventData = ` ${data.Data}`;
                         }
                     }
-                    var feed = `${displayName} ${data.EventType}${eventData}`;
+                    var text = `${data.EventType}${eventData}`;
                 }
-                if (this.photonEventOverlay) {
-                    AppApi.ExecuteVrOverlayFunction('addEntryHudFeed', feed);
-                }
+                this.addEntryPhotonEvent({
+                    photonId: senderId,
+                    displayName,
+                    text,
+                    created_at: gameLogDate
+                });
             } else {
                 var eventType = '';
                 if (data.EventType) {
@@ -8340,8 +8543,8 @@ speechSynthesis.getVoices();
                 var feed = `RPC ${displayName} ${
                     this.photonEventType[data.Type]
                 }${eventType}`;
+                console.log(feed);
             }
-            console.log(feed);
         } else {
             console.log('photonEvent:', data);
         }
@@ -8382,13 +8585,15 @@ speechSynthesis.getVoices();
             if (!this.photonLobby.has(id)) {
                 this.photonLobby.set(id);
             }
+            if (!this.photonLobbyCurrent.has(id)) {
+                this.photonLobbyCurrent.set(id);
+            }
         });
-        for (var id of this.photonLobby.keys()) {
+        for (var id of this.photonLobbyCurrent.keys()) {
             if (!lobbyIds.includes(id)) {
-                this.photonLobby.delete(id);
+                this.photonLobbyCurrent.delete(id);
             }
         }
-        this.updatePhotonLobbySize();
     };
 
     $app.methods.parsePhotonUser = async function (
@@ -8396,6 +8601,13 @@ speechSynthesis.getVoices();
         user,
         gameLogDate
     ) {
+        var tags = [];
+        if (
+            typeof user.tags !== 'undefined' &&
+            typeof user.tags.$values !== 'undefined'
+        ) {
+            tags = user.tags.$values;
+        }
         var photonUser = {
             id: user.id,
             username: user.username,
@@ -8410,30 +8622,45 @@ speechSynthesis.getVoices();
             status: user.status,
             statusDescription: user.statusDescription,
             bio: user.bio,
-            tags: user.tags.$values
+            tags
         };
         this.photonLobby.set(photonId, photonUser);
-        this.updatePhotonLobbySize();
+        this.photonLobbyCurrent.set(photonId, photonUser);
         var ref = API.cachedUsers.get(user.id);
         var bias = Date.parse(gameLogDate) + 60 * 1000; // 1min
         if (bias > Date.now()) {
-            if (typeof ref === 'undefined') {
-                ref = await API.getUser({
+            if (typeof ref === 'undefined' || typeof ref.id === 'undefined') {
+                var args = await API.getUser({
                     userId: user.id
                 });
+                ref = args.ref;
             } else if (
-                ref.currentAvatarImageUrl !== user.currentAvatarImageUrl
+                !ref.isFriend &&
+                this.lastLocation.playerList.has(ref.displayName)
             ) {
-                API.applyUser({
-                    ...ref,
-                    currentAvatarImageUrl: user.currentAvatarImageUrl,
-                    currentAvatarThumbnailImageUrl:
-                        user.currentAvatarThumbnailImageUrl
-                });
+                var {joinTime} = this.lastLocation.playerList.get(
+                    ref.displayName
+                );
+                if (!joinTime) {
+                    joinTime = Date.parse(gameLogDate);
+                }
+                ref.$location_at = joinTime;
+                ref.$online_for = joinTime;
+            }
+            if (ref.currentAvatarImageUrl !== user.currentAvatarImageUrl) {
+                if (typeof ref.id !== 'undefined') {
+                    API.applyUser({
+                        ...ref,
+                        currentAvatarImageUrl: user.currentAvatarImageUrl,
+                        currentAvatarThumbnailImageUrl:
+                            user.currentAvatarThumbnailImageUrl
+                    });
+                }
             }
         }
         if (typeof ref !== 'undefined' && typeof ref.id !== 'undefined') {
             this.photonLobby.set(photonId, ref);
+            this.photonLobbyCurrent.set(photonId, ref);
             // check moderation queue
             if (this.moderationEventQueue.has(photonId)) {
                 var {block, mute, gameLogDate} =
@@ -8503,12 +8730,17 @@ speechSynthesis.getVoices();
         });
     };
 
-    $app.methods.parsePhotonAvatarChange = function (user, avatar) {
+    $app.methods.parsePhotonAvatarChange = function (
+        photonId,
+        user,
+        avatar,
+        gameLogDate
+    ) {
         var oldAvatarId = this.photonLobbyAvatars.get(user.id);
         if (
             oldAvatarId &&
             oldAvatarId !== avatar.id &&
-            user.userId !== API.currentUser.id
+            user.id !== API.currentUser.id
         ) {
             var entry = {
                 created_at: new Date().toJSON(),
@@ -8525,10 +8757,13 @@ speechSynthesis.getVoices();
             };
             this.queueGameLogNoty(entry);
             this.addGameLog(entry);
-            var feed = `${user.displayName} ChangeAvatar ${avatar.name}`;
-            if (this.photonEventOverlay) {
-                AppApi.ExecuteVrOverlayFunction('addEntryHudFeed', feed);
-            }
+            this.addEntryPhotonEvent({
+                photonId,
+                displayName: user.displayName,
+                text: `ChangeAvatar ${avatar.name}`,
+                created_at: gameLogDate,
+                avatar
+            });
         }
         this.photonLobbyAvatars.set(user.id, avatar.id);
     };
@@ -10182,6 +10417,23 @@ speechSynthesis.getVoices();
         },
         layout: 'table'
     };
+    $app.data.currentInstanceUserList = {
+        data: [],
+        tableProps: {
+            stripe: true,
+            size: 'mini',
+            defaultSort: {
+                prop: 'photonId',
+                order: 'descending'
+            }
+        },
+        pageSize: 15,
+        paginationProps: {
+            small: true,
+            layout: 'sizes,prev,pager,next,total',
+            pageSizes: [5, 10, 15, 25, 50]
+        }
+    };
     $app.data.visits = 0;
     $app.data.openVR = configRepository.getBool('openVR');
     $app.data.openVRAlways = configRepository.getBool('openVRAlways');
@@ -10242,6 +10494,9 @@ speechSynthesis.getVoices();
     $app.data.branch = configRepository.getString('VRCX_branch');
     $app.data.maxTableSize = configRepository.getInt('VRCX_maxTableSize');
     database.setmaxTableSize($app.data.maxTableSize);
+    $app.data.photonLobbyTimeoutThreshold = configRepository.getString(
+        'VRCX_photonLobbyTimeoutThreshold'
+    );
     $app.methods.saveOpenVROption = function () {
         configRepository.setBool('openVR', this.openVR);
         configRepository.setBool('openVRAlways', this.openVRAlways);
@@ -10467,6 +10722,13 @@ speechSynthesis.getVoices();
         $app.data.maxTableSize = 1000;
         configRepository.getInt('VRCX_maxTableSize', $app.data.maxTableSize);
         database.setmaxTableSize($app.data.maxTableSize);
+    }
+    if (!configRepository.getString('VRCX_photonLobbyTimeoutThreshold')) {
+        $app.data.photonLobbyTimeoutThreshold = 3000;
+        configRepository.setString(
+            'VRCX_photonLobbyTimeoutThreshold',
+            $app.data.photonLobbyTimeoutThreshold
+        );
     }
     if (!configRepository.getString('sharedFeedFilters')) {
         var sharedFeedFilters = {
@@ -10720,6 +10982,7 @@ speechSynthesis.getVoices();
 
     $app.methods.vrInit = function () {
         downloadProgressStateChange();
+        this.updatePhotonLobbyBotSize(this.photonLobbyBots.length);
         this.updateVRConfigVars();
         this.updateVRLastLocation();
         this.updateVrNowPlaying();
@@ -11281,6 +11544,7 @@ speechSynthesis.getVoices();
                     );
                     database.setmaxTableSize(this.maxTableSize);
                     this.feedTableLookup();
+                    this.gameLogTableLookup();
                 }
             }
         });
@@ -11294,6 +11558,36 @@ speechSynthesis.getVoices();
         this.playerModerationTable.pageSize = pageSize;
         this.notificationTable.pageSize = pageSize;
         configRepository.setInt('VRCX_tablePageSize', pageSize);
+    };
+
+    $app.methods.promptPhotonLobbyTimeoutThreshold = function () {
+        this.$prompt(
+            'Enter amount of seconds (default: 3)',
+            'Photon Lobby Timeout Threshold',
+            {
+                distinguishCancelAndClose: true,
+                confirmButtonText: 'OK',
+                cancelButtonText: 'Cancel',
+                inputValue: this.photonLobbyTimeoutThreshold / 1000,
+                inputPattern: /\d+$/,
+                inputErrorMessage: 'Valid number is required',
+                callback: (action, instance) => {
+                    if (
+                        action === 'confirm' &&
+                        instance.inputValue &&
+                        !isNaN(instance.inputValue)
+                    ) {
+                        this.photonLobbyTimeoutThreshold = Math.trunc(
+                            Number(instance.inputValue) * 1000
+                        );
+                        configRepository.setString(
+                            'VRCX_photonLobbyTimeoutThreshold',
+                            this.photonLobbyTimeoutThreshold
+                        );
+                    }
+                }
+            }
+        );
     };
 
     $app.methods.promptLocalAvatarGroupDialog = function () {
@@ -11767,6 +12061,124 @@ speechSynthesis.getVoices();
             };
         }
         D.instance.friendCount = friendCount;
+    };
+
+    API.$on('LOGIN', function () {
+        $app.currentInstanceUserList.data = [];
+    });
+
+    API.$on('USER', function (args) {
+        if ($app.lastLocation.playerList.has(args.ref.displayName)) {
+            $app.getCurrentInstanceUserList();
+        }
+    });
+
+    $app.methods.getCurrentInstanceUserList = function () {
+        var users = [];
+        var pushUser = function (ref) {
+            var photonId = '';
+            var masterId = 0;
+            $app.photonLobbyCurrent.forEach((ref1, id) => {
+                if (masterId === 0 || masterId > id) {
+                    masterId = id;
+                }
+                if (typeof ref1 !== 'undefined') {
+                    if (
+                        (typeof ref.id !== 'undefined' &&
+                            typeof ref1.id !== 'undefined' &&
+                            ref1.id === ref.id) ||
+                        (typeof ref.displayName !== 'undefined' &&
+                            typeof ref1.displayName !== 'undefined' &&
+                            ref1.displayName === ref.displayName)
+                    ) {
+                        photonId = id;
+                    }
+                }
+            });
+            var isMaster = false;
+            if (photonId === masterId) {
+                isMaster = true;
+            }
+            users.push({
+                ref,
+                timer: ref.$location_at,
+                photonId,
+                isMaster
+            });
+            // get block, mute
+        };
+
+        var playersInInstance = this.lastLocation.playerList;
+        if (playersInInstance.size > 0) {
+            var ref = API.cachedUsers.get(API.currentUser.id);
+            if (typeof ref === 'undefined') {
+                ref = API.currentUser;
+            }
+            if (playersInInstance.has(ref.displayName)) {
+                pushUser(ref);
+            }
+            for (var player of playersInInstance.values()) {
+                // if friend isn't in instance add them
+                if (player === API.currentUser.displayName) {
+                    continue;
+                }
+                var addUser = true;
+                for (var k = 0; k < users.length; k++) {
+                    var user = users[k];
+                    if (player.displayName === user.displayName) {
+                        addUser = false;
+                        break;
+                    }
+                }
+                if (addUser) {
+                    var ref = API.cachedUsers.get(player.userId);
+                    if (typeof ref !== 'undefined') {
+                        pushUser(ref);
+                    } else {
+                        var userRef = {};
+                        for (var ref of API.cachedUsers.values()) {
+                            if (ref.displayName === player.displayName) {
+                                userRef = ref;
+                                break;
+                            }
+                        }
+                        if (typeof userRef.id === 'undefined') {
+                            var {joinTime} = this.lastLocation.playerList.get(
+                                player.displayName
+                            );
+                            if (!joinTime) {
+                                joinTime = Date.now();
+                            }
+                            var ref = {
+                                // if userId is missing just push displayName
+                                displayName: player.displayName,
+                                $location_at: joinTime,
+                                $online_for: joinTime
+                            };
+                        }
+                        pushUser(ref);
+                    }
+                }
+            }
+        }
+        this.currentInstanceUserList.data = users;
+    };
+
+    $app.data.currentInstanceWorld = {};
+    $app.data.currentInstanceLocation = {};
+
+    $app.methods.updateCurrentInstanceWorld = function (instanceId) {
+        this.currentInstanceWorld = {};
+        this.currentInstanceLocation = {};
+        if (instanceId) {
+            var L = API.parseLocation(instanceId);
+            this.currentInstanceLocation = L;
+            API.getCachedWorld({
+                worldId: L.worldId
+            }).then((args) => {
+                this.currentInstanceWorld = args.ref;
+            });
+        }
     };
 
     $app.methods.setUserDialogWorlds = function (userId) {
