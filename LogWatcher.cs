@@ -37,9 +37,9 @@ namespace VRCX
         private static bool incomingJson;
         private static string jsonChunk;
         private static string jsonDate;
+        private static string onJoinPhotonDisplayName;
         private static string photonEvent;
         private static IDictionary<int, string> photonEvent7 = new Dictionary<int, string>();
-        private static string onJoinPhotonId;
 
         // NOTE
         // FileSystemWatcher() is unreliable
@@ -736,32 +736,64 @@ namespace VRCX
             // 2021.11.02 02:21:41 Log        -  [Behaviour] Configuring remote player VRCPlayer[Remote] 22349737 1194
             // 2021.11.02 02:21:41 Log        -  [Behaviour] Initialized player Natsumi-sama
 
-            if (string.Compare(line, offset, "[Behaviour] Configuring remote player VRCPlayer[Remote] ", 0, 56, StringComparison.Ordinal) == 0)
+            // 2021.11.10 08:06:12 Log        -  [Behaviour] Natsumi-sama: Limb IK
+            // 2021.11.10 08:10:28 Log        -  [Behaviour] Initialize Limb Avatar (UnityEngine.Animator) VRCPlayer[Remote] 78614426 59 (ǄǄǄǅǄǅǅǄǅǄǄǅǅǄǅǄǅǅǅǄǄǄǅǄǄǅǅǄǅǅǄǅǅǄǅǅǅǅǄǅǄǅǄǄǄǄǅ) False Loading
+            // 2021.11.10 08:57:32 Log        -  [Behaviour] Initialize Limb Avatar (UnityEngine.Animator) VRCPlayer[Local] 59136629 1 (ǄǄǄǅǄǅǅǄǅǄǄǅǅǄǅǄǅǅǅǄǄǄǅǄǄǅǅǄǅǅǄǅǅǄǅǅǅǅǄǅǄǅǄǄǄǄǅ) True Loading
+
+            if (string.Compare(line, offset, "[Behaviour] Initialize ", 0, 23, StringComparison.Ordinal) == 0 && line.Contains(" Avatar (UnityEngine.Animator) VRCPlayer["))
             {
-                var pos = line.LastIndexOf(" ");
-                onJoinPhotonId = line.Substring(pos + 1);
+                var pos = -1;
 
-                return true;
-            }
-
-            if (string.Compare(line, offset, "[Behaviour] Initialized player ", 0, 31, StringComparison.Ordinal) == 0)
-            {
-                var data = line.Substring(offset + 31);
-
-                if (!String.IsNullOrEmpty(onJoinPhotonId))
+                if (line.Contains(" Avatar (UnityEngine.Animator) VRCPlayer[Remote] "))
                 {
+                    pos = line.LastIndexOf(" Avatar (UnityEngine.Animator) VRCPlayer[Remote] ");
+                }
+
+                if (line.Contains(" Avatar (UnityEngine.Animator) VRCPlayer[Local] "))
+                {
+                    pos = line.LastIndexOf(" Avatar (UnityEngine.Animator) VRCPlayer[Local] ");
+                }
+
+                if (pos < 0)
+                {
+                    return false;
+                }
+
+                if (!String.IsNullOrEmpty(onJoinPhotonDisplayName))
+                {
+                    var endPos = line.LastIndexOf(" (");
+                    var photonId = line.Substring(offset + pos + 23, endPos - (offset + pos + 23));
+                    Console.WriteLine(photonId);
+
                     AppendLog(new[]
                     {
                         fileInfo.Name,
                         ConvertLogTimeToISO8601(line),
                         "photon-id",
-                        data,
-                        onJoinPhotonId
+                        onJoinPhotonDisplayName,
+                        photonId
                     });
-                    onJoinPhotonId = String.Empty;
+                    onJoinPhotonDisplayName = String.Empty;
+
+                    return true;
+                }
+            }
+
+            if (string.Compare(line, offset, "[Behaviour] ", 0, 12, StringComparison.Ordinal) == 0)
+            {
+                if (line.Contains(": 3 Point IK"))
+                {
+                    var endPos = line.LastIndexOf(": 3 Point IK");
+                    onJoinPhotonDisplayName = line.Substring(offset + 12, endPos - (offset + 12));
+                    return true;
                 }
 
-                return true;
+                if (line.Contains(": Limb IK"))
+                {
+                    var endPos = line.LastIndexOf(": Limb IK");
+                    onJoinPhotonDisplayName = line.Substring(offset + 12, endPos - (offset + 12));
+                    return true;
+                }
             }
 
             return false;
