@@ -23,6 +23,11 @@ namespace VRCX
             public string RecentWorldName;
             public string LastVideoURL;
             public bool ShaderKeywordsLimitReached = false;
+            public bool incomingJson;
+            public string jsonChunk;
+            public string jsonDate;
+            public string onJoinPhotonDisplayName;
+            public string photonEvent;
         }
 
         public static readonly LogWatcher Instance;
@@ -34,11 +39,6 @@ namespace VRCX
         private bool m_ResetLog;
         private bool m_FirstRun = true;
         private static DateTime tillDate = DateTime.Now;
-        private static bool incomingJson;
-        private static string jsonChunk;
-        private static string jsonDate;
-        private static string onJoinPhotonDisplayName;
-        private static string photonEvent;
         private static IDictionary<int, string> photonEvent7 = new Dictionary<int, string>();
 
         // NOTE
@@ -190,17 +190,17 @@ namespace VRCX
                                 break;
                             }
 
-                            if (incomingJson)
+                            if (logContext.incomingJson)
                             {
-                                jsonChunk += line;
+                                logContext.jsonChunk += line;
                                 if (line == "}}")
                                 {
-                                    var data = jsonChunk.Replace("{{", "{").Replace("}}", "}");
-                                    ParseLogPhotonEvent(fileInfo, data, jsonDate, photonEvent);
-                                    incomingJson = false;
-                                    jsonChunk = String.Empty;
-                                    jsonDate = String.Empty;
-                                    photonEvent = String.Empty;
+                                    var data = logContext.jsonChunk.Replace("{{", "{").Replace("}}", "}");
+                                    ParseLogPhotonEvent(fileInfo, data, logContext.jsonDate, logContext.photonEvent);
+                                    logContext.incomingJson = false;
+                                    logContext.jsonChunk = String.Empty;
+                                    logContext.jsonDate = String.Empty;
+                                    logContext.photonEvent = String.Empty;
                                 }
                                 continue;
                             }
@@ -233,17 +233,17 @@ namespace VRCX
                             {
                                 if (string.Compare(line, offset, "[Network Data] OnEvent: PLAYER:  ", 0, 33, StringComparison.Ordinal) == 0)
                                 {
-                                    photonEvent = line.Substring(offset + 33);
-                                    incomingJson = true;
-                                    jsonChunk = String.Empty;
-                                    jsonDate = ConvertLogTimeToISO8601(line);
+                                    logContext.photonEvent = line.Substring(offset + 33);
+                                    logContext.incomingJson = true;
+                                    logContext.jsonChunk = String.Empty;
+                                    logContext.jsonDate = ConvertLogTimeToISO8601(line);
                                 }
                                 else if (string.Compare(line, offset, "[Network Data] OnEvent: SYSTEM ", 0, 31, StringComparison.Ordinal) == 0)
                                 {
-                                    photonEvent = line.Substring(offset + 31);
-                                    incomingJson = true;
-                                    jsonChunk = String.Empty;
-                                    jsonDate = ConvertLogTimeToISO8601(line);
+                                    logContext.photonEvent = line.Substring(offset + 31);
+                                    logContext.incomingJson = true;
+                                    logContext.jsonChunk = String.Empty;
+                                    logContext.jsonDate = ConvertLogTimeToISO8601(line);
                                 }
                                 else if (ParseLogOnPlayerJoinedOrLeft(fileInfo, logContext, line, offset) == true ||
                                     ParseLogLocation(fileInfo, logContext, line, offset) == true ||
@@ -326,16 +326,26 @@ namespace VRCX
             // 2021.02.03 10:18:58 Log        -  [ǄǄǅǅǅǄǄǅǅǄǅǅǅǅǄǄǄǅǅǄǄǅǅǅǅǄǅǅǅǅǄǄǄǄǄǅǄǅǄǄǄǅǅǄǅǅǅ] Destination fetching: wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd
             // 2021.06.23 12:02:56 Log        -  [Behaviour] Entering Room: VRChat Home
 
-            if (string.Compare(line, offset, "[Behaviour] Entering Room: ", 0, 27, StringComparison.Ordinal) == 0)
+            if (line.Contains("] Entering Room: "))
             {
-                var worldName = line.Substring(offset + 27);
+                var lineOffset = line.LastIndexOf("] Entering Room: ");
+                if (lineOffset < 0)
+                    return false;
+                lineOffset += 17;
+
+                var worldName = line.Substring(lineOffset);
                 logContext.RecentWorldName = worldName;
                 return true;
             }
 
-            if (string.Compare(line, offset, "[Behaviour] Joining wrld_", 0, 25, StringComparison.Ordinal) == 0)
+            if (line.Contains("] Joining wrld_"))
             {
-                var location = line.Substring(offset + 20);
+                var lineOffset = line.LastIndexOf("] Joining ");
+                if (lineOffset < 0)
+                    return false;
+                lineOffset += 10;
+
+                var location = line.Substring(lineOffset);
 
                 AppendLog(new[]
                 {
@@ -347,6 +357,7 @@ namespace VRCX
                 });
 
                 photonEvent7 = new Dictionary<int, string>();
+                logContext.onJoinPhotonDisplayName = String.Empty;
 
                 return true;
             }
@@ -359,9 +370,14 @@ namespace VRCX
             // 2021.09.02 00:02:12 Log        -  [Behaviour] Destination set: wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd:15609~private(usr_032383a7-748c-4fb2-94e4-bcb928e5de6b)~nonce(72CC87D420C1D49AEFFBEE8824C84B2DF0E38678E840661E)
             // 2021.09.02 00:49:15 Log        -  [Behaviour] Destination fetching: wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd
 
-            if (string.Compare(line, offset, "[Behaviour] Destination fetching: ", 0, 34, StringComparison.Ordinal) == 0)
+            if (line.Contains("] Destination fetching: "))
             {
-                var location = line.Substring(offset + 34);
+                var lineOffset = line.LastIndexOf("] Destination fetching: ");
+                if (lineOffset < 0)
+                    return false;
+                lineOffset += 24;
+
+                var location = line.Substring(lineOffset);
 
                 AppendLog(new[]
                 {
@@ -369,20 +385,6 @@ namespace VRCX
                     ConvertLogTimeToISO8601(line),
                     "location-destination",
                     location
-                });
-
-                return true;
-            }
-
-            // 2021.10.04 11:54:16 Log        -  [Behaviour] OnLeftRoom
-
-            if (string.Compare(line, offset, "[Behaviour] OnLeftRoom", 0, 22, StringComparison.Ordinal) == 0)
-            {
-                AppendLog(new[]
-                {
-                    fileInfo.Name,
-                    ConvertLogTimeToISO8601(line),
-                    "location-destination"
                 });
 
                 return true;
@@ -404,16 +406,19 @@ namespace VRCX
 
             // 2021.06.23 11:41:16 Log        -  [Behaviour] Initialized PlayerAPI "Natsumi-sama" is local
 
-            if (string.Compare(line, offset, "[Behaviour] Initialized PlayerAPI \"", 0, 35, StringComparison.Ordinal) == 0)
+            if (line.Contains("] Initialized PlayerAPI \""))
             {
+                var lineOffset = line.LastIndexOf("] Initialized PlayerAPI \"");
+                if (lineOffset < 0)
+                    return false;
+                lineOffset += 25;
+
                 var pos = line.LastIndexOf("\" is ");
                 if (pos < 0)
-                {
                     return false;
-                }
 
-                var userDisplayName = line.Substring(offset + 35, pos - (offset + 35));
                 var userType = line.Substring(pos + 5);
+                var userDisplayName = line.Substring(lineOffset, pos - lineOffset);
 
                 AppendLog(new[]
                 {
@@ -427,25 +432,14 @@ namespace VRCX
                 return true;
             }
 
-            // fallback method
-            /*if (string.Compare(line, offset, "OnPlayerJoined ", 0, 15, StringComparison.Ordinal) == 0)
+            if (line.Contains("] OnPlayerLeft "))
             {
-                var userDisplayName = line.Substring(offset + 15);
+                var lineOffset = line.LastIndexOf("] OnPlayerLeft ");
+                if (lineOffset < 0)
+                    return false;
+                lineOffset += 15;
 
-                AppendLog(new[]
-                {
-                    fileInfo.Name,
-                    ConvertLogTimeToISO8601(line),
-                    "player-joined",
-                    userDisplayName
-                });
-
-                return true;
-            }*/
-
-            if (string.Compare(line, offset, "[Behaviour] OnPlayerLeft ", 0, 25, StringComparison.Ordinal) == 0)
-            {
-                var userDisplayName = line.Substring(offset + 25);
+                var userDisplayName = line.Substring(lineOffset);
 
                 AppendLog(new[]
                 {
@@ -466,22 +460,16 @@ namespace VRCX
             // 2021.04.06 11:25:45 Log        -  [Network Processing] RPC invoked ConfigurePortal on (Clone [1600004] Portals/PortalInternalDynamic) for Natsumi-sama
             // 2021.07.19 04:24:28 Log        -  [Behaviour] Will execute SendRPC/AlwaysBufferOne on (Clone [100004] Portals/PortalInternalDynamic) (UnityEngine.GameObject) for Natsumi-sama: S: "ConfigurePortal" I: 7 F: 0 B: 255 (local master owner)
 
-            if (string.Compare(line, offset, "[Behaviour] Will execute SendRPC/AlwaysBufferOne on (Clone [", 0, 60, StringComparison.Ordinal) != 0)
-            {
+            if (!line.Contains("] Will execute SendRPC/AlwaysBufferOne on (Clone ["))
                 return false;
-            }
 
             var pos = line.LastIndexOf("] Portals/PortalInternalDynamic) (UnityEngine.GameObject) for ");
             if (pos < 0)
-            {
                 return false;
-            }
 
             var endPos = line.LastIndexOf(": S: \"ConfigurePortal\"");
             if (endPos < 0)
-            {
                 return false;
-            }
 
             var data = line.Substring(pos + 62, endPos - (pos + 62));
 
@@ -501,36 +489,32 @@ namespace VRCX
             // 2021.04.04 12:21:06 Error      -  Maximum number (256) of shader keywords exceeded, keyword _TOGGLESIMPLEBLUR_ON will be ignored.
             // 2021.08.20 04:20:69 Error      -  Maximum number (384) of shader global keywords exceeded, keyword _FOG_EXP2 will be ignored.
 
-            if (logContext.ShaderKeywordsLimitReached == true)
+            if (line.Contains("Maximum number (384) of shader global keywords exceeded"))
             {
-                return false;
+                if (logContext.ShaderKeywordsLimitReached == true)
+                    return true;
+
+                AppendLog(new[]
+                {
+                    fileInfo.Name,
+                    ConvertLogTimeToISO8601(line),
+                    "event",
+                    "Shader Keyword Limit has been reached"
+                });
+                logContext.ShaderKeywordsLimitReached = true;
+
+                return true;
             }
 
-            if (string.Compare(line, offset, "Maximum number (384) of shader global keywords exceeded", 0, 55, StringComparison.Ordinal) != 0)
-            {
-                return false;
-            }
-
-            AppendLog(new[]
-            {
-                fileInfo.Name,
-                ConvertLogTimeToISO8601(line),
-                "event",
-                "Shader Keyword Limit has been reached"
-            });
-            logContext.ShaderKeywordsLimitReached = true;
-
-            return true;
+            return false;
         }
 
         private bool ParseLogJoinBlocked(FileInfo fileInfo, LogContext logContext, string line, int offset)
         {
             // 2021.04.07 09:34:37 Error      -  [Behaviour] Master is not sending any events! Moving to a new instance.
 
-            if (string.Compare(line, offset, "[Behaviour] Master is not sending any events! Moving to a new instance.", 0, 71, StringComparison.Ordinal) != 0)
-            {
+            if (!line.Contains("] Master is not sending any events! Moving to a new instance."))
                 return false;
-            }
 
             AppendLog(new[]
             {
@@ -548,9 +532,7 @@ namespace VRCX
             // 2021.05.07 10:48:19 Log        -  [Network Processing] RPC invoked SwitchAvatar on AvatarPedestal for User
 
             if (string.Compare(line, offset, "[Network Processing] RPC invoked SwitchAvatar on AvatarPedestal for ", 0, 68, StringComparison.Ordinal) != 0)
-            {
                 return false;
-            }
 
             var data = line.Substring(offset + 68);
 
@@ -571,9 +553,7 @@ namespace VRCX
             // 2021.04.08 06:40:07 Error -  [Video Playback] ERROR: Private video
 
             if (string.Compare(line, offset, "[Video Playback] ERROR: ", 0, 24, StringComparison.Ordinal) != 0)
-            {
                 return false;
-            }
 
             var data = line.Substring(offset + 24);
 
@@ -593,15 +573,12 @@ namespace VRCX
             // 2020.10.16 14:42:33 Log        -  [Video Playback] Attempting to resolve URL 'http://storage.llss.io/yUKvv_nCpj0.mp4'
 
             if (string.Compare(line, offset, "[Video Playback] Attempting to resolve URL '", 0, 44, StringComparison.Ordinal) != 0)
-            {
                 return false;
-            }
 
             var pos = line.LastIndexOf("'");
             if (pos < 0)
-            {
                 return false;
-            }
+
             var data = line.Substring(offset + 44);
             data = data.Remove(data.Length - 1);
 
@@ -643,23 +620,18 @@ namespace VRCX
             // 2021.04.23 13:12:25 Log        -  User Natsumi-sama added URL https://www.youtube.com/watch?v=dQw4w9WgXcQ
 
             if (string.Compare(line, offset, "User ", 0, 5, StringComparison.Ordinal) != 0)
-            {
                 return false;
-            }
 
             var pos = line.LastIndexOf(" added URL ");
             if (pos < 0)
-            {
                 return false;
-            }
 
             var playerPlayer = line.Substring(offset + 5, pos - (offset + 5));
             var data = line.Substring(pos + 11);
 
             if (logContext.LastVideoURL == data)
-            {
                 return false;
-            }
+
             logContext.LastVideoURL = data;
 
             AppendLog(new[]
@@ -679,15 +651,11 @@ namespace VRCX
             // 2021.01.03 05:48:58 Log        -  [API] Received Notification: < Notification from username:pypy, sender user id:usr_4f76a584-9d4b-46f6-8209-8305eb683661 to of type: friendRequest, id: not_3a8f66eb-613c-4351-bee3-9980e6b5652c, created at: 01/14/2021 15:38:40 UTC, details: {{}}, type:friendRequest, m seen:False, message: ""> received at 01/02/2021 16:48:58 UTC
 
             if (string.Compare(line, offset, "[API] Received Notification: <", 0, 30, StringComparison.Ordinal) != 0)
-            {
                 return false;
-            }
 
             var pos = line.LastIndexOf("> received at ");
             if (pos < 0)
-            {
                 return false;
-            }
 
             var data = line.Substring(offset + 30, pos - (offset + 30));
 
@@ -708,15 +676,11 @@ namespace VRCX
             // 2021.10.03 09:48:43 Log        -  [API] [101] Sending Get request to https://api.vrchat.cloud/api/1/users/usr_032383a7-748c-4fb2-94e4-bcb928e5de6b?apiKey=JlE5Jldo5Jibnk5O5hTx6XVqsJu4WJ26&organization=vrchat
 
             if (string.Compare(line, offset, "[API] [", 0, 7, StringComparison.Ordinal) != 0)
-            {
                 return false;
-            }
 
             var pos = line.LastIndexOf("] Sending Get request to ");
             if (pos < 0)
-            {
                 return false;
-            }
 
             var data = line.Substring(pos + 25);
 
@@ -737,61 +701,66 @@ namespace VRCX
             // 2021.11.02 02:21:41 Log        -  [Behaviour] Initialized player Natsumi-sama
 
             // 2021.11.10 08:06:12 Log        -  [Behaviour] Natsumi-sama: Limb IK
+            // 2021.11.10 08:06:12 Log        -  [Behaviour] NatsumiDa: 3 Point IK
             // 2021.11.10 08:10:28 Log        -  [Behaviour] Initialize Limb Avatar (UnityEngine.Animator) VRCPlayer[Remote] 78614426 59 (ǄǄǄǅǄǅǅǄǅǄǄǅǅǄǅǄǅǅǅǄǄǄǅǄǄǅǅǄǅǅǄǅǅǄǅǅǅǅǄǅǄǅǄǄǄǄǅ) False Loading
             // 2021.11.10 08:57:32 Log        -  [Behaviour] Initialize Limb Avatar (UnityEngine.Animator) VRCPlayer[Local] 59136629 1 (ǄǄǄǅǄǅǅǄǅǄǄǅǅǄǅǄǅǅǅǄǄǄǅǄǄǅǅǄǅǅǄǅǅǄǅǅǅǅǄǅǄǅǄǄǄǄǅ) True Loading
 
-            if (string.Compare(line, offset, "[Behaviour] Initialize ", 0, 23, StringComparison.Ordinal) == 0 && line.Contains(" Avatar (UnityEngine.Animator) VRCPlayer["))
+            if (line.Contains("] Initialize ") && line.Contains(" Avatar (UnityEngine.Animator) VRCPlayer["))
             {
                 var pos = -1;
 
                 if (line.Contains(" Avatar (UnityEngine.Animator) VRCPlayer[Remote] "))
                 {
                     pos = line.LastIndexOf(" Avatar (UnityEngine.Animator) VRCPlayer[Remote] ");
+                    pos += 49;
                 }
 
                 if (line.Contains(" Avatar (UnityEngine.Animator) VRCPlayer[Local] "))
                 {
                     pos = line.LastIndexOf(" Avatar (UnityEngine.Animator) VRCPlayer[Local] ");
+                    pos += 48;
                 }
 
                 if (pos < 0)
-                {
                     return false;
-                }
 
-                if (!String.IsNullOrEmpty(onJoinPhotonDisplayName))
+                if (!String.IsNullOrEmpty(logContext.onJoinPhotonDisplayName))
                 {
                     var endPos = line.LastIndexOf(" (");
-                    var photonId = line.Substring(offset + pos + 23, endPos - (offset + pos + 23));
-                    Console.WriteLine(photonId);
+                    var photonId = line.Substring(pos + 9, endPos - (pos + 9));
 
                     AppendLog(new[]
                     {
                         fileInfo.Name,
                         ConvertLogTimeToISO8601(line),
                         "photon-id",
-                        onJoinPhotonDisplayName,
+                        logContext.onJoinPhotonDisplayName,
                         photonId
                     });
-                    onJoinPhotonDisplayName = String.Empty;
+                    logContext.onJoinPhotonDisplayName = String.Empty;
 
                     return true;
                 }
             }
 
-            if (string.Compare(line, offset, "[Behaviour] ", 0, 12, StringComparison.Ordinal) == 0)
+            if (line.Contains(": 3 Point IK") || line.Contains(": Limb IK"))
             {
+                var lineOffset = line.IndexOf("] ");
+                if (lineOffset < 0)
+                    return false;
+                lineOffset += 2;
+
                 if (line.Contains(": 3 Point IK"))
                 {
                     var endPos = line.LastIndexOf(": 3 Point IK");
-                    onJoinPhotonDisplayName = line.Substring(offset + 12, endPos - (offset + 12));
+                    logContext.onJoinPhotonDisplayName = line.Substring(lineOffset, endPos - lineOffset);
                     return true;
                 }
 
                 if (line.Contains(": Limb IK"))
                 {
                     var endPos = line.LastIndexOf(": Limb IK");
-                    onJoinPhotonDisplayName = line.Substring(offset + 12, endPos - (offset + 12));
+                    logContext.onJoinPhotonDisplayName = line.Substring(lineOffset, endPos - lineOffset);
                     return true;
                 }
             }

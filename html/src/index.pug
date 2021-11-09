@@ -79,12 +79,12 @@ html
                             img.x-link(v-lazy="currentInstanceWorld.imageUrl" style="width:500px;height:375px" @click="openExternalLink(currentInstanceWorld.imageUrl)")
                         div(style="margin-left:10px;display:flex;flex-direction:column")
                             div
-                                i.el-icon-s-home(v-show="API.currentUser.$homeLocation && API.currentUser.$homeLocation.worldId === currentInstanceWorld.id")
-                                span.x-link(v-text="currentInstanceWorld.name" @click="showWorldDialog(currentInstanceWorld.id)" style="font-weight:bold;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1")
+                                span.x-link(@click="showWorldDialog(currentInstanceWorld.id)" style="font-weight:bold;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1")
+                                    | #[i.el-icon-s-home(v-show="API.currentUser.$homeLocation && API.currentUser.$homeLocation.worldId === currentInstanceWorld.id")] {{ currentInstanceWorld.name }}
                             div
                                 span.x-link(v-text="currentInstanceWorld.authorName" @click="showUserDialog(currentInstanceWorld.authorId)" style="color:#909399;font-family:monospace")
                             div(style="margin-top:5px")
-                                el-tag(v-if="currentInstanceWorld.$isLabs" type="primary" effect="plain" size="mini" style="margin-left:10px;margin-top:5px") Labs
+                                el-tag(v-if="currentInstanceWorld.$isLabs" type="primary" effect="plain" size="mini") Labs
                                 el-tag(v-else-if="currentInstanceWorld.releaseStatus === 'public'" type="success" effect="plain" size="mini") Public
                                 el-tag(v-else-if="currentInstanceWorld.releaseStatus === 'private'" type="danger" effect="plain" size="mini") Private
                                 span(style="margin-left:5px")
@@ -105,14 +105,14 @@ html
                             div(style="margin-top:5px")
                                 span(v-show="currentInstanceWorld.name !== currentInstanceWorld.description" v-text="currentInstanceWorld.description" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2")
                     div.current-instance-table
-                        data-tables(v-bind="currentInstanceUserList" @row-click="selectFriendsListRow" style="margin-top:10px;cursor:pointer")
+                        data-tables(v-bind="currentInstanceUserList" @sort-change="updateTimers" @row-click="selectCurrentInstanceRow" style="margin-top:10px;cursor:pointer")
                             el-table-column(label="Avatar" width="60" prop="photo")
                                 template(v-once #default="scope")
                                     template(v-if="userImage(scope.row.ref)")
                                         el-popover(placement="right" height="500px" trigger="hover")
                                             img.friends-list-avatar(slot="reference" v-lazy="userImage(scope.row.ref)")
                                             img.friends-list-avatar(v-lazy="userImageFull(scope.row.ref)" style="height:500px;cursor:pointer" @click="openExternalLink(userImageFull(scope.row.ref))")
-                            el-table-column(label="Timer" width="80" prop="timer" sortable)
+                            el-table-column(label="Timer" width="90" prop="timer" sortable)
                                 template(v-once #default="scope")
                                     timer(:epoch="scope.row.timer")
                             el-table-column(label="Photon Id" width="100" prop="photonId" sortable)
@@ -139,7 +139,7 @@ html
                                         template(#content)
                                             span(v-text="link")
                                         img(:src="getFaviconUrl(link)" style="width:16px;height:16px;vertical-align:middle;margin-right:5px;cursor:pointer" @click.stop="openExternalLink(link)")
-                    div.photon-event-table(v-if="photonEventTable.data.length > 0" style="overflow:auto")
+                    div.photon-event-table(v-if="photonEventTable.data.length > 0")
                         data-tables(v-bind="photonEventTable" style="margin-bottom:10px")
                             el-table-column(label="Date" prop="created_at" width="90")
                                 template(v-once #default="scope")
@@ -147,9 +147,9 @@ html
                                         template(#content)
                                             span {{ scope.row.created_at | formatDate('YYYY-MM-DD HH24:MI:SS') }}
                                         span {{ scope.row.created_at | formatDate('MM-DD HH24:MI') }}
-                            el-table-column(label="Name" prop="photonId" width="150")
+                            el-table-column(label="Name" prop="photonId" width="160")
                                 template(v-once #default="scope")
-                                    span.x-link(v-text="getDisplayNameFromPhotonId(scope.row.photonId)" @click="showUserFromPhotonId(scope.row.photonId)")
+                                    span.x-link(v-text="getDisplayNameFromPhotonId(scope.row.photonId)" @click="showUserFromPhotonId(scope.row.photonId)" style="padding-right:10px")
                             el-table-column(label="Event" prop="text")
                                 template(v-once #default="scope")
                                     span(v-if="scope.row.avatar")

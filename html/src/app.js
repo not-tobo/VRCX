@@ -7999,6 +7999,7 @@ speechSynthesis.getVoices();
                     };
                     this.photonLobby.set(photonId, ctx);
                     this.photonLobbyCurrent.set(photonId, ctx);
+                    this.getCurrentInstanceUserList();
                 }
                 return;
             case 'notification':
@@ -10427,12 +10428,7 @@ speechSynthesis.getVoices();
                 order: 'descending'
             }
         },
-        pageSize: 15,
-        paginationProps: {
-            small: true,
-            layout: 'sizes,prev,pager,next,total',
-            pageSizes: [5, 10, 15, 25, 50]
-        }
+        layout: 'table'
     };
     $app.data.visits = 0;
     $app.data.openVR = configRepository.getBool('openVR');
@@ -12063,6 +12059,9 @@ speechSynthesis.getVoices();
         D.instance.friendCount = friendCount;
     };
 
+
+    // App: player list
+
     API.$on('LOGIN', function () {
         $app.currentInstanceUserList.data = [];
     });
@@ -12119,7 +12118,7 @@ speechSynthesis.getVoices();
             }
             for (var player of playersInInstance.values()) {
                 // if friend isn't in instance add them
-                if (player === API.currentUser.displayName) {
+                if (player.displayName === API.currentUser.displayName) {
                     continue;
                 }
                 var addUser = true;
@@ -12178,6 +12177,24 @@ speechSynthesis.getVoices();
             }).then((args) => {
                 this.currentInstanceWorld = args.ref;
             });
+        }
+    };
+
+    $app.methods.selectCurrentInstanceRow = function (val) {
+        if (val === null) {
+            return;
+        }
+        var ref = val.ref;
+        if (ref.id) {
+            this.showUserDialog(ref.id);
+        } else {
+            this.lookupUser(ref);
+        }
+    };
+
+    $app.methods.updateTimers = function () {
+        for (var $timer of $timers) {
+            $timer.update();
         }
     };
 
