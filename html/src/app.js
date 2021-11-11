@@ -11084,9 +11084,19 @@ speechSynthesis.getVoices();
             isSteamVRRunning &&
             (isGameRunning || this.openVRAlways)
         ) {
-            AppApi.StartVR();
+            var hmdOverlay = false;
+            if (
+                this.overlayNotifications ||
+                this.progressPie ||
+                this.photonEventOverlay ||
+                this.timeoutHudOverlay
+            ) {
+                hmdOverlay = true;
+            }
+            // active, hmdOverlay, wristOverlay
+            AppApi.SetVR(true, hmdOverlay, this.overlayWrist);
         } else {
-            AppApi.StopVR();
+            AppApi.SetVR(false, false, false);
         }
     };
 
@@ -12132,6 +12142,20 @@ speechSynthesis.getVoices();
                 if (addUser) {
                     var ref = API.cachedUsers.get(player.userId);
                     if (typeof ref !== 'undefined') {
+                        if (
+                            !ref.isFriend ||
+                            ref.status === 'ask me' ||
+                            ref.status === 'busy'
+                        ) {
+                            // fix $location_at
+                            var {joinTime} = this.lastLocation.playerList.get(
+                                ref.displayName
+                            );
+                            if (!joinTime) {
+                                joinTime = Date.now();
+                            }
+                            ref.$location_at = joinTime;
+                        }
                         pushUser(ref);
                     } else {
                         var userRef = {};
