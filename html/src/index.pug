@@ -1115,9 +1115,16 @@ html
                     div.options-container-item
                         span.name Photon event overlay
                         el-switch(v-model="photonEventOverlay" @change="saveEventOverlay" :disabled="!openVR")
+                    span.sub-header User timeout HUD overlay
                     div.options-container-item
-                        span.name User timeout HUD overlay
+                        span.name Enable
                         el-switch(v-model="timeoutHudOverlay" @change="saveEventOverlay" :disabled="!openVR")
+                    div.options-container-item
+                        span.name Filter
+                        el-radio-group(v-model="timeoutHudOverlayFilter" @change="saveEventOverlay" size="mini" :disabled="!openVR || !timeoutHudOverlay")
+                            el-radio-button(label="VIP")
+                            el-radio-button(label="Friends")
+                            el-radio-button(label="Everyone")
                     div.options-container-item
                         el-button(size="small" icon="el-icon-time" @click="promptPhotonLobbyTimeoutThreshold" :disabled="!openVR") Timeout Threshold
                 div.options-container

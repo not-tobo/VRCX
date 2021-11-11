@@ -8119,16 +8119,20 @@ speechSynthesis.getVoices();
                     if (!joinTime || joinTime + 60000 < dtNow) {
                         // wait 1min for user to load in
                         var displayName = '';
+                        var userId = '';
                         var ref = this.photonLobby.get(id);
                         displayName = `ID:${id}`;
-                        if (
-                            typeof ref !== 'undefined' &&
-                            typeof ref.displayName !== 'undefined'
-                        ) {
-                            displayName = ref.displayName;
+                        if (typeof ref !== 'undefined') {
+                            if (typeof ref.displayName !== 'undefined') {
+                                displayName = ref.displayName;
+                            }
+                            if (typeof ref.id !== 'undefined') {
+                                userId = ref.id;
+                            }
                         }
                         var time = Math.round(timeSinceLastEvent / 1000);
                         var feed = {
+                            userId,
                             displayName,
                             time
                         };
@@ -8147,10 +8151,34 @@ speechSynthesis.getVoices();
                     return 0;
                 });
                 if (this.timeoutHudOverlay) {
-                    AppApi.ExecuteVrOverlayFunction(
-                        'updateHudTimeout',
-                        JSON.stringify(hudTimeout)
-                    );
+                    if (
+                        this.timeoutHudOverlayFilter === 'VIP' ||
+                        this.timeoutHudOverlayFilter === 'Friends'
+                    ) {
+                        var filteredHudTimeout = [];
+                        hudTimeout.forEach((item) => {
+                            if (
+                                this.timeoutHudOverlayFilter === 'VIP' &&
+                                API.cachedFavoritesByObjectId.has(item.userId)
+                            ) {
+                                filteredHudTimeout.push(item);
+                            } else if (
+                                this.timeoutHudOverlayFilter === 'Friends' &&
+                                this.friends.has(item.userId)
+                            ) {
+                                filteredHudTimeout.push(item);
+                            }
+                        });
+                        AppApi.ExecuteVrOverlayFunction(
+                            'updateHudTimeout',
+                            JSON.stringify(filteredHudTimeout)
+                        );
+                    } else {
+                        AppApi.ExecuteVrOverlayFunction(
+                            'updateHudTimeout',
+                            JSON.stringify(hudTimeout)
+                        );
+                    }
                 }
                 this.photonLobbyTimeout = hudTimeout;
             }
@@ -8240,7 +8268,7 @@ speechSynthesis.getVoices();
                 if (typeof ref.id !== 'undefined') {
                     this.showUserDialog(ref.id);
                 } else if (typeof ref.displayName !== 'undefined') {
-                    this.lookupUser(ref.displayName);
+                    this.lookupUser(ref);
                 }
             }
         }
@@ -8832,6 +8860,10 @@ speechSynthesis.getVoices();
                         videoLength = this.convertYoutubeTime(
                             data.items[0].contentDetails.duration
                         );
+                        if (videoLength) {
+                            // add loading time
+                            videoLength += 15;
+                        }
                     }
                 }
             } catch {
@@ -10621,6 +10653,9 @@ speechSynthesis.getVoices();
     $app.data.timeoutHudOverlay = configRepository.getBool(
         'VRCX_TimeoutHudOverlay'
     );
+    $app.data.timeoutHudOverlayFilter = configRepository.getString(
+        'VRCX_TimeoutHudOverlayFilter'
+    );
     $app.methods.saveEventOverlay = function () {
         configRepository.setBool(
             'VRCX_PhotonEventOverlay',
@@ -10629,6 +10664,10 @@ speechSynthesis.getVoices();
         configRepository.setBool(
             'VRCX_TimeoutHudOverlay',
             this.timeoutHudOverlay
+        );
+        configRepository.setString(
+            'VRCX_TimeoutHudOverlayFilter',
+            this.timeoutHudOverlayFilter
         );
         if (!this.timeoutHudOverlay) {
             AppApi.ExecuteVrOverlayFunction('updateHudTimeout', '[]');
@@ -10724,6 +10763,13 @@ speechSynthesis.getVoices();
         configRepository.setString(
             'VRCX_photonLobbyTimeoutThreshold',
             $app.data.photonLobbyTimeoutThreshold
+        );
+    }
+    if (!configRepository.getString('VRCX_TimeoutHudOverlayFilter')) {
+        $app.data.timeoutHudOverlayFilter = 'Everyone';
+        configRepository.setString(
+            'VRCX_TimeoutHudOverlayFilter',
+            $app.data.timeoutHudOverlayFilter
         );
     }
     if (!configRepository.getString('sharedFeedFilters')) {
@@ -12069,7 +12115,6 @@ speechSynthesis.getVoices();
         D.instance.friendCount = friendCount;
     };
 
-
     // App: player list
 
     API.$on('LOGIN', function () {
@@ -12077,7 +12122,36 @@ speechSynthesis.getVoices();
     });
 
     API.$on('USER', function (args) {
+        // add user ref to playerList, friendList, photonLobby, photonLobbyCurrent
         if ($app.lastLocation.playerList.has(args.ref.displayName)) {
+            var playerListRef = $app.lastLocation.playerList.get(
+                args.ref.displayName
+            );
+            if (!playerListRef.userId) {
+                playerListRef.userId = args.ref.id;
+                $app.lastLocation.playerList.set(
+                    args.ref.displayName,
+                    playerListRef
+                );
+                if ($app.lastLocation.friendList.has(args.ref.displayName)) {
+                    $app.lastLocation.friendList.set(
+                        args.ref.displayName,
+                        playerListRef
+                    );
+                }
+            }
+            $app.photonLobby.forEach((ref, id) => {
+                if (
+                    typeof ref !== 'undefined' &&
+                    ref.displayName === args.ref.displayName &&
+                    ref !== args.ref
+                ) {
+                    $app.photonLobby.set(id, args.ref);
+                    if ($app.photonLobbyCurrent.has(id)) {
+                        $app.photonLobbyCurrent.set(id, args.ref);
+                    }
+                }
+            });
             $app.getCurrentInstanceUserList();
         }
     });
@@ -12158,27 +12232,18 @@ speechSynthesis.getVoices();
                         }
                         pushUser(ref);
                     } else {
-                        var userRef = {};
-                        for (var ref of API.cachedUsers.values()) {
-                            if (ref.displayName === player.displayName) {
-                                userRef = ref;
-                                break;
-                            }
+                        var {joinTime} = this.lastLocation.playerList.get(
+                            player.displayName
+                        );
+                        if (!joinTime) {
+                            joinTime = Date.now();
                         }
-                        if (typeof userRef.id === 'undefined') {
-                            var {joinTime} = this.lastLocation.playerList.get(
-                                player.displayName
-                            );
-                            if (!joinTime) {
-                                joinTime = Date.now();
-                            }
-                            var ref = {
-                                // if userId is missing just push displayName
-                                displayName: player.displayName,
-                                $location_at: joinTime,
-                                $online_for: joinTime
-                            };
-                        }
+                        var ref = {
+                            // if userId is missing just push displayName
+                            displayName: player.displayName,
+                            $location_at: joinTime,
+                            $online_for: joinTime
+                        };
                         pushUser(ref);
                     }
                 }
