@@ -8188,7 +8188,11 @@ speechSynthesis.getVoices();
         var dtNow = Date.now();
         var event7PhotonIds = Object.keys(event7List);
         var photonBots = [];
+        var currentUserPresent = false;
         this.photonLobbyCurrent.forEach((ref, id) => {
+            if (typeof ref !== 'undefined' && ref.id === API.currentUser.id) {
+                currentUserPresent = true;
+            }
             var joinTime = this.photonLobbyJointime.get(id);
             if (
                 (!joinTime || joinTime + 3000 < dtNow) &&
@@ -8199,6 +8203,23 @@ speechSynthesis.getVoices();
             }
         });
         if (this.photonLobbyBots.length !== photonBots.length) {
+            // bad bug fix is bad
+            if (!currentUserPresent) {
+                console.log('current user missing from photon lobby');
+                if (
+                    this.lastLocation.playerList.has(
+                        API.currentUser.displayName
+                    ) &&
+                    photonBots.length === 1
+                ) {
+                    var ref = API.cachedUsers.get(API.currentUser.id);
+                    if (typeof ref !== 'undefined') {
+                        this.photonLobby.set(photonBots[0], ref);
+                        this.photonLobbyCurrent.set(photonBots[0], ref);
+                    }
+                }
+                return;
+            }
             this.updatePhotonLobbyBotSize(photonBots.length);
             if (photonBots.length > 0) {
                 var text = `photonBotIds: ${photonBots.toString()}`;
