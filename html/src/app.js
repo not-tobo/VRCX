@@ -4951,31 +4951,27 @@ speechSynthesis.getVoices();
 
     $app.methods.notySaveImage = async function (noty) {
         var imageUrl = await this.notyGetImage(noty);
-        var base64Image = '';
-        if (imageUrl) {
-            try {
-                base64Image = await fetch(imageUrl, {
-                    method: 'GET',
-                    redirect: 'follow'
-                })
-                    .then((response) => response.arrayBuffer())
-                    .then((buffer) => {
-                        var binary = '';
-                        var bytes = new Uint8Array(buffer);
-                        var length = bytes.byteLength;
-                        for (var i = 0; i < length; i++) {
-                            binary += String.fromCharCode(bytes[i]);
-                        }
-                        return btoa(binary);
-                    });
-            } catch (err) {
-                console.error(err);
-            }
+        var fileId = extractFileId(imageUrl);
+        var fileVersion = extractFileVersion(imageUrl);
+        if (fileId && fileVersion) {
+            return AppApi.GetImage(imageUrl, fileId, fileVersion);
+        } else if (imageUrl) {
+            fileVersion = imageUrl.split('/').pop(); // 1416226261.thumbnail-500.png
+            fileId = fileVersion.split('.').shift(); // 1416226261
+            return AppApi.GetImage(imageUrl, fileId, fileVersion);
         }
-        return base64Image;
+        return '';
     };
 
-    $app.methods.displayOverlayNotification = function (noty, message, image) {
+    $app.methods.displayOverlayNotification = function (
+        noty,
+        message,
+        imageFile
+    ) {
+        var image = '';
+        if (imageFile) {
+            image = `file:///${imageFile}`;
+        }
         AppApi.ExecuteVrOverlayFunction(
             'playNoty',
             JSON.stringify({noty, message, image})

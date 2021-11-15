@@ -241,6 +241,11 @@ namespace VRCX
             return CpuMonitor.Instance.CpuUsage;
         }
 
+        public string GetImage(string url, string fileId, string version)
+        {
+            return ImageCache.GetImage(url, fileId, version);
+        }
+
         public void DesktopNotification(string BoldText, string Text, string Image)
         {
             XmlDocument toastXml = ToastNotificationManager.GetTemplateContent(ToastTemplateType.ToastImageAndText02);
@@ -248,8 +253,7 @@ namespace VRCX
             String imagePath = Path.Combine(Program.BaseDirectory, "VRCX.ico");
             if (!String.IsNullOrEmpty(Image))
             {
-                imagePath = Path.Combine(Program.AppDataDirectory, "cache\\toast");
-                File.WriteAllBytes(imagePath, Convert.FromBase64String(Image));
+                imagePath = Image;
             }
             stringElements[0].AppendChild(toastXml.CreateTextNode(BoldText));
             stringElements[1].AppendChild(toastXml.CreateTextNode(Text));
@@ -287,8 +291,7 @@ namespace VRCX
             else
             {
                 UseBase64Icon = false;
-                Icon = Path.Combine(Program.AppDataDirectory, "cache\\toast");
-                File.WriteAllBytes(Icon, Convert.FromBase64String(Image));
+                Icon = Image;
             }
 
             IPAddress broadcastIP = IPAddress.Parse("127.0.0.1");
@@ -315,16 +318,16 @@ namespace VRCX
             var Location = Path.Combine(Program.AppDataDirectory, "update.exe");
             WebClient client = new WebClient();
             client.Headers.Add("user-agent", AppVersion);
-            client.DownloadFile(new System.Uri(url), Location);
+            client.DownloadFile(new Uri(url), Location);
         }
 
         public void RestartApplication()
         {
-            System.Diagnostics.Process VRCXProcess = new System.Diagnostics.Process();
+            Process VRCXProcess = new Process();
             VRCXProcess.StartInfo.FileName = Path.Combine(Program.BaseDirectory, "VRCX.exe");
             VRCXProcess.StartInfo.UseShellExecute = false;
             VRCXProcess.Start();
-            System.Environment.Exit(0);
+            Environment.Exit(0);
         }
 
         public bool CheckForUpdateExe()

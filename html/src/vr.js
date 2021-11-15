@@ -375,7 +375,7 @@ import configRepository from './repository/config.js';
         var text = '';
         var img = '';
         if (image) {
-            img = `<img class="noty-img" src="data:image/png;base64, ${image}"></img>`;
+            img = `<img class="noty-img" src="${image}"></img>`;
         }
         switch (noty.type) {
             case 'OnPlayerJoined':
