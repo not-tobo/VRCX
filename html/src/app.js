@@ -1493,6 +1493,7 @@ speechSynthesis.getVoices();
                 }
             }
         }
+        this.$emit('USER:APPLY', ref);
         return ref;
     };
 
@@ -8207,6 +8208,7 @@ speechSynthesis.getVoices();
             this.addEntryPhotonEvent({
                 photonId: '',
                 displayName: '',
+                userId: '',
                 text,
                 created_at: new Date().toJSON()
             });
@@ -8235,10 +8237,28 @@ speechSynthesis.getVoices();
     $app.methods.addEntryPhotonEvent = function (feed) {
         this.photonEventTable.data.unshift(feed);
         if (this.photonEventOverlay) {
-            AppApi.ExecuteVrOverlayFunction(
-                'addEntryHudFeed',
-                JSON.stringify(feed)
-            );
+            if (
+                this.photonEventOverlayFilter === 'VIP' ||
+                this.photonEventOverlayFilter === 'Friends'
+            ) {
+                if (
+                    feed.userId &&
+                    ((this.photonEventOverlayFilter === 'VIP' &&
+                        API.cachedFavoritesByObjectId.has(feed.userId)) ||
+                        (this.photonEventOverlayFilter === 'Friends' &&
+                            this.friends.has(feed.userId)))
+                ) {
+                    AppApi.ExecuteVrOverlayFunction(
+                        'addEntryHudFeed',
+                        JSON.stringify(feed)
+                    );
+                }
+            } else {
+                AppApi.ExecuteVrOverlayFunction(
+                    'addEntryHudFeed',
+                    JSON.stringify(feed)
+                );
+            }
         }
     };
 
@@ -8298,7 +8318,9 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.parsePhotonEvent = function (data, gameLogDate) {
-        if (data.Code === 253) {
+        if (data.Code === 226) {
+            // nothing
+        } else if (data.Code === 253) {
             // SetUserProperties
             this.parsePhotonUser(
                 data.Parameters[253],
@@ -8367,15 +8389,19 @@ speechSynthesis.getVoices();
                         });
                         if (block || mute) {
                             var displayName = `ID:${photonId}`;
-                            if (
-                                typeof ref !== 'undefined' &&
-                                typeof ref.displayName !== 'undefined'
-                            ) {
-                                displayName = ref.displayName;
+                            var userId = '';
+                            if (typeof ref !== 'undefined') {
+                                if (typeof ref.displayName !== 'undefined') {
+                                    displayName = ref.displayName;
+                                }
+                                if (typeof ref.id !== 'undefined') {
+                                    userId = ref.id;
+                                }
                             }
                             this.addEntryPhotonEvent({
                                 photonId,
                                 displayName,
+                                userId,
                                 text: `mute:${mute} block:${block}`,
                                 created_at: gameLogDate
                             });
@@ -8440,14 +8466,17 @@ speechSynthesis.getVoices();
                 return;
             }
             var displayName = '';
+            var userId = '';
             if (senderId) {
                 var ref = this.photonLobby.get(senderId);
                 displayName = `ID:${senderId}`;
-                if (
-                    typeof ref !== 'undefined' &&
-                    typeof ref.displayName !== 'undefined'
-                ) {
-                    displayName = ref.displayName;
+                if (typeof ref !== 'undefined') {
+                    if (typeof ref.displayName !== 'undefined') {
+                        displayName = ref.displayName;
+                    }
+                    if (typeof ref.id !== 'undefined') {
+                        userId = ref.id;
+                    }
                 }
             }
             if (
@@ -8463,10 +8492,10 @@ speechSynthesis.getVoices();
                 var portalId = data.Data[0];
                 var date = this.lastPortalList.get(portalId);
                 var time = timeToText(Date.parse(gameLogDate) - date);
-                this.lastPortalList.delete(portalId);
                 this.addEntryPhotonEvent({
                     photonId: senderId,
                     displayName,
+                    userId,
                     text: `DeletedPortal ${time}`,
                     created_at: gameLogDate
                 });
@@ -8515,7 +8544,8 @@ speechSynthesis.getVoices();
                     data.EventType === 'PlayEffect' ||
                     data.EventType === 'ConfigurePortal' ||
                     data.EventType === 'PlayEmoteRPC' ||
-                    data.EventType === 'CancelRPC'
+                    data.EventType === 'CancelRPC' ||
+                    data.EventType === '_SendOnSpawn'
                 ) {
                     return;
                 }
@@ -8553,6 +8583,7 @@ speechSynthesis.getVoices();
                 this.addEntryPhotonEvent({
                     photonId: senderId,
                     displayName,
+                    userId,
                     text,
                     created_at: gameLogDate
                 });
@@ -8770,7 +8801,7 @@ speechSynthesis.getVoices();
             var entry = {
                 created_at: new Date().toJSON(),
                 type: 'AvatarChange',
-                userId: user.userId,
+                userId: user.id,
                 displayName: user.displayName,
                 name: avatar.name,
                 description: avatar.description,
@@ -8785,6 +8816,7 @@ speechSynthesis.getVoices();
             this.addEntryPhotonEvent({
                 photonId,
                 displayName: user.displayName,
+                userId: user.id,
                 text: `ChangeAvatar ${avatar.name}`,
                 created_at: gameLogDate,
                 avatar
@@ -10652,6 +10684,9 @@ speechSynthesis.getVoices();
     $app.data.timeoutHudOverlayFilter = configRepository.getString(
         'VRCX_TimeoutHudOverlayFilter'
     );
+    $app.data.photonEventOverlayFilter = configRepository.getString(
+        'VRCX_PhotonEventOverlayFilter'
+    );
     $app.methods.saveEventOverlay = function () {
         configRepository.setBool(
             'VRCX_PhotonEventOverlay',
@@ -10664,6 +10699,10 @@ speechSynthesis.getVoices();
         configRepository.setString(
             'VRCX_TimeoutHudOverlayFilter',
             this.timeoutHudOverlayFilter
+        );
+        configRepository.setString(
+            'VRCX_PhotonEventOverlayFilter',
+            this.photonEventOverlayFilter
         );
         if (!this.timeoutHudOverlay) {
             AppApi.ExecuteVrOverlayFunction('updateHudTimeout', '[]');
@@ -10766,6 +10805,13 @@ speechSynthesis.getVoices();
         configRepository.setString(
             'VRCX_TimeoutHudOverlayFilter',
             $app.data.timeoutHudOverlayFilter
+        );
+    }
+    if (!configRepository.getString('VRCX_PhotonEventOverlayFilter')) {
+        $app.data.photonEventOverlayFilter = 'Everyone';
+        configRepository.setString(
+            'VRCX_PhotonEventOverlayFilter',
+            $app.data.photonEventOverlayFilter
         );
     }
     if (!configRepository.getString('sharedFeedFilters')) {
@@ -12117,34 +12163,34 @@ speechSynthesis.getVoices();
         $app.currentInstanceUserList.data = [];
     });
 
-    API.$on('USER', function (args) {
+    API.$on('USER:APPLY', function (ref) {
         // add user ref to playerList, friendList, photonLobby, photonLobbyCurrent
-        if ($app.lastLocation.playerList.has(args.ref.displayName)) {
+        if ($app.lastLocation.playerList.has(ref.displayName)) {
             var playerListRef = $app.lastLocation.playerList.get(
-                args.ref.displayName
+                ref.displayName
             );
             if (!playerListRef.userId) {
-                playerListRef.userId = args.ref.id;
+                playerListRef.userId = ref.id;
                 $app.lastLocation.playerList.set(
-                    args.ref.displayName,
+                    ref.displayName,
                     playerListRef
                 );
-                if ($app.lastLocation.friendList.has(args.ref.displayName)) {
+                if ($app.lastLocation.friendList.has(ref.displayName)) {
                     $app.lastLocation.friendList.set(
-                        args.ref.displayName,
+                        ref.displayName,
                         playerListRef
                     );
                 }
             }
-            $app.photonLobby.forEach((ref, id) => {
+            $app.photonLobby.forEach((ref1, id) => {
                 if (
-                    typeof ref !== 'undefined' &&
-                    ref.displayName === args.ref.displayName &&
-                    ref !== args.ref
+                    typeof ref1 !== 'undefined' &&
+                    ref1.displayName === ref.displayName &&
+                    ref1 !== ref
                 ) {
-                    $app.photonLobby.set(id, args.ref);
+                    $app.photonLobby.set(id, ref);
                     if ($app.photonLobbyCurrent.has(id)) {
-                        $app.photonLobbyCurrent.set(id, args.ref);
+                        $app.photonLobbyCurrent.set(id, ref);
                     }
                 }
             });
