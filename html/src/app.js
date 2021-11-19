@@ -1874,9 +1874,12 @@ speechSynthesis.getVoices();
         }
     */
     API.getInstanceShortName = function (params) {
-        return this.call(`instances/${params.worldId}:${params.instanceId}/shortName`, {
-            method: 'GET'
-        }).then((json) => {
+        return this.call(
+            `instances/${params.worldId}:${params.instanceId}/shortName`,
+            {
+                method: 'GET'
+            }
+        ).then((json) => {
             var args = {
                 json,
                 params
@@ -7098,7 +7101,9 @@ speechSynthesis.getVoices();
     $app.data.showUserDialogHistory = new Set();
 
     $app.methods.quickSearchUserHistory = function () {
-        var userHistory = Array.from(this.showUserDialogHistory.values()).reverse().slice(0, 5);
+        var userHistory = Array.from(this.showUserDialogHistory.values())
+            .reverse()
+            .slice(0, 5);
         var results = [];
         userHistory.forEach((userId) => {
             var ref = API.cachedUsers.get(userId);
@@ -11390,16 +11395,23 @@ speechSynthesis.getVoices();
                         var input = instance.inputValue;
                         var testUrl = input.substring(0, 15);
                         if (testUrl === 'https://vrch.at') {
-                            AppApi.FollowUrl(input).then((url) => {
+                            AppApi.FollowUrl(input).then((output) => {
+                                var url = output;
                                 // /home/launch?worldId=wrld_f20326da-f1ac-45fc-a062-609723b097b1&instanceId=33570~region(jp)&shortName=cough-stockinglinz-ddd26
                                 // https://vrch.at/wrld_f20326da-f1ac-45fc-a062-609723b097b1
-                                if (url.substring(0, 18) === 'https://vrchat.com') {
+                                if (
+                                    url.substring(0, 18) ===
+                                    'https://vrchat.com'
+                                ) {
                                     url = url.substring(18);
                                 }
                                 if (url.substring(0, 13) === '/home/launch?') {
-                                    var urlParams = new URLSearchParams(url.substring(13));
+                                    var urlParams = new URLSearchParams(
+                                        url.substring(13)
+                                    );
                                     var worldId = urlParams.get('worldId');
-                                    var instanceId = urlParams.get('instanceId');
+                                    var instanceId =
+                                        urlParams.get('instanceId');
                                     if (instanceId) {
                                         var location = `${worldId}:${instanceId}`;
                                         this.showWorldDialog(location);
@@ -14167,7 +14179,10 @@ speechSynthesis.getVoices();
         }
         D.url = getLaunchURL(L.worldId, L.instanceId);
         D.visible = true;
-        API.getInstanceShortName({worldId: L.worldId, instanceId: L.instanceId});
+        API.getInstanceShortName({
+            worldId: L.worldId,
+            instanceId: L.instanceId
+        });
     };
 
     $app.methods.locationToLaunchArg = function (location) {
