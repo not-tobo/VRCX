@@ -30,16 +30,6 @@ namespace VRCX
             Instance = new AppApi();
         }
 
-        public void ChangeVolume(string Volume)
-        {
-            ProcessStartInfo Stuff = new ProcessStartInfo()
-            {
-                FileName = Path.Combine(Program.BaseDirectory, "nircmd.exe"),
-                Arguments = $"setappvolume VRChat.exe {Volume}"
-            };
-            Process.Start(Stuff);
-        }
-
         public string MD5File(string Blob)
         {
             byte[] fileData = Convert.FromBase64CharArray(Blob.ToCharArray(), 0, Blob.Length);
