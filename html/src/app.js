@@ -13,8 +13,6 @@ Vue.component('v-swatches', VSwatches);
 import ElementUI from 'element-ui';
 import locale from 'element-ui/lib/locale/lang/en';
 import {v4 as uuidv4} from 'uuid';
-// import PyPyVideos from './PyPyVideos.json';
-// var PyPyVideosTable = JSON.parse(atob(PyPyVideos.json));
 
 import {appVersion} from './constants.js';
 import configRepository from './repository/config.js';
