@@ -8497,7 +8497,16 @@ speechSynthesis.getVoices();
                 data.EventType === 'initUSpeakSenderRPC' ||
                 data.EventType === 'SanityCheck' ||
                 (data.EventType === 'UdonSyncRunProgramAsRPC' &&
-                    data.Data[0] !== 'Beep')
+                    data.Data[0] !== 'Beep') ||
+                data.EventType === 'InformOfBadConnection' ||
+                data.EventType === 'SetTimerRPC' ||
+                data.EventType === 'IncrementPortalPlayerCountRPC' ||
+                data.EventType === 'PlayEffect' ||
+                data.EventType === 'PlayEmoteRPC' ||
+                data.EventType === 'CancelRPC' ||
+                data.EventType === '_SendOnSpawn' ||
+                data.EventType === 'RefreshAvatar' ||
+                data.EventType === 'InternalApplyOverrideRPC'
             ) {
                 return;
             }
@@ -8573,18 +8582,6 @@ speechSynthesis.getVoices();
                 this.addPhotonEventToGameLog(entry);
             }
             if (data.Type === 14) {
-                if (
-                    data.EventType === 'InformOfBadConnection' ||
-                    data.EventType === 'SetTimerRPC' ||
-                    data.EventType === 'IncrementPortalPlayerCountRPC' ||
-                    data.EventType === 'PlayEffect' ||
-                    data.EventType === 'ConfigurePortal' ||
-                    data.EventType === 'PlayEmoteRPC' ||
-                    data.EventType === 'CancelRPC' ||
-                    data.EventType === '_SendOnSpawn'
-                ) {
-                    return;
-                }
                 if (data.EventType === 'ChangeVisibility') {
                     if (data.Data[0] === true) {
                         var text = 'EnableCamera';
@@ -12354,6 +12351,7 @@ speechSynthesis.getVoices();
             }
         }
         this.currentInstanceUserList.data = users;
+        this.updateTimers();
     };
 
     $app.data.currentInstanceWorld = {};

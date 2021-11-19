@@ -1109,11 +1109,11 @@ html
                         span.name Dance worlds only
                         el-switch(v-model="progressPieFilter" @change="changeYouTubeApi" :disabled="!openVR")
                 div.options-container
-                    span.header WIP Photon Logging Stuff
+                    span.header Photon Logging Overlay
                     el-tooltip(placement="top" style="margin-left:5px" content="Requires '--log-debug-levels=API;NetworkData' steam launch option")
                         i.el-icon-warning
                     div.options-container-item
-                    span.sub-header Photon Event HUD Overlay
+                    span.sub-header Photon Event HUD
                     div.options-container-item
                         span.name Enable
                         el-switch(v-model="photonEventOverlay" @change="saveEventOverlay" :disabled="!openVR")
@@ -1123,7 +1123,7 @@ html
                             el-radio-button(label="VIP")
                             el-radio-button(label="Friends")
                             el-radio-button(label="Everyone")
-                    span.sub-header User timeout HUD Overlay
+                    span.sub-header User timeout HUD
                     div.options-container-item
                         span.name Enable
                         el-switch(v-model="timeoutHudOverlay" @change="saveEventOverlay" :disabled="!openVR")
