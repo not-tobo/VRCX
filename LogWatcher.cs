@@ -570,7 +570,7 @@ namespace VRCX
 
         private bool ParseLogVideoChange(FileInfo fileInfo, LogContext logContext, string line, int offset)
         {
-            // 2020.10.16 14:42:33 Log        -  [Video Playback] Attempting to resolve URL 'http://storage.llss.io/yUKvv_nCpj0.mp4'
+            // 2021.04.20 13:37:69 Log        -  [Video Playback] Attempting to resolve URL 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
 
             if (string.Compare(line, offset, "[Video Playback] Attempting to resolve URL '", 0, 44, StringComparison.Ordinal) != 0)
                 return false;
@@ -626,7 +626,7 @@ namespace VRCX
             if (pos < 0)
                 return false;
 
-            var playerPlayer = line.Substring(offset + 5, pos - (offset + 5));
+            var displayName = line.Substring(offset + 5, pos - (offset + 5));
             var data = line.Substring(pos + 11);
 
             if (logContext.LastVideoURL == data)
@@ -640,7 +640,7 @@ namespace VRCX
                 ConvertLogTimeToISO8601(line),
                 "video-play",
                 data,
-                playerPlayer
+                displayName
             });
 
             return true;

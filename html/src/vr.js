@@ -11,20 +11,10 @@ import locale from 'element-ui/lib/locale/lang/en';
 import MarqueeText from 'vue-marquee-text-component';
 Vue.component('marquee-text', MarqueeText);
 
-import configRepository from './repository/config.js';
-
 (async function () {
     var $app = null;
 
-    await CefSharp.BindObjectAsync(
-        'AppApi',
-        'WebApi',
-        'SharedVariable',
-        'SQLite',
-        'Discord'
-    );
-
-    await configRepository.init();
+    await CefSharp.BindObjectAsync('AppApi');
 
     Noty.overrideDefaults({
         animation: {

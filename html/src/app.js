@@ -8639,8 +8639,6 @@ speechSynthesis.getVoices();
                 }${eventType}`;
                 console.log(feed);
             }
-        } else {
-            console.log('photonEvent:', data);
         }
     };
 
@@ -10925,13 +10923,11 @@ speechSynthesis.getVoices();
     $app.data.sharedFeedFilters = JSON.parse(
         configRepository.getString('sharedFeedFilters')
     );
-    if (!$app.data.sharedFeedFilters.noty.AvatarChange) {
-        $app.data.sharedFeedFilters.noty.AvatarChange = 'Off';
+    if (!$app.data.sharedFeedFilters.noty.Blocked) {
         $app.data.sharedFeedFilters.noty.Blocked = 'Off';
         $app.data.sharedFeedFilters.noty.Unblocked = 'Off';
         $app.data.sharedFeedFilters.noty.Muted = 'Off';
         $app.data.sharedFeedFilters.noty.Unmuted = 'Off';
-        $app.data.sharedFeedFilters.wrist.AvatarChange = 'Everyone';
         $app.data.sharedFeedFilters.wrist.Blocked = 'On';
         $app.data.sharedFeedFilters.wrist.Unblocked = 'On';
         $app.data.sharedFeedFilters.wrist.Muted = 'On';
@@ -13393,11 +13389,9 @@ speechSynthesis.getVoices();
                         }
                         switch (command) {
                             case 'Delete Favorite':
-                                if (API.cachedFavoritesByObjectId.has(D.id)) {
-                                    API.deleteFavorite({
-                                        objectId: D.id
-                                    });
-                                }
+                                API.deleteFavorite({
+                                    objectId: D.id
+                                });
                                 break;
                             case 'Select Avatar':
                                 API.selectAvatar({
