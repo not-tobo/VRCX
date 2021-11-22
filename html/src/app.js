@@ -8212,10 +8212,9 @@ speechSynthesis.getVoices();
                     }
                 }
             });
-            if (this.photonLobbyTimeout.length > 0 || hudTimeout.length > 0) {
-                hudTimeout.sort(function (a, b) {
-                    if (a.time > b.time) {
-                        return 1;
+            hudTimeout.sort(function (a, b) {
+                if (a.time > b.time) {
+                    return 1;
                     }
                     if (a.time < b.time) {
                         return -1;
@@ -8246,12 +8245,14 @@ speechSynthesis.getVoices();
                     }
                     AppApi.ExecuteVrOverlayFunction(
                         'updateHudTimeout',
-                        JSON.stringify(filteredHudTimeout)
-                    );
-                }
+                    JSON.stringify(filteredHudTimeout)
+                );
+            }
+            if (this.photonLobbyTimeout.length > 0 || hudTimeout.length > 0) {
                 this.photonLobbyTimeout = hudTimeout;
-
                 this.getCurrentInstanceUserList();
+            } else {
+                this.photonLobbyTimeout = hudTimeout;
             }
             this.photonBotCheck(event7List);
         });
