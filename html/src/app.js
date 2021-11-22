@@ -894,7 +894,7 @@ speechSynthesis.getVoices();
 
     Vue.component('avatar-info', {
         template:
-            '<div @click="confirm" class="avatar-info"><span style="display:inline-block;margin-right:5px">{{ avatarName }}</span><span :class="color">{{ avatarType }}</span></div>',
+            '<div @click="confirm" class="avatar-info"><span style="margin-right:5px">{{ avatarName }}</span><span :class="color">{{ avatarType }}</span></div>',
         props: {
             imageurl: String,
             userid: String,
@@ -1197,7 +1197,7 @@ speechSynthesis.getVoices();
             ref.$trustColor = 'x-tag-troll';
             ref.$trustSortNum += 0.1;
         }
-        if (ref.$isLegend) {
+        if ($app.legendColorOverride && ref.$isLegend) {
             ref.$trustColor = 'x-tag-legendary';
             ref.$trustSortNum += 0.2;
         }
@@ -6238,7 +6238,7 @@ speechSynthesis.getVoices();
     $app.data.orderFriendsGroupGPS = configRepository.getBool(
         'orderFriendGroupGPS'
     );
-    var saveOrderFriendGroup = function () {
+    $app.methods.saveOrderFriendGroup = function () {
         configRepository.setBool('orderFriendGroup0', this.orderFriendsGroup0);
         configRepository.setBool('orderFriendGroup1', this.orderFriendsGroup1);
         configRepository.setBool('orderFriendGroup2', this.orderFriendsGroup2);
@@ -6258,13 +6258,6 @@ speechSynthesis.getVoices();
         this.sortFriendsGroup0 = true;
         this.sortFriendsGroup1 = true;
     };
-    $app.watch.orderFriendsGroup0 = saveOrderFriendGroup;
-    $app.watch.orderFriendsGroup1 = saveOrderFriendGroup;
-    $app.watch.orderFriendsGroup2 = saveOrderFriendGroup;
-    $app.watch.orderFriendsGroup3 = saveOrderFriendGroup;
-    $app.watch.orderFriendsGroupPrivate = saveOrderFriendGroup;
-    $app.watch.orderFriendsGroupStatus = saveOrderFriendGroup;
-    $app.watch.orderFriendsGroupGPS = saveOrderFriendGroup;
 
     $app.methods.fetchActiveFriend = function (userId) {
         this.pendingActiveFriends.add(userId);
@@ -8041,6 +8034,8 @@ speechSynthesis.getVoices();
         }
     };
 
+    $app.data.recommendedSteamParams =
+        '--enable-sdk-log-levels --log-debug-levels=API;NetworkData';
     $app.data.lastPortalId = '';
     $app.data.lastPortalList = new Map();
     $app.data.portalQueue = '';
@@ -8777,13 +8772,14 @@ speechSynthesis.getVoices();
                 type = 'Muted';
             }
             if (row.userId) {
-                if (block === row.block && mute === row.mute) {
-                    return;
-                }
                 if (!block && row.block) {
                     type = 'Unblocked';
                 } else if (!mute && row.mute) {
                     type = 'Unmuted';
+                }
+                if (block === row.block && mute === row.mute) {
+                    // no change
+                    type = '';
                 }
             }
             if (type) {
@@ -10579,6 +10575,9 @@ speechSynthesis.getVoices();
     $app.data.vrBackgroundEnabled = configRepository.getBool(
         'VRCX_vrBackgroundEnabled'
     );
+    $app.data.legendColorOverride = configRepository.getBool(
+        'VRCX_legendColorOverride'
+    );
     $app.data.asideWidth = configRepository.getInt('VRCX_asidewidth');
     $app.data.autoUpdateVRCX = configRepository.getString(
         'VRCX_autoUpdateVRCX'
@@ -10645,6 +10644,15 @@ speechSynthesis.getVoices();
         this.updateSharedFeed(true);
         this.updateVRConfigVars();
         AppApi.ExecuteVrOverlayFunction('notyClear', '');
+    };
+    $app.methods.saveLegendColorOverride = function () {
+        configRepository.setBool(
+            'VRCX_legendColorOverride',
+            this.legendColorOverride
+        );
+        API.cachedUsers.forEach((ref, id) => {
+            API.applyUserTrustLevel(ref);
+        });
     };
     $app.data.TTSvoices = speechSynthesis.getVoices();
     $app.methods.saveNotificationTTS = function () {
@@ -10797,6 +10805,13 @@ speechSynthesis.getVoices();
         configRepository.setBool(
             'VRCX_vrBackgroundEnabled',
             $app.data.vrBackgroundEnabled
+        );
+    }
+    if (!configRepository.getBool('VRCX_legendColorOverride')) {
+        $app.data.legendColorOverride = false;
+        configRepository.setBool(
+            'VRCX_legendColorOverride',
+            $app.data.legendColorOverride
         );
     }
     if (!configRepository.getInt('VRCX_asidewidth')) {
@@ -11722,7 +11737,7 @@ speechSynthesis.getVoices();
     $app.methods.promptPhotonLobbyTimeoutThreshold = function () {
         this.$prompt(
             'Enter amount of seconds (default: 3)',
-            'Photon Lobby Timeout Threshold',
+            'User Timeout Threshold',
             {
                 distinguishCancelAndClose: true,
                 confirmButtonText: 'OK',
@@ -14272,6 +14287,14 @@ speechSynthesis.getVoices();
             type: 'success'
         });
         this.copyToClipboard(url);
+    };
+
+    $app.methods.copyText = function (text) {
+        this.$message({
+            message: 'Text copied to clipboard',
+            type: 'success'
+        });
+        this.copyToClipboard(text);
     };
 
     // App: VRCPlus Icons
@@ -18155,29 +18178,29 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.clearVRCXCache = function () {
-        API.cachedUsers.forEach((value, key) => {
+        API.cachedUsers.forEach((ref, id) => {
             if (
-                !this.friends.has(key) &&
-                !this.lastLocation.playerList.has(value.displayName) &&
-                key !== API.currentUser.id
+                !this.friends.has(id) &&
+                !this.lastLocation.playerList.has(ref.displayName) &&
+                id !== API.currentUser.id
             ) {
-                API.cachedUsers.delete(key);
+                API.cachedUsers.delete(id);
             }
         });
-        API.cachedWorlds.forEach((value, key) => {
+        API.cachedWorlds.forEach((ref, id) => {
             if (
-                !API.cachedFavoritesByObjectId.has(key) &&
-                value.authorId !== API.currentUser.id
+                !API.cachedFavoritesByObjectId.has(id) &&
+                ref.authorId !== API.currentUser.id
             ) {
-                API.cachedWorlds.delete(key);
+                API.cachedWorlds.delete(id);
             }
         });
-        API.cachedAvatars.forEach((value, key) => {
+        API.cachedAvatars.forEach((ref, id) => {
             if (
-                !API.cachedFavoritesByObjectId.has(key) &&
-                value.authorId !== API.currentUser.id
+                !API.cachedFavoritesByObjectId.has(id) &&
+                ref.authorId !== API.currentUser.id
             ) {
-                API.cachedAvatars.delete(key);
+                API.cachedAvatars.delete(id);
             }
         });
 
