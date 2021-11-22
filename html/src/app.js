@@ -8086,6 +8086,66 @@ speechSynthesis.getVoices();
         'CallUdonMethod'
     ];
 
+    $app.data.photonEmojis = [
+        'Angry',
+        'Blushing',
+        'Crying',
+        'Frown',
+        'Hand Wave',
+        'Hang Ten',
+        'In Love',
+        'Jack O Lantern',
+        'Kiss',
+        'Laugh',
+        'Skull',
+        'Smile',
+        'Spooky Ghost',
+        'Stoic',
+        'Sunglasses',
+        'Thinking',
+        'Thumbs Down',
+        'Thumbs Up',
+        'Tongue Out',
+        'Wow',
+        'Bats',
+        'Cloud',
+        'Fire',
+        'Snow Fall',
+        'Snowball',
+        'Splash',
+        'Web',
+        'Beer',
+        'Candy',
+        'Candy Cane',
+        'Candy Corn',
+        'Champagne',
+        'Drink',
+        'Gingerbread',
+        'Ice Cream',
+        'Pineapple',
+        'Pizza',
+        'Tomato',
+        'Beachball',
+        'Coal',
+        'Confetti',
+        'Gift',
+        'Gifts',
+        'Life Ring',
+        'Mistletoe',
+        'Money',
+        'Neon Shades',
+        'Sun Lotion',
+        'Boo',
+        'Broken Heart',
+        'Exclamation',
+        'Go',
+        'Heart',
+        'Music Note',
+        'Question',
+        'Stop',
+        'Zzz'
+    ];
+
     $app.methods.startLobbyWatcherLoop = function () {
         if (!this.photonLobbyWatcherLoop) {
             this.photonLobbyWatcherLoop = true;
@@ -8128,7 +8188,7 @@ speechSynthesis.getVoices();
                 var timeSinceLastEvent = dtNow - Date.parse(dt);
                 if (timeSinceLastEvent > this.photonLobbyTimeoutThreshold) {
                     var joinTime = this.photonLobbyJointime.get(id);
-                    if (!joinTime || joinTime + 60000 < dtNow) {
+                    if (!joinTime || joinTime + 120000 < dtNow) {
                         // wait 1min for user to load in
                         var displayName = '';
                         var userId = '';
@@ -8181,18 +8241,17 @@ speechSynthesis.getVoices();
                                 filteredHudTimeout.push(item);
                             }
                         });
-                        AppApi.ExecuteVrOverlayFunction(
-                            'updateHudTimeout',
-                            JSON.stringify(filteredHudTimeout)
-                        );
                     } else {
-                        AppApi.ExecuteVrOverlayFunction(
-                            'updateHudTimeout',
-                            JSON.stringify(hudTimeout)
-                        );
+                        var filteredHudTimeout = hudTimeout;
                     }
+                    AppApi.ExecuteVrOverlayFunction(
+                        'updateHudTimeout',
+                        JSON.stringify(filteredHudTimeout)
+                    );
                 }
                 this.photonLobbyTimeout = hudTimeout;
+
+                this.getCurrentInstanceUserList();
             }
             this.photonBotCheck(event7List);
         });
@@ -8602,6 +8661,8 @@ speechSynthesis.getVoices();
                     var text = 'Beep';
                 } else if (data.EventType === 'ReloadAvatarNetworkedRPC') {
                     var text = 'AvatarReset';
+                } else if (data.EventType === 'SpawnEmojiRPC') {
+                    var text = `SpawnEmoji ${this.photonEmojis[data.Data]}`;
                 } else {
                     var eventData = '';
                     if (data.Data) {
@@ -10650,7 +10711,7 @@ speechSynthesis.getVoices();
             'VRCX_legendColorOverride',
             this.legendColorOverride
         );
-        API.cachedUsers.forEach((ref, id) => {
+        API.cachedUsers.forEach((ref) => {
             API.applyUserTrustLevel(ref);
         });
     };
@@ -12285,6 +12346,7 @@ speechSynthesis.getVoices();
         var pushUser = function (ref) {
             var photonId = '';
             var masterId = 0;
+            var isFriend = false;
             $app.photonLobbyCurrent.forEach((ref1, id) => {
                 if (masterId === 0 || masterId > id) {
                     masterId = id;
@@ -12306,11 +12368,22 @@ speechSynthesis.getVoices();
             if (photonId === masterId) {
                 isMaster = true;
             }
+            var timeoutTime = 0;
+            if (typeof ref.id !== 'undefined') {
+                isFriend = $app.friends.has(ref.id);
+                $app.photonLobbyTimeout.forEach((ref1) => {
+                    if (ref1.userId === ref.id) {
+                        timeoutTime = ref1.time;
+                    }
+                });
+            }
             users.push({
                 ref,
                 timer: ref.$location_at,
                 photonId,
-                isMaster
+                isMaster,
+                isFriend,
+                timeoutTime
             });
             // get block, mute
         };
