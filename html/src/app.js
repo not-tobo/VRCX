@@ -872,8 +872,10 @@ speechSynthesis.getVoices();
                         this.region = 'europeanunion';
                     } else if (L.region === 'jp') {
                         this.region = 'jp';
+                    } else if (L.region === 'use') {
+                        this.region = 'flag-icon-use';
                     } else {
-                        this.region = 'us';
+                        this.region = 'flag-icon-usw';
                     }
                 }
             },
@@ -14062,8 +14064,10 @@ speechSynthesis.getVoices();
                 tags.push('~canRequestInvite');
             }
         }
-        if (D.region === 'USA') {
+        if (D.region === 'US West') {
             tags.push(`~region(us)`);
+        } else if (D.region === 'US East') {
+            tags.push(`~region(use)`);
         } else if (D.region === 'Europe') {
             tags.push(`~region(eu)`);
         } else if (D.region === 'Japan') {
@@ -14146,7 +14150,7 @@ speechSynthesis.getVoices();
                 'instanceDialogAccessType'
             );
         }
-        D.region = 'USA';
+        D.region = 'US West';
         if (configRepository.getString('instanceRegion') !== null) {
             D.region = configRepository.getString('instanceRegion');
         }
