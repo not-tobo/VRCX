@@ -8271,13 +8271,8 @@ speechSynthesis.getVoices();
                 currentUserPresent = true;
             }
             if (this.photonLobbyJointime.has(id)) {
-                var {
-                    joinTime,
-                    hasInstantiated,
-                    isInvisible,
-                    inVRMode,
-                    avatarEyeHeight
-                } = this.photonLobbyJointime.get(id);
+                var {joinTime, hasInstantiated, isInvisible, avatarEyeHeight} =
+                    this.photonLobbyJointime.get(id);
             }
             if (
                 (!joinTime || joinTime + 3000 < dtNow) &&
@@ -8877,8 +8872,8 @@ speechSynthesis.getVoices();
                 API.applyUser({
                     ...ref,
                     currentAvatarImageUrl: user.currentAvatarImageUrl,
-                        currentAvatarThumbnailImageUrl:
-                            user.currentAvatarThumbnailImageUrl
+                    currentAvatarThumbnailImageUrl:
+                        user.currentAvatarThumbnailImageUrl
                 });
             }
         }
