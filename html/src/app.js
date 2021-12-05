@@ -8284,17 +8284,6 @@ speechSynthesis.getVoices();
                 photonBots.unshift(id);
             }
             if (joinTime && joinTime + 10000 < dtNow && !hasInstantiated) {
-                if (!this.photonLobbyBots.includes(id)) {
-                    this.addEntryPhotonEvent({
-                        photonId: id,
-                        displayName: ref.displayName,
-                        userId: ref.id,
-                        text: 'photon bot has joined',
-                        created_at: new Date().toJSON()
-                    });
-                }
-                photonBots.unshift(id);
-            }
             if (isInvisible) {
                 if (!this.photonLobbyBots.includes(id)) {
                     this.addEntryPhotonEvent({
@@ -8306,8 +8295,22 @@ speechSynthesis.getVoices();
                     });
                 }
                 photonBots.unshift(id);
-            }
-            if (avatarEyeHeight < 0) {
+            } else if (avatarEyeHeight < 0) {
+                if (!this.photonLobbyBots.includes(id)) {
+                    this.addEntryPhotonEvent({
+                        photonId: id,
+                        displayName: ref.displayName,
+                        userId: ref.id,
+                        text: 'photon bot has joined',
+                        created_at: new Date().toJSON()
+                    });
+                }
+                photonBots.unshift(id);
+            } else if (
+                joinTime &&
+                joinTime + 10000 < dtNow &&
+                !hasInstantiated
+            ) {
                 if (!this.photonLobbyBots.includes(id)) {
                     this.addEntryPhotonEvent({
                         photonId: id,
@@ -8441,6 +8444,11 @@ speechSynthesis.getVoices();
                     this.lookupUser(ref);
                 }
             }
+        } else {
+            this.$message({
+                message: 'Missing user info',
+                type: 'error'
+            });
         }
     };
 
@@ -9076,6 +9084,10 @@ speechSynthesis.getVoices();
             /VideoPlay\(PyPyDance\) "(.+?)",([\d.]+),([\d.]+),"(.+?)\s*(?:)?"/g.exec(
                 gameLog.data
             );
+        if (!data) {
+            console.error('failed to parse', gameLog.data);
+            return;
+        }
         var videoUrl = data[1];
         var videoPos = Number(data[2]);
         var videoLength = Number(data[3]);
@@ -9141,9 +9153,13 @@ speechSynthesis.getVoices();
 
     $app.methods.addGameLogVRDancing = function (gameLog, location) {
         var data =
-            /VideoPlay\(VRDancing\) "(.+?)",([\d.]+),([\d.]+),([\d.]+),"(.+?)","(.+?)"/g.exec(
+            /VideoPlay\(VRDancing\) "(.+?)",([\d.]+),([\d.]+),(-?[\d.]+),"(.+?)","(.+?)"/g.exec(
                 gameLog.data
             );
+        if (!data) {
+            console.error('failed to parse', gameLog.data);
+            return;
+        }
         var videoUrl = data[1];
         var videoPos = Number(data[2]);
         var videoLength = Number(data[3]);
@@ -9470,7 +9486,8 @@ speechSynthesis.getVoices();
                 appId = '784094509008551956';
                 bigIcon = 'pypy';
             } else if (
-                L.worldId === 'wrld_42377cf1-c54f-45ed-8996-5875b0573a83'
+                L.worldId === 'wrld_42377cf1-c54f-45ed-8996-5875b0573a83' ||
+                L.worldId === 'wrld_dd6d2888-dbdc-47c2-bc98-3d631b2acd7c'
             ) {
                 appId = '846232616054030376';
                 bigIcon = 'vr_dancing';
@@ -11216,7 +11233,7 @@ speechSynthesis.getVoices();
             'sharedFeedFilters',
             JSON.stringify(this.sharedFeedFilters)
         );
-        this.updateVRConfigVars();
+        this.updateSharedFeed(true);
     };
 
     $app.methods.cancelSharedFeedFilters = function () {
@@ -11276,7 +11293,8 @@ speechSynthesis.getVoices();
     $app.methods.isDanceWorld = function (location) {
         var danceWorlds = [
             'wrld_f20326da-f1ac-45fc-a062-609723b097b1',
-            'wrld_42377cf1-c54f-45ed-8996-5875b0573a83'
+            'wrld_42377cf1-c54f-45ed-8996-5875b0573a83',
+            'wrld_dd6d2888-dbdc-47c2-bc98-3d631b2acd7c'
         ];
         var L = API.parseLocation(location);
         if (danceWorlds.includes(L.worldId)) {
@@ -11425,10 +11443,15 @@ speechSynthesis.getVoices();
             ) {
                 hmdOverlay = true;
             }
-            // active, hmdOverlay, wristOverlay
-            AppApi.SetVR(true, hmdOverlay, this.overlayWrist);
+            // active, hmdOverlay, wristOverlay, menuButton
+            AppApi.SetVR(
+                true,
+                hmdOverlay,
+                this.overlayWrist,
+                this.overlaybutton
+            );
         } else {
-            AppApi.SetVR(false, false, false);
+            AppApi.SetVR(false, false, false, false);
         }
     };
 
@@ -14378,7 +14401,8 @@ speechSynthesis.getVoices();
         loading: false,
         desktop: configRepository.getBool('launchAsDesktop'),
         location: '',
-        url: ''
+        url: '',
+        shortUrl: ''
     };
 
     $app.watch['launchDialog.desktop'] = function () {
@@ -14391,7 +14415,7 @@ speechSynthesis.getVoices();
 
     API.$on('INSTANCE:SHORTNAME', function (args) {
         var url = `https://vrch.at/${args.json}`;
-        $app.launchDialog.url = url;
+        $app.launchDialog.shortUrl = url;
     });
 
     $app.methods.showLaunchDialog = function (tag) {
@@ -14406,6 +14430,7 @@ speechSynthesis.getVoices();
         } else {
             D.location = L.worldId;
         }
+        D.shortUrl = '';
         D.url = getLaunchURL(L.worldId, L.instanceId);
         D.visible = true;
         API.getInstanceShortName({
