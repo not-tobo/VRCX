@@ -9681,8 +9681,15 @@ speechSynthesis.getVoices();
             params.user = 'me';
             params.releaseStatus = 'all';
         }
+        if (ref.tag) {
+            params.tag = ref.tag;
+        }
         if (!this.searchWorldLabs) {
-            params.tag = 'system_approved';
+           if (params.tag) {
+               params.tag += ',system_approved';
+           } else {
+               params.tag = 'system_approved';
+           }
         }
         // TODO: option.platform
         this.searchWorldParams = params;
