@@ -8283,7 +8283,6 @@ speechSynthesis.getVoices();
             ) {
                 photonBots.unshift(id);
             }
-            if (joinTime && joinTime + 10000 < dtNow && !hasInstantiated) {
             if (isInvisible) {
                 if (!this.photonLobbyBots.includes(id)) {
                     this.addEntryPhotonEvent({
@@ -9702,11 +9701,11 @@ speechSynthesis.getVoices();
             params.tag = ref.tag;
         }
         if (!this.searchWorldLabs) {
-           if (params.tag) {
-               params.tag += ',system_approved';
-           } else {
-               params.tag = 'system_approved';
-           }
+            if (params.tag) {
+                params.tag += ',system_approved';
+            } else {
+                params.tag = 'system_approved';
+            }
         }
         // TODO: option.platform
         this.searchWorldParams = params;
