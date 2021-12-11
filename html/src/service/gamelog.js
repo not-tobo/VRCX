@@ -51,8 +51,7 @@ class GameLogService {
                 break;
 
             case 'photon-event':
-                gameLog.eventType = args[0];
-                gameLog.json = args[1];
+                gameLog.json = args[0];
                 break;
 
             case 'photon-id':

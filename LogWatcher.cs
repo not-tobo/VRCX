@@ -193,9 +193,9 @@ namespace VRCX
                             if (logContext.incomingJson)
                             {
                                 logContext.jsonChunk += line;
-                                if (line == "}")
+                                if (line == "}}")
                                 {
-                                    var data = logContext.jsonChunk;
+                                    var data = logContext.jsonChunk.Replace("{{", "{").Replace("}}", "}");
                                     ParseLogPhotonEvent(fileInfo, data, logContext.jsonDate, logContext.photonEvent);
                                     logContext.incomingJson = false;
                                     logContext.jsonChunk = String.Empty;
@@ -231,9 +231,9 @@ namespace VRCX
                             var offset = 34;
                             if (line[offset] == '[')
                             {
-                                if (string.Compare(line, offset, "[Network Data] OnEvent: PLAYER:   ", 0, 34, StringComparison.Ordinal) == 0)
+                                if (string.Compare(line, offset, "[Network Data] OnEvent: PLAYER:  ", 0, 33, StringComparison.Ordinal) == 0)
                                 {
-                                    logContext.photonEvent = line.Substring(offset + 34);
+                                    logContext.photonEvent = line.Substring(offset + 33);
                                     logContext.incomingJson = true;
                                     logContext.jsonChunk = String.Empty;
                                     logContext.jsonDate = ConvertLogTimeToISO8601(line);
@@ -772,16 +772,23 @@ namespace VRCX
             return false;
         }
 
+        public class VrcEvent
+        {
+            public int Code { get; set; }
+            public Parameters Parameters { get; set; }
+            public int SenderKey { get; set; }
+            public int CustomDataKey { get; set; }
+            public int Type { get; set; }
+            public string EventType { get; set; }
+            public Object Data { get; set; }
+        }
+
         public class Parameters
         {
             [JsonPropertyName("245")]
             public _245 _245 { get; set; }
             [JsonPropertyName("254")]
             public int _254 { get; set; }
-
-            public int Type { get; set; }
-            public string EventType { get; set; }
-            public Object Data { get; set; }
         }
 
         public class _245
@@ -804,8 +811,8 @@ namespace VRCX
 
             if (photonEvent == "7")
             {
-                var json = System.Text.Json.JsonSerializer.Deserialize<Parameters>(data);
-                var photonId = json._254;
+                var json = System.Text.Json.JsonSerializer.Deserialize<VrcEvent>(data);
+                var photonId = json.Parameters._254;
                 if (photonEvent7.ContainsKey(photonId))
                 {
                     photonEvent7[photonId] = date;
@@ -818,14 +825,14 @@ namespace VRCX
 
             if (photonEvent == "254")
             {
-                var json = System.Text.Json.JsonSerializer.Deserialize<Parameters>(data);
-                photonEvent7.Remove(json._254);
+                var json = System.Text.Json.JsonSerializer.Deserialize<VrcEvent>(data);
+                photonEvent7.Remove(json.Parameters._254);
             }
 
             if (photonEvent == "6")
             {
-                var json = System.Text.Json.JsonSerializer.Deserialize<Parameters>(data);
-                byte[] bytes = Convert.FromBase64String(json._245.Value);
+                var json = System.Text.Json.JsonSerializer.Deserialize<VrcEvent>(data);
+                byte[] bytes = Convert.FromBase64String(json.Parameters._245.Value);
                 try
                 {
                     var deserialization = new VRCEventDeserialization();
@@ -833,7 +840,7 @@ namespace VRCX
                     json.Data = eventData.Data;
                     json.Type = eventData.Type;
                     json.EventType = eventData.EventType;
-                    data = System.Text.Json.JsonSerializer.Serialize<Parameters>(json);
+                    data = System.Text.Json.JsonSerializer.Serialize<VrcEvent>(json);
                 }
                 catch(Exception ex)
                 {
@@ -846,7 +853,6 @@ namespace VRCX
                 fileInfo.Name,
                 date,
                 "photon-event",
-                photonEvent,
                 data
             });
         }
