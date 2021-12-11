@@ -8668,17 +8668,17 @@ speechSynthesis.getVoices();
                     created_at: gameLogDate
                 });
             } else {
-                var eventType = '';
+                var vrcEventType = '';
                 if (data.EventType) {
                     if (Array.isArray(data.EventType)) {
-                        eventType = ` ${data.EventType.toString()}`;
+                        vrcEventType = ` ${data.EventType.toString()}`;
                     } else {
-                        eventType = ` ${data.EventType}`;
+                        vrcEventType = ` ${data.EventType}`;
                     }
                 }
                 var feed = `RPC ${displayName} ${
                     this.photonEventType[data.Type]
-                }${eventType}`;
+                }${vrcEventType}`;
                 console.log(feed);
             }
         }
