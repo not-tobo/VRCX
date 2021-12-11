@@ -7995,7 +7995,8 @@ speechSynthesis.getVoices();
                     console.error('error parsing photon json:', gameLog.json);
                     return;
                 }
-                this.parsePhotonEvent(data, gameLog.dt);
+                var eventType = parseInt(gameLog.eventType, 10);
+                this.parsePhotonEvent(eventType, data, gameLog.dt);
                 return;
             case 'photon-id':
                 if (!this.isGameRunning || !this.friendLogInitStatus) {
@@ -8420,83 +8421,69 @@ speechSynthesis.getVoices();
         return 0;
     };
 
-    $app.methods.parsePhotonEvent = function (data, gameLogDate) {
-        if (data.Code === 226) {
+    $app.methods.parsePhotonEvent = function (eventType, data, gameLogDate) {
+        if (eventType === 226) {
             // nothing
-        } else if (data.Code === 253) {
+        } else if (eventType === 253) {
             // SetUserProperties
-            this.parsePhotonUser(
-                data.Parameters[253],
-                data.Parameters[251].user,
-                gameLogDate
-            );
+            this.parsePhotonUser(data[253], data[251].user, gameLogDate);
             this.parsePhotonAvatarChange(
-                data.Parameters[253],
-                data.Parameters[251].user,
-                data.Parameters[251].avatarDict,
+                data[253],
+                data[251].user,
+                data[251].avatarDict,
                 gameLogDate
             );
-            this.parsePhotonAvatar(data.Parameters[251].avatarDict);
-            this.parsePhotonAvatar(data.Parameters[251].favatarDict);
-            if (typeof data.Parameters[251].inVRMode !== 'undefined') {
-                this.photonLobbyInVrMode.set(
-                    data.Parameters[253],
-                    data.Parameters[251].inVRMode
-                );
+            this.parsePhotonAvatar(data[251].avatarDict);
+            this.parsePhotonAvatar(data[251].favatarDict);
+            if (typeof data[251].inVRMode !== 'undefined') {
+                this.photonLobbyInVrMode.set(data[253], data[251].inVRMode);
             }
-        } else if (data.Code === 255) {
+        } else if (eventType === 255) {
             // Join
-            if (typeof data.Parameters[249] !== 'undefined') {
-                this.parsePhotonUser(
-                    data.Parameters[254],
-                    data.Parameters[249].user,
-                    gameLogDate
-                );
+            if (typeof data[249] !== 'undefined') {
+                this.parsePhotonUser(data[254], data[249].user, gameLogDate);
                 this.parsePhotonAvatarChange(
-                    data.Parameters[254],
-                    data.Parameters[249].user,
-                    data.Parameters[249].avatarDict,
+                    data[254],
+                    data[249].user,
+                    data[249].avatarDict,
                     gameLogDate
                 );
-                this.parsePhotonAvatar(data.Parameters[249].avatarDict);
-                this.parsePhotonAvatar(data.Parameters[249].favatarDict);
+                this.parsePhotonAvatar(data[249].avatarDict);
+                this.parsePhotonAvatar(data[249].favatarDict);
             }
-            if (typeof data.Parameters[249].inVRMode !== 'undefined') {
-                this.photonLobbyInVrMode.set(
-                    data.Parameters[254],
-                    data.Parameters[249].inVRMode
-                );
+            if (typeof data[249].inVRMode !== 'undefined') {
+                this.photonLobbyInVrMode.set(data[254], data[249].inVRMode);
             }
-            this.parsePhotonLobbyIds(data.Parameters[252].$values);
-            this.photonLobbyJointime.set(data.Parameters[254], {
+            this.parsePhotonLobbyIds(data[252].$values);
+            this.photonLobbyJointime.set(data[254], {
                 joinTime: Date.parse(gameLogDate),
                 hasInstantiated: false,
-                isInvisible: data.Parameters[249].isInvisible,
-                inVRMode: data.Parameters[249].inVRMode,
-                avatarEyeHeight: data.Parameters[249].avatarEyeHeight
+                isInvisible: data[249].isInvisible,
+                inVRMode: data[249].inVRMode,
+                avatarEyeHeight: data[249].avatarEyeHeight
             });
             this.startLobbyWatcherLoop();
-        } else if (data.Code === 254) {
+        } else if (eventType === 254) {
             // Leave
-            this.checkPhotonBotLeave(data.Parameters[254], gameLogDate);
-            this.photonUserLeave(data.Parameters[254], gameLogDate);
-            this.photonLobbyCurrent.delete(data.Parameters[254]);
-            this.photonLobbyJointime.delete(data.Parameters[254]);
-            this.photonLobbyInVrMode.delete(data.Parameters[254]);
-            this.parsePhotonLobbyIds(data.Parameters[252].$values);
-            if (typeof data.Parameters[203] !== 'undefined') {
-                this.setPhotonLobbyMaster(data.Parameters[203], gameLogDate);
+            this.checkPhotonBotLeave(data[254], gameLogDate);
+            this.photonUserLeave(data[254], gameLogDate);
+            this.photonLobbyCurrent.delete(data[254]);
+            this.photonLobbyJointime.delete(data[254]);
+            this.photonLobbyInVrMode.delete(data[254]);
+            this.parsePhotonLobbyIds(data[252].$values);
+            if (typeof data[203] !== 'undefined') {
+                this.setPhotonLobbyMaster(data[203], gameLogDate);
             }
-        } else if (data.Code === 4) {
+        } else if (eventType === 4) {
             // Sync
-            this.setPhotonLobbyMaster(data.Parameters[254], gameLogDate);
-        } else if (data.Code === 33) {
+            this.setPhotonLobbyMaster(data[254], gameLogDate);
+        } else if (eventType === 33) {
             // Moderation
-            if (data.Parameters[245]['0'] === 21) {
-                if (data.Parameters[245]['1']) {
-                    var photonId = data.Parameters[245]['1'];
-                    var block = data.Parameters[245]['10'];
-                    var mute = data.Parameters[245]['11'];
+            if (data[245]['0'] === 21) {
+                if (data[245]['1']) {
+                    var photonId = data[245]['1'];
+                    var block = data[245]['10'];
+                    var mute = data[245]['11'];
                     var ref = this.photonLobby.get(photonId);
                     if (
                         typeof ref !== 'undefined' &&
@@ -8524,8 +8511,8 @@ speechSynthesis.getVoices();
                         }
                     }
                 } else {
-                    var blockArray = data.Parameters[245]['10'].$values;
-                    var muteArray = data.Parameters[245]['11'].$values;
+                    var blockArray = data[245]['10'].$values;
+                    var muteArray = data[245]['11'].$values;
                     var idList = new Map();
                     blockArray.forEach((photonId1) => {
                         if (muteArray.includes(photonId1)) {
@@ -8561,25 +8548,23 @@ speechSynthesis.getVoices();
                     });
                 }
             }
-        } else if (data.Code === 202) {
+        } else if (eventType === 202) {
             // Instantiate
-            if (!this.photonLobby.has(data.Parameters[254])) {
-                this.photonLobby.set(data.Parameters[254]);
+            if (!this.photonLobby.has(data[254])) {
+                this.photonLobby.set(data[254]);
             }
-            if (!this.photonLobbyCurrent.has(data.Parameters[254])) {
-                this.photonLobbyCurrent.set(data.Parameters[254]);
+            if (!this.photonLobbyCurrent.has(data[254])) {
+                this.photonLobbyCurrent.set(data[254]);
             }
-            var lobbyJointime = this.photonLobbyJointime.get(
-                data.Parameters[254]
-            );
+            var lobbyJointime = this.photonLobbyJointime.get(data[254]);
             if (typeof lobbyJointime !== 'undefined') {
-                this.photonLobbyJointime.set(data.Parameters[254], {
+                this.photonLobbyJointime.set(data[254], {
                     ...lobbyJointime,
                     hasInstantiated: true
                 });
             }
-        } else if (data.Code === 6) {
-            var senderId = data.Parameters[254];
+        } else if (eventType === 6) {
+            var senderId = data[254];
             // VRC Event
             if (
                 data.EventType === 'ReceiveVoiceStatsSyncRPC' ||
