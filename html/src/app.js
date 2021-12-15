@@ -9040,6 +9040,9 @@ speechSynthesis.getVoices();
         if (typeof gameLog.videoPos !== 'undefined') {
             videoPos = gameLog.videoPos;
         }
+        if (!this.isDanceWorld(location) && videoUrl === this.nowPlaying.url) {
+            return;
+        }
         if (!this.isDanceWorld(location) || gameLog.videoId === 'YouTube') {
             // skip PyPyDance and VRDancing videos
             try {
