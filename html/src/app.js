@@ -13569,6 +13569,7 @@ speechSynthesis.getVoices();
         this.$nextTick(() => adjustDialogZ(this.$refs.avatarDialog.$el));
         var D = this.avatarDialog;
         D.visible = true;
+        D.loading = true;
         D.id = avatarId;
         D.treeData = [];
         D.fileSize = '';
@@ -13641,6 +13642,8 @@ speechSynthesis.getVoices();
                         D.fileSize = 'Error';
                     });
             }
+        }).finally(() => {
+            D.loading = false;
         });
     };
 
@@ -13650,6 +13653,9 @@ speechSynthesis.getVoices();
             return;
         }
         switch (command) {
+            case 'Refresh':
+                this.showAvatarDialog(D.id);
+                break;
             case 'Rename':
                 this.promptRenameAvatar(D);
                 break;
