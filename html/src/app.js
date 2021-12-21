@@ -18633,10 +18633,6 @@ speechSynthesis.getVoices();
         }
     };
 
-    $app.methods.eventPing = function (data) {
-        console.log('IPC Ping', data.version);
-    };
-
     $app = new Vue($app);
     window.$app = $app;
 })();
