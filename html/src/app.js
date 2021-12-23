@@ -8294,7 +8294,8 @@ speechSynthesis.getVoices();
 
     $app.methods.photonEventTableFilterChange = function () {
         this.photonEventTable.filters[0].value = this.photonEventTableFilter;
-        this.photonEventTablePrevious.filters[0].value = this.photonEventTableFilter;
+        this.photonEventTablePrevious.filters[0].value =
+            this.photonEventTableFilter;
     };
 
     $app.data.photonEventTable = {
