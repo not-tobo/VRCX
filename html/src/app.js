@@ -8,8 +8,6 @@ import Noty from 'noty';
 import Vue from 'vue';
 import VueLazyload from 'vue-lazyload';
 import {DataTables} from 'vue-data-tables';
-import VSwatches from 'vue-swatches';
-Vue.component('v-swatches', VSwatches);
 import ElementUI from 'element-ui';
 import locale from 'element-ui/lib/locale/lang/en';
 import {v4 as uuidv4} from 'uuid';
@@ -11202,21 +11200,6 @@ speechSynthesis.getVoices();
     $app.data.trustColor = JSON.parse(
         configRepository.getString('VRCX_trustColor')
     );
-
-    $app.data.trustColorSwatches = [
-        '#CCCCCC',
-        '#1778FF',
-        '#2BCF5C',
-        '#FF7B42',
-        '#B18FFF',
-        '#FFD000',
-        '#FF69B4',
-        '#ABCDEF',
-        '#8143E6',
-        '#B52626',
-        '#FF2626',
-        '#782F2F'
-    ];
 
     $app.methods.updatetrustColor = function () {
         var trustColor = $app.trustColor;
