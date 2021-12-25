@@ -13597,6 +13597,7 @@ speechSynthesis.getVoices();
                 ref2.releaseStatus !== 'public' &&
                 ref2.authorId !== API.currentUser.id
             ) {
+                D.loading = false;
                 return;
             }
         }
