@@ -6672,6 +6672,9 @@ speechSynthesis.getVoices();
                 this.friendsGroup3_.push(ctx);
                 this.friendsGroupD_.unshift(ctx);
             }
+            if (ctx.state !== newState) {
+                this.updateOnlineFriendCoutner();
+            }
             ctx.state = newState;
             ctx.name = ctx.ref.displayName;
             ctx.isVIP = isVIP;
@@ -6710,6 +6713,19 @@ speechSynthesis.getVoices();
                 this.sortFriendsGroup0 = true;
                 this.friendsGroupB_.unshift(ctx);
             }
+        }
+    };
+
+    $app.data.onlineFriendCount = 0;
+    $app.methods.updateOnlineFriendCoutner = function () {
+        var onlineFriendCount =
+            this.friendsGroup0.length + this.friendsGroup1.length;
+        if (onlineFriendCount !== this.onlineFriendCount) {
+            AppApi.ExecuteVrFeedFunction(
+                'updateOnlineFriendCount',
+                `${onlineFriendCount}`
+            );
+            this.onlineFriendCount = onlineFriendCount;
         }
     };
 
@@ -11415,6 +11431,10 @@ speechSynthesis.getVoices();
         this.updateVRLastLocation();
         this.updateVrNowPlaying();
         this.updateSharedFeed(true);
+        AppApi.ExecuteVrFeedFunction(
+            'updateOnlineFriendCount',
+            `${this.onlineFriendCount}`
+        );
     };
 
     $app.data.localAvatarDatabaseAvailable = false;
