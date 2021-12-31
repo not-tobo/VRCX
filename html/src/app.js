@@ -12089,9 +12089,9 @@ speechSynthesis.getVoices();
             avatarName: '',
             fileCreatedAt: ''
         },
-        lastSeen: '',
         joinCount: 0,
-        timeSpent: ''
+        timeSpent: 0,
+        lastSeen: ''
     };
 
     $app.watch['userDialog.memo'] = function () {
@@ -12304,7 +12304,7 @@ speechSynthesis.getVoices();
         };
         D.lastSeen = '';
         D.joinCount = 0;
-        D.timeSpent = '';
+        D.timeSpent = 0;
         API.getCachedUser({
             userId
         })
@@ -13117,7 +13117,10 @@ speechSynthesis.getVoices();
         cacheSize: 0,
         cacheLocked: false,
         lastVisit: '',
-        visitCount: 0
+        visitCount: 0,
+        timeSpent: 0,
+        isPC: false,
+        isQuest: false
     };
 
     API.$on('LOGOUT', function () {
@@ -13216,6 +13219,9 @@ speechSynthesis.getVoices();
         D.rooms = [];
         D.lastVisit = '';
         D.visitCount = '';
+        D.timeSpent = 0;
+        D.isPC = false;
+        D.isQuest = false;
         database.getLastVisit(D.id).then((ref) => {
             if (ref.worldId === D.id) {
                 D.lastVisit = ref.created_at;
@@ -13224,6 +13230,11 @@ speechSynthesis.getVoices();
         database.getVisitCount(D.id).then((ref) => {
             if (ref.worldId === D.id) {
                 D.visitCount = ref.visitCount;
+            }
+        });
+        database.getTimeSpentInWorld(D.id).then((ref) => {
+            if (ref.worldId === D.id) {
+                D.timeSpent = ref.timeSpent;
             }
         });
         API.getCachedWorld({
@@ -13239,6 +13250,13 @@ speechSynthesis.getVoices();
                     D.loading = false;
                     D.ref = args.ref;
                     D.isFavorite = API.cachedFavoritesByObjectId.has(D.id);
+                    for (var unityPackage of args.ref.unityPackages) {
+                        if (unityPackage.platform === 'standalonewindows') {
+                            D.isPC = true;
+                        } else if (unityPackage.platform === 'android') {
+                            D.isQuest = true;
+                        }
+                    }
                     this.updateVRChatWorldCache();
                     if (args.cache) {
                         API.getWorld(args.params)
