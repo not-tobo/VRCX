@@ -6325,6 +6325,7 @@ speechSynthesis.getVoices();
     API.$on('USER:CURRENT', function (args) {
         // USER:CURRENT에서 처리를 함
         $app.refreshFriends(args.ref, args.origin);
+        $app.updateOnlineFriendCoutner();
     });
 
     API.$on('USER', function (args) {
@@ -11457,10 +11458,8 @@ speechSynthesis.getVoices();
         this.updateVRLastLocation();
         this.updateVrNowPlaying();
         this.updateSharedFeed(true);
-        AppApi.ExecuteVrFeedFunction(
-            'updateOnlineFriendCount',
-            `${this.onlineFriendCount}`
-        );
+        this.onlineFriendCount = 0;
+        this.updateOnlineFriendCoutner();
     };
 
     $app.data.localAvatarDatabaseAvailable = false;
