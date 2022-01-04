@@ -8798,6 +8798,7 @@ speechSynthesis.getVoices();
         var args = await API.getCachedWorld({
             worldId: L.worldId
         });
+        this.portalDownloadWorldCache(args.ref, ref);
         this.addPhotonEventToGameLog({
             created_at,
             type: 'PortalSpawn',
@@ -10890,6 +10891,9 @@ speechSynthesis.getVoices();
     $app.data.worldAutoCacheGPSFilter = configRepository.getBool(
         'VRCX_worldAutoCacheGPSFilter'
     );
+    $app.data.portalAutoCache = configRepository.getString(
+        'VRCX_portalAutoCache'
+    );
     $app.data.autoSweepVRChatCache = configRepository.getBool(
         'VRCX_autoSweepVRChatCache'
     );
@@ -10953,6 +10957,10 @@ speechSynthesis.getVoices();
         configRepository.setBool(
             'VRCX_worldAutoCacheGPSFilter',
             this.worldAutoCacheGPSFilter
+        );
+        configRepository.setString(
+            'VRCX_portalAutoCache',
+            this.portalAutoCache
         );
         configRepository.setBool(
             'VRCX_autoSweepVRChatCache',
@@ -11129,6 +11137,13 @@ speechSynthesis.getVoices();
         configRepository.setString(
             'VRCX_worldAutoCacheGPS',
             $app.data.worldAutoCacheGPS
+        );
+    }
+    if (!configRepository.getString('VRCX_portalAutoCache')) {
+        $app.data.portalAutoCache = 'Off';
+        configRepository.setString(
+            'VRCX_portalAutoCache',
+            $app.data.portalAutoCache
         );
     }
     if (!configRepository.getBool('VRCX_vrBackgroundEnabled')) {
@@ -17693,6 +17708,18 @@ speechSynthesis.getVoices();
         }
     };
 
+    $app.methods.portalDownloadWorldCache = function (worldRef, userRef) {
+        var isFriend = this.friends.has(userRef.id);
+        var isFavorite = API.cachedFavoritesByObjectId.has(userRef.id);
+        if (
+            this.portalAutoCache === 'Everyone' ||
+            (this.portalAutoCache === 'Friends' && isFriend) ||
+            (this.portalAutoCache === 'VIP' && isFavorite)
+        ) {
+            this.autoDownloadWorldCache(worldRef.id, 'Portal', userRef.id);
+        }
+    };
+
     $app.methods.feedDownloadWorldCache = function (id, location) {
         if (
             this.worldAutoCacheGPS === 'Always' ||
@@ -17786,6 +17813,20 @@ speechSynthesis.getVoices();
                         type: 'success'
                     });
                 }
+                if (
+                    this.isGameRunning &&
+                    (this.downloadCurrent.type === 'Invite' ||
+                        this.downloadCurrent.type === 'Portal')
+                ) {
+                    var entry = {
+                        created_at: new Date().toJSON(),
+                        type: 'Event',
+                        data: `World finished caching ${this.downloadCurrent.ref.name}`
+                    };
+                    this.queueGameLogNoty(entry);
+                    this.addGameLog(entry);
+                    database.addGamelogEventToDatabase(entry);
+                }
                 this.downloadCurrent.status = 'Success';
                 this.downloadCurrent.date = Date.now();
                 this.downloadHistoryTable.data.unshift(this.downloadCurrent);
@@ -17842,6 +17883,20 @@ speechSynthesis.getVoices();
                         message: 'File already in cache',
                         type: 'warning'
                     });
+                }
+                if (
+                    this.isGameRunning &&
+                    (this.downloadCurrent.type === 'Invite' ||
+                        this.downloadCurrent.type === 'Portal')
+                ) {
+                    var entry = {
+                        created_at: new Date().toJSON(),
+                        type: 'Event',
+                        data: `World already in cache ${this.downloadCurrent.ref.name}`
+                    };
+                    this.queueGameLogNoty(entry);
+                    this.addGameLog(entry);
+                    database.addGamelogEventToDatabase(entry);
                 }
                 this.downloadCurrent.status = 'Already in cache';
                 this.downloadCurrent.date = Date.now();
