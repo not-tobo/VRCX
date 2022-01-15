@@ -4041,6 +4041,8 @@ speechSynthesis.getVoices();
             nextCurrentUserRefresh: 0,
             nextFriendsRefresh: 0,
             nextAppUpdateCheck: 0,
+            ipcTimeout: 0,
+            nextClearVRCXCacheCheck: 0,
             isGameRunning: false,
             isGameNoVR: false,
             isSteamVRRunning: false,
@@ -4144,6 +4146,13 @@ speechSynthesis.getVoices();
                 }
                 if (--this.ipcTimeout <= 0) {
                     this.ipcEnabled = false;
+                }
+                if (
+                    --this.nextClearVRCXCacheCheck <= 0 &&
+                    this.clearVRCXCacheFrequency > 0
+                ) {
+                    this.nextClearVRCXCacheCheck = this.clearVRCXCacheFrequency;
+                    this.clearVRCXCache();
                 }
                 AppApi.CheckGameRunning().then(
                     ([isGameRunning, isGameNoVR, isSteamVRRunning]) => {
@@ -10957,6 +10966,12 @@ speechSynthesis.getVoices();
     $app.data.photonLobbyTimeoutThreshold = configRepository.getString(
         'VRCX_photonLobbyTimeoutThreshold'
     );
+    $app.data.clearVRCXCacheFrequency = configRepository.getString(
+        'VRCX_clearVRCXCacheFrequency'
+    );
+    $app.data.nextClearVRCXCacheCheck = configRepository.getString(
+        'VRCX_clearVRCXCacheFrequency'
+    );
     $app.methods.saveOpenVROption = function () {
         configRepository.setBool('openVR', this.openVR);
         configRepository.setBool('openVRAlways', this.openVRAlways);
@@ -11243,6 +11258,13 @@ speechSynthesis.getVoices();
         configRepository.setString(
             'VRCX_photonLobbyTimeoutThreshold',
             $app.data.photonLobbyTimeoutThreshold
+        );
+    }
+    if (!configRepository.getString('VRCX_clearVRCXCacheFrequency')) {
+        $app.data.clearVRCXCacheFrequency = 172800; // 24 hours
+        configRepository.setString(
+            'VRCX_clearVRCXCacheFrequency',
+            $app.data.clearVRCXCacheFrequency
         );
     }
     if (!configRepository.getString('VRCX_TimeoutHudOverlayFilter')) {
@@ -12150,6 +12172,36 @@ speechSynthesis.getVoices();
                         configRepository.setString(
                             'VRCX_photonLobbyTimeoutThreshold',
                             this.photonLobbyTimeoutThreshold
+                        );
+                    }
+                }
+            }
+        );
+    };
+
+    $app.methods.promptAutoClearVRCXCacheFrequency = function () {
+        this.$prompt(
+            'Enter amount of hours (default: 24, disabled: 0)',
+            'Clear VRCX Cache Timer',
+            {
+                distinguishCancelAndClose: true,
+                confirmButtonText: 'OK',
+                cancelButtonText: 'Cancel',
+                inputValue: this.clearVRCXCacheFrequency / 3600 / 2,
+                inputPattern: /\d+$/,
+                inputErrorMessage: 'Valid number is required',
+                callback: (action, instance) => {
+                    if (
+                        action === 'confirm' &&
+                        instance.inputValue &&
+                        !isNaN(instance.inputValue)
+                    ) {
+                        this.clearVRCXCacheFrequency = Math.trunc(
+                            Number(instance.inputValue) * 3600 * 2
+                        );
+                        configRepository.setString(
+                            'VRCX_clearVRCXCacheFrequency',
+                            this.clearVRCXCacheFrequency
                         );
                     }
                 }
