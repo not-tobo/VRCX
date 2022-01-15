@@ -403,7 +403,7 @@ namespace VRCX
                 return true;
             }
 
-            if ((line.Contains("[Behaviour] OnPlayerLeft") || line.Contains("[NetworkManager] OnPlayerLeft")) && !line.Contains("] OnPlayerLeftRoom"))
+            if ((line.Contains("[Behaviour] OnPlayerLeft") || line.Contains("[NetworkManager] OnPlayerLeft")) && !line.Contains("] OnPlayerLeftRoom") && !line.Contains("] OnPlayerLeft:"))
             {
                 var lineOffset = line.LastIndexOf("] OnPlayerLeft");
                 if (lineOffset < 0)
