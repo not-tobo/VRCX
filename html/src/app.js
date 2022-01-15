@@ -18913,6 +18913,14 @@ speechSynthesis.getVoices();
         }
     };
 
+    $app.methods.toggleAvatarCopying = function () {
+        API.saveCurrentUser({
+            allowAvatarCopying: !API.currentUser.allowAvatarCopying
+        }).then((args) => {
+            return args;
+        });
+    };
+
     $app = new Vue($app);
     window.$app = $app;
 })();
