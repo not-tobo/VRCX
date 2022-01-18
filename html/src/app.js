@@ -7280,6 +7280,7 @@ speechSynthesis.getVoices();
     };
 
     API.$on('LOGIN', async function (args) {
+        $app.friendLog = new Map();
         $app.feedTable.data = [];
         $app.feedSessionTable = [];
         $app.friendLogInitStatus = false;
@@ -10322,7 +10323,6 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.getFriendLog = async function () {
-        this.friendLog = new Map();
         var friendLogCurrentArray = await database.getFriendLogCurrent();
         for (var friend of friendLogCurrentArray) {
             this.friendLog.set(friend.userId, friend);
@@ -16609,7 +16609,7 @@ speechSynthesis.getVoices();
 
     $app.methods.displayPreviousImages = function (type, command) {
         this.previousImagesTableFileId = '';
-        this.previousImagesTable = '';
+        this.previousImagesTable = [];
         var imageUrl = '';
         if (type === 'Avatar') {
             var {imageUrl} = this.avatarDialog.ref;
@@ -16701,11 +16701,11 @@ speechSynthesis.getVoices();
     $app.data.changeAvatarImageDialogLoading = false;
     $app.data.changeWorldImageDialogVisible = false;
     $app.data.changeWorldImageDialogLoading = false;
-    $app.data.previousImagesTable = {};
+    $app.data.previousImagesTable = [];
     $app.data.previousImagesFileId = '';
 
     API.$on('LOGIN', function () {
-        $app.previousImagesTable = {};
+        $app.previousImagesTable = [];
         $app.previousImagesDialogVisible = false;
     });
 
