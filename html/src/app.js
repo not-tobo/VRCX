@@ -10541,20 +10541,31 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.deleteFriendLog = function (row) {
-        // FIXME: 메시지 수정
         this.$confirm('Continue? Delete Log', 'Confirm', {
             confirmButtonText: 'Confirm',
             cancelButtonText: 'Cancel',
             type: 'info',
             callback: (action) => {
-                if (
-                    action === 'confirm' &&
-                    removeFromArray(this.friendLogTable.data, row)
-                ) {
+                if (action === 'confirm') {
+                    removeFromArray(this.friendLogTable.data, row);
                     database.deleteFriendLogHistory(row.rowId);
                 }
             }
         });
+    };
+
+    $app.methods.deleteFriendLogUnfriendBug = function () {
+        var i = 0;
+        this.friendLogTable.data.forEach((ref) => {
+            if (ref.type === 'Unfriend' && ref.created_at > '2022-01-14T01:00:00.000Z') {
+                i++;
+                database.deleteFriendLogHistory(ref.rowId);
+            }
+        });
+        database.getFriendLogHistory().then((data) => {
+            this.friendLogTable.data = data;
+        });
+        console.log(`Deleted ${i} unfriend logs`);
     };
 
     // App: Moderation
