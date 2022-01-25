@@ -8010,6 +8010,12 @@ speechSynthesis.getVoices();
                 this.lastVideoUrl = gameLog.videoUrl;
                 this.addGameLogVideo(gameLog, location, userId);
                 return;
+            case 'video-sync':
+                var timestamp = gameLog.timestamp.replace(/,/g, '');
+                if (this.nowPlaying.playing) {
+                    this.nowPlaying.offset = parseInt(timestamp, 10);
+                }
+                return;
             case 'api-request':
                 var bias = Date.parse(gameLog.dt) + 60 * 1000;
                 if (!this.isGameRunning || bias < Date.now()) {
@@ -9200,10 +9206,6 @@ speechSynthesis.getVoices();
                         videoLength = this.convertYoutubeTime(
                             data.items[0].contentDetails.duration
                         );
-                        if (videoLength) {
-                            // add loading time
-                            videoLength += 15;
-                        }
                     }
                 }
             } catch {
@@ -9397,6 +9399,7 @@ speechSynthesis.getVoices();
         name: '',
         length: 0,
         startTime: 0,
+        offset: 0,
         elapsed: 0,
         percentage: 0,
         remainingText: '',
@@ -9409,6 +9412,7 @@ speechSynthesis.getVoices();
             name: '',
             length: 0,
             startTime: 0,
+            offset: 0,
             elapsed: 0,
             percentage: 0,
             remainingText: '',
@@ -9432,7 +9436,8 @@ speechSynthesis.getVoices();
                 url: ctx.videoUrl,
                 name,
                 length: ctx.videoLength,
-                startTime: Date.parse(ctx.created_at) / 1000 - ctx.videoPos,
+                startTime: Date.parse(ctx.created_at) / 1000,
+                offset: ctx.videoPos,
                 elapsed: 0,
                 percentage: 0,
                 remainingText: ''
@@ -9441,7 +9446,8 @@ speechSynthesis.getVoices();
             this.nowPlaying = {
                 ...this.nowPlaying,
                 length: ctx.videoLength,
-                startTime: Date.parse(ctx.created_at) / 1000 - ctx.videoPos,
+                startTime: Date.parse(ctx.created_at) / 1000,
+                offset: ctx.videoPos,
                 elapsed: 0,
                 percentage: 0,
                 remainingText: ''
@@ -9461,7 +9467,7 @@ speechSynthesis.getVoices();
             return;
         }
         var now = Date.now() / 1000;
-        np.elapsed = Math.round((now - np.startTime) * 10) / 10;
+        np.elapsed = Math.round((now - np.startTime + np.offset) * 10) / 10;
         if (np.elapsed >= np.length) {
             this.clearNowPlaying();
             return;
@@ -9649,7 +9655,10 @@ speechSynthesis.getVoices();
             if (this.nowPlaying.playing) {
                 Discord.SetTimestamps(
                     Date.now(),
-                    (this.nowPlaying.startTime + this.nowPlaying.length) * 1000
+                    (this.nowPlaying.startTime -
+                        this.nowPlaying.offset +
+                        this.nowPlaying.length) *
+                        1000
                 );
             }
         }
