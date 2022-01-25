@@ -111,7 +111,7 @@ speechSynthesis.getVoices();
         this.Set(key, JSON.stringify(value));
     };
 
-    setInterval(function () {
+    workerTimers.setInterval(function () {
         VRCXStorage.Flush();
     }, 5 * 60 * 1000);
 
@@ -3968,7 +3968,7 @@ speechSynthesis.getVoices();
         }
     });
 
-    setInterval(function () {
+    workerTimers.setInterval(function () {
         for (var $timer of $timers) {
             $timer.update();
         }
@@ -4026,7 +4026,7 @@ speechSynthesis.getVoices();
         }
     });
 
-    setInterval(function () {
+    workerTimers.setInterval(function () {
         for (var $countDownTimer of $countDownTimers) {
             $countDownTimer.update();
         }
@@ -7608,7 +7608,6 @@ speechSynthesis.getVoices();
         this.moderationEventQueue = new Map();
         this.lastPortalId = '';
         this.lastPortalList = new Map();
-        this.portalQueue = '';
         if (this.photonEventTable.data.length > 0) {
             this.photonEventTablePrevious.data = this.photonEventTable.data;
             this.photonEventTable.data = [];
@@ -7990,20 +7989,7 @@ speechSynthesis.getVoices();
                 database.addGamelogJoinLeaveToDatabase(entry);
                 break;
             case 'portal-spawn':
-                if (this.portalQueue === 'skip') {
-                    this.portalQueue = '';
-                    return;
-                } else if (this.portalQueue && gameLog.userDisplayName) {
-                    var ref = {
-                        id: userId,
-                        displayName: gameLog.userDisplayName
-                    };
-                    this.parsePhotonPortalSpawn(
-                        gameLog.dt,
-                        this.portalQueue,
-                        ref
-                    );
-                    this.portalQueue = '';
+                if (this.ipcEnabled && this.isGameRunning) {
                     return;
                 }
                 var entry = {
@@ -8103,7 +8089,6 @@ speechSynthesis.getVoices();
         'https://gist.github.com/Natsumi-sama/d280a58f08ace3da0e8fc7a9a381d44e';
     $app.data.lastPortalId = '';
     $app.data.lastPortalList = new Map();
-    $app.data.portalQueue = '';
     $app.data.moderationEventQueue = new Map();
     $app.data.moderationAgainstTable = [];
     $app.data.photonLobby = new Map();
@@ -8752,14 +8737,11 @@ speechSynthesis.getVoices();
                             id: this.getUserIdFromPhotonId(senderId),
                             displayName
                         };
-                        this.portalQueue = 'skip';
                         this.parsePhotonPortalSpawn(
                             gameLogDate,
                             instanceId,
                             ref1
                         );
-                    } else {
-                        this.portalQueue = instanceId;
                     }
                     return;
                 } else if (eventData.Type > 34) {
@@ -8796,11 +8778,9 @@ speechSynthesis.getVoices();
                     } else {
                         var eventVrc = '';
                         if (eventData.Data) {
-                            if (Array.isArray(eventData.Data)) {
-                                eventVrc = ` ${eventData.Data.toString()}`;
-                            } else {
-                                eventVrc = ` ${eventData.Data}`;
-                            }
+                            eventVrc = ` ${JSON.stringify(
+                                eventData.Data
+                            ).replace(/"([^(")"]+)":/g, '$1:')}`;
                         }
                         var text = `${eventData.EventType}${eventVrc}`;
                     }
@@ -9130,9 +9110,14 @@ speechSynthesis.getVoices();
             oldAvatarId !== avatar.id &&
             user.id !== API.currentUser.id
         ) {
-            var entry = {
-                created_at: new Date().toJSON(),
-                type: 'AvatarChange',
+            this.checkVRChatCache(avatar).then((cacheInfo) => {
+                var inCache = false;
+                if (cacheInfo[0] > 0) {
+                    inCache = true;
+                }
+                var entry = {
+                    created_at: new Date().toJSON(),
+                    type: 'AvatarChange',
                 userId: user.id,
                 displayName: user.displayName,
                 name: avatar.name,
@@ -9148,10 +9133,12 @@ speechSynthesis.getVoices();
             this.addEntryPhotonEvent({
                 photonId,
                 displayName: user.displayName,
-                userId: user.id,
-                text: `ChangeAvatar ${avatar.name}`,
-                created_at: gameLogDate,
-                avatar
+                    userId: user.id,
+                    text: `ChangeAvatar ${avatar.name}`,
+                    created_at: gameLogDate,
+                    avatar,
+                    inCache
+                });
             });
         }
         this.photonLobbyAvatars.set(user.id, avatar.id);
@@ -9186,7 +9173,7 @@ speechSynthesis.getVoices();
         var videoName = '';
         var videoLength = '';
         var displayName = '';
-        var videoPos = 10; // video loading delay
+        var videoPos = 8; // video loading delay
         if (typeof gameLog.displayName !== 'undefined') {
             displayName = gameLog.displayName;
         }
@@ -17750,6 +17737,69 @@ speechSynthesis.getVoices();
         this.downloadVRChatCacheProgress();
     };
 
+    $app.methods.downloadVRChatCacheOldVersion = async function (
+        worldId,
+        oldAssetUrl
+    ) {
+        var args = await API.getWorld({worldId});
+        var ref = args.json;
+        var latestAssetUrl = '';
+        for (var i = ref.unityPackages.length - 1; i > -1; i--) {
+            var unityPackage = ref.unityPackages[i];
+            if (
+                unityPackage.platform === 'standalonewindows' &&
+                this.compareUnityVersion(unityPackage.unityVersion) &&
+                !latestAssetUrl
+            ) {
+                latestAssetUrl = unityPackage.assetUrl;
+                break;
+            }
+        }
+        if (latestAssetUrl === oldAssetUrl) {
+            console.log('File version is latest');
+            return;
+        }
+        var fileId = extractFileId(latestAssetUrl);
+        var fileVersion = parseInt(extractFileVersion(latestAssetUrl), 10);
+        var oldFileId = extractFileId(oldAssetUrl);
+        var oldFileVersion = parseInt(extractFileVersion(oldAssetUrl), 10);
+        if (!fileId) {
+            console.log('latestFileId invalid asset url');
+            return;
+        }
+        if (!oldFileId) {
+            console.log('oldFileId invalid asset url');
+            return;
+        }
+        var args = await API.getBundles(oldFileId);
+        var {versions} = args.json;
+        var file = '';
+        for (var i = versions.length - 1; i > -1; i--) {
+            var version = versions[i];
+            if (version.version === oldFileVersion) {
+                file = version.file;
+                break;
+            }
+        }
+        if (!file) {
+            console.log('Missing asset version');
+            return;
+        }
+        var {url, md5, sizeInBytes} = file;
+        var cacheDir = await this.getVRChatCacheDir();
+        await AssetBundleCacher.DeleteCache(cacheDir, fileId, fileVersion);
+        await AssetBundleCacher.DownloadCacheFile(
+            cacheDir,
+            url,
+            fileId,
+            fileVersion,
+            sizeInBytes,
+            md5,
+            appVersion,
+            false
+        );
+    };
+
     $app.methods.cancelVRChatCacheDownload = function (location) {
         var L = API.parseLocation(location);
         if (L.worldId) {
@@ -17910,7 +17960,8 @@ speechSynthesis.getVoices();
                 if (
                     this.isGameRunning &&
                     (this.downloadCurrent.type === 'Invite' ||
-                        this.downloadCurrent.type === 'Portal')
+                        this.downloadCurrent.type === 'Portal' ||
+                        this.downloadCurrent.type === 'Manual')
                 ) {
                     var entry = {
                         created_at: new Date().toJSON(),
