@@ -8338,7 +8338,9 @@ speechSynthesis.getVoices();
                     var entry = {
                         created_at: new Date().toJSON(),
                         type: 'Event',
-                        data: `${text} - ${this.getDisplayNameFromPhotonId(photonId)} (${this.getUserIdFromPhotonId(photonId)})`
+                        data: `${text} - ${this.getDisplayNameFromPhotonId(
+                            id
+                        )} (${this.getUserIdFromPhotonId(id)})`
                     };
                     this.queueGameLogNoty(entry);
                     this.addGameLog(entry);
@@ -8919,7 +8921,9 @@ speechSynthesis.getVoices();
             var entry = {
                 created_at: new Date().toJSON(),
                 type: 'Event',
-                data: `${text} - ${this.getDisplayNameFromPhotonId(photonId)} (${this.getUserIdFromPhotonId(photonId)})`
+                data: `${text} - ${this.getDisplayNameFromPhotonId(
+                    photonId
+                )} (${this.getUserIdFromPhotonId(photonId)})`
             };
             this.queueGameLogNoty(entry);
             this.addGameLog(entry);
@@ -10557,7 +10561,10 @@ speechSynthesis.getVoices();
     $app.methods.deleteFriendLogUnfriendBug = function () {
         var i = 0;
         this.friendLogTable.data.forEach((ref) => {
-            if (ref.type === 'Unfriend' && ref.created_at > '2022-01-14T01:00:00.000Z') {
+            if (
+                ref.type === 'Unfriend' &&
+                ref.created_at > '2022-01-14T01:00:00.000Z'
+            ) {
                 i++;
                 database.deleteFriendLogHistory(ref.rowId);
             }
