@@ -9126,21 +9126,21 @@ speechSynthesis.getVoices();
                 var entry = {
                     created_at: new Date().toJSON(),
                     type: 'AvatarChange',
-                userId: user.id,
-                displayName: user.displayName,
-                name: avatar.name,
-                description: avatar.description,
-                avatarId: avatar.id,
-                authorId: avatar.authorId,
-                releaseStatus: avatar.releaseStatus,
-                imageUrl: avatar.imageUrl,
-                thumbnailImageUrl: avatar.thumbnailImageUrl
-            };
-            this.queueGameLogNoty(entry);
-            this.addGameLog(entry);
-            this.addEntryPhotonEvent({
-                photonId,
-                displayName: user.displayName,
+                    userId: user.id,
+                    displayName: user.displayName,
+                    name: avatar.name,
+                    description: avatar.description,
+                    avatarId: avatar.id,
+                    authorId: avatar.authorId,
+                    releaseStatus: avatar.releaseStatus,
+                    imageUrl: avatar.imageUrl,
+                    thumbnailImageUrl: avatar.thumbnailImageUrl
+                };
+                this.queueGameLogNoty(entry);
+                this.addGameLog(entry);
+                this.addEntryPhotonEvent({
+                    photonId,
+                    displayName: user.displayName,
                     userId: user.id,
                     text: `ChangeAvatar ${avatar.name}`,
                     created_at: gameLogDate,
@@ -9953,11 +9953,11 @@ speechSynthesis.getVoices();
                 for (var ref of API.cachedAvatars.values()) {
                     var match = ref.name.toUpperCase().includes(query);
                     if (!match && ref.description) {
-                    match = ref.description.toUpperCase().includes(query);
-                }
-                if (!match && ref.authorName) {
-                    match = ref.authorName.toUpperCase().includes(query);
-                }
+                        match = ref.description.toUpperCase().includes(query);
+                    }
+                    if (!match && ref.authorName) {
+                        match = ref.authorName.toUpperCase().includes(query);
+                    }
                     if (match) {
                         switch (this.searchAvatarFilter) {
                             case 'all':
@@ -12636,14 +12636,14 @@ speechSynthesis.getVoices();
                         this.userDialogLastAvatar = userId;
                         if (
                             userId === API.currentUser.id &&
-                                D.avatars.length === 0
-                            ) {
-                                this.refreshUserDialogAvatars();
-                            }
-                            if (this.localAvatarDatabaseEnable) {
-                                if (this.localAvatarDatabaseAuthorCache) {
-                                    this.getLocalAvatarCacheFromAuthor(userId);
-                                } else {
+                            D.avatars.length === 0
+                        ) {
+                            this.refreshUserDialogAvatars();
+                        }
+                        if (this.localAvatarDatabaseEnable) {
+                            if (this.localAvatarDatabaseAuthorCache) {
+                                this.getLocalAvatarCacheFromAuthor(userId);
+                            } else {
                                 this.checkAvatarAvailable();
                             }
                         }
@@ -14194,8 +14194,8 @@ speechSynthesis.getVoices();
                 if (avatarInfo.ownerId === refUserId) {
                     this.$message({
                         message: "It's personal (own) avatar",
-                    type: 'warning'
-                });
+                        type: 'warning'
+                    });
                 } else {
                     this.showUserDialog(avatarInfo.ownerId);
                 }
