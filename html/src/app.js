@@ -8008,10 +8008,11 @@ speechSynthesis.getVoices();
                 database.addGamelogPortalSpawnToDatabase(entry);
                 break;
             case 'video-play':
-                if (this.lastVideoUrl === gameLog.videoUrl) {
+                var videoUrl = encodeURI(gameLog.videoUrl);
+                if (this.lastVideoUrl === videoUrl) {
                     return;
                 }
-                this.lastVideoUrl = gameLog.videoUrl;
+                this.lastVideoUrl = videoUrl;
                 this.addGameLogVideo(gameLog, location, userId);
                 return;
             case 'video-sync':
@@ -9795,9 +9796,17 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.search = function () {
-        this.searchUser();
-        this.searchWorld({});
-        this.searchAvatar();
+        switch (this.$refs.searchTab.currentName) {
+            case '0':
+                this.searchUser();
+                break;
+            case '1':
+                this.searchWorld({});
+                break;
+            case '2':
+                this.searchAvatar();
+                break;
+        }
     };
 
     $app.methods.searchUser = async function () {
@@ -10430,6 +10439,7 @@ speechSynthesis.getVoices();
             database.setFriendLogCurrent(friendLogCurrent);
             this.notifyMenu('friendLog');
             this.deleteFriendRequest(id);
+            this.updateSharedFeed(true);
         }
     };
 
@@ -10463,6 +10473,7 @@ speechSynthesis.getVoices();
         this.friendLog.delete(id);
         database.deleteFriendLogCurrent(id);
         this.notifyMenu('friendLog');
+        this.updateSharedFeed(true);
     };
 
     $app.methods.updateFriendships = function (ref) {
@@ -10515,6 +10526,7 @@ speechSynthesis.getVoices();
             database.setFriendLogCurrent(friendLogCurrent);
             ctx.displayName = ref.displayName;
             this.notifyMenu('friendLog');
+            this.updateSharedFeed(true);
         }
         if (
             ref.$trustLevel &&
@@ -10540,6 +10552,7 @@ speechSynthesis.getVoices();
             this.friendLog.set(ref.id, friendLogCurrent);
             database.setFriendLogCurrent(friendLogCurrent);
             this.notifyMenu('friendLog');
+            this.updateSharedFeed(true);
         }
         ctx.trustLevel = ref.$trustLevel;
     };
@@ -10556,23 +10569,6 @@ speechSynthesis.getVoices();
                 }
             }
         });
-    };
-
-    $app.methods.deleteFriendLogUnfriendBug = function () {
-        var i = 0;
-        this.friendLogTable.data.forEach((ref) => {
-            if (
-                ref.type === 'Unfriend' &&
-                ref.created_at > '2022-01-14T01:00:00.000Z'
-            ) {
-                i++;
-                database.deleteFriendLogHistory(ref.rowId);
-            }
-        });
-        database.getFriendLogHistory().then((data) => {
-            this.friendLogTable.data = data;
-        });
-        console.log(`Deleted ${i} unfriend logs`);
     };
 
     // App: Moderation
@@ -12767,8 +12763,11 @@ speechSynthesis.getVoices();
                         break;
                     }
                 }
-                if (addUser && API.cachedUsers.has(friend.userId)) {
-                    users.push(API.cachedUsers.get(friend.userId));
+                if (addUser) {
+                    var ref = API.cachedUsers.get(friend.userId);
+                    if (typeof ref !== 'undefined') {
+                        users.push(ref);
+                    }
                 }
             }
             friendCount = users.length - 1;
@@ -13755,7 +13754,9 @@ speechSynthesis.getVoices();
                     L.user = ref;
                 }
             }
-            instance.friendCount = instance.users.length;
+            if (instance.friendCount === 0) {
+                instance.friendCount = instance.users.length;
+            }
             instance.users.sort(compareByLocationAt);
             rooms.push(instance);
         }
@@ -14221,7 +14222,7 @@ speechSynthesis.getVoices();
             if (!avatarId) {
                 avatarId = await this.checkAvatarCacheRemote(
                     fileId,
-                    ownerUserId
+                    avatarInfo.ownerId
                 );
             }
             if (!avatarId) {
