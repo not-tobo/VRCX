@@ -19479,7 +19479,7 @@ speechSynthesis.getVoices();
                     hour: 'numeric',
                     minute: 'numeric',
                     second: 'numeric',
-                    hour12
+                    hourCycle: (hour12 ? 'h12' : 'h23')
                 });
             } else if (format === 'short') {
                 return dt
@@ -19488,7 +19488,7 @@ speechSynthesis.getVoices();
                         day: '2-digit',
                         hour: 'numeric',
                         minute: 'numeric',
-                        hour12
+                        hourCycle: (hour12 ? 'h12' : 'h23')
                     })
                     .replace(' AM', 'am')
                     .replace(' PM', 'pm')
