@@ -435,7 +435,7 @@ speechSynthesis.getVoices();
             })
             .then(({data, status}) => {
                 if (status === 200) {
-                    if (data.success === Object(data.success)) {
+                    if (data && data.success === Object(data.success)) {
                         new Noty({
                             type: 'success',
                             text: escapeTag(data.success.message)
@@ -473,13 +473,13 @@ speechSynthesis.getVoices();
                 ) {
                     this.expireNotification(init.inviteId);
                 }
-                if (data.error === Object(data.error)) {
+                if (data && data.error === Object(data.error)) {
                     this.$throw(
                         data.error.status_code || status,
                         data.error.message,
                         endpoint
                     );
-                } else if (typeof data.error === 'string') {
+                } else if (data && typeof data.error === 'string') {
                     this.$throw(
                         data.status_code || status,
                         data.error,
@@ -681,7 +681,8 @@ speechSynthesis.getVoices();
             hiddenId: null,
             privateId: null,
             friendsId: null,
-            canRequestInvite: false
+            canRequestInvite: false,
+            strict: false
         };
         if (_tag === 'offline') {
             ctx.isOffline = true;
@@ -708,6 +709,8 @@ speechSynthesis.getVoices();
                             ctx.canRequestInvite = true;
                         } else if (key === 'region') {
                             ctx.region = value;
+                        } else if (key === 'strict') {
+                            ctx.strict = true;
                         }
                     } else {
                         ctx.instanceName = s;
@@ -808,7 +811,7 @@ speechSynthesis.getVoices();
 
     Vue.component('location', {
         template:
-            '<span @click="showWorldDialog" :class="{ \'x-link\': link && this.location !== \'private\' && this.location !== \'offline\'}">{{ text }}<slot></slot><span class="famfamfam-flags" :class="region" style="display:inline-block;margin-left:5px"></span></span>',
+            '<span @click="showWorldDialog" :class="{ \'x-link\': link && this.location !== \'private\' && this.location !== \'offline\'}">{{ text }}<slot></slot><span class="famfamfam-flags" :class="region" style="display:inline-block;margin-left:5px"></span><i v-if="strict" class="el-icon el-icon-lock" style="display:inline-block;margin-left:5px"></i></span>',
         props: {
             location: String,
             hint: {
@@ -823,7 +826,8 @@ speechSynthesis.getVoices();
         data() {
             return {
                 text: this.location,
-                region: this.region
+                region: this.region,
+                strict: this.strict
             };
         },
         methods: {
@@ -878,6 +882,7 @@ speechSynthesis.getVoices();
                         this.region = 'flag-icon-usw';
                     }
                 }
+                this.strict = L.strict;
             },
             showWorldDialog() {
                 if (this.link) {
@@ -1919,6 +1924,9 @@ speechSynthesis.getVoices();
 
     API.$on('INSTANCE', function (args) {
         var {json} = args;
+        if (!json) {
+            return;
+        }
         var D = $app.userDialog;
         if ($app.userDialog.visible && D.ref.location === json.id) {
             D.instance.occupants = json.n_users;
@@ -1927,6 +1935,9 @@ speechSynthesis.getVoices();
 
     API.$on('INSTANCE', function (args) {
         var {json} = args;
+        if (!json) {
+            return;
+        }
         var D = $app.worldDialog;
         if ($app.worldDialog.visible && $app.worldDialog.id === json.worldId) {
             for (var instance of D.rooms) {
@@ -14654,6 +14665,7 @@ speechSynthesis.getVoices();
         userId: '',
         accessType: '',
         region: '',
+        strict: false,
         location: '',
         url: ''
     };
@@ -14671,12 +14683,10 @@ speechSynthesis.getVoices();
         } else {
             tags.push((99999 * Math.random() + 1).toFixed(0));
         }
-        if (D.userId) {
-            var userId = D.userId;
-        } else {
+        if (!D.userId) {
             D.userId = API.currentUser.id;
-            var userId = API.currentUser.id;
         }
+        var userId = D.userId;
         if (D.accessType !== 'public') {
             if (D.accessType === 'friends+') {
                 tags.push(`~hidden(${userId})`);
@@ -14700,6 +14710,12 @@ speechSynthesis.getVoices();
         }
         if (D.accessType !== 'public') {
             tags.push(`~nonce(${uuidv4()})`);
+        }
+        if (D.accessType !== 'invite' && D.accessType !== 'friends') {
+            D.strict = false;
+        }
+        if (D.strict) {
+            tags.push('~strict');
         }
         D.instanceId = tags.join('');
     };
@@ -14752,6 +14768,10 @@ speechSynthesis.getVoices();
                 this.newInstanceDialog.userId
             );
         }
+        configRepository.setBool(
+            'instanceDialogStrict',
+            this.newInstanceDialog.strict
+        );
         $app.buildInstance();
         updateLocationURL();
     };
@@ -14760,6 +14780,7 @@ speechSynthesis.getVoices();
     $app.watch['newInstanceDialog.accessType'] = saveNewInstanceDialog;
     $app.watch['newInstanceDialog.region'] = saveNewInstanceDialog;
     $app.watch['newInstanceDialog.userId'] = saveNewInstanceDialog;
+    $app.watch['newInstanceDialog.strict'] = saveNewInstanceDialog;
 
     $app.methods.showNewInstanceDialog = function (tag) {
         this.$nextTick(() => adjustDialogZ(this.$refs.newInstanceDialog.$el));
@@ -14788,6 +14809,10 @@ speechSynthesis.getVoices();
         D.userId = '';
         if (configRepository.getString('instanceDialogUserId') !== null) {
             D.userId = configRepository.getString('instanceDialogUserId');
+        }
+        D.strict = false;
+        if (configRepository.getBool('instanceDialogStrict') !== null) {
+            D.strict = configRepository.getBool('instanceDialogStrict');
         }
         this.buildInstance();
         D.visible = true;
@@ -14977,10 +15002,12 @@ speechSynthesis.getVoices();
         D.shortUrl = '';
         D.url = getLaunchURL(L.worldId, L.instanceId);
         D.visible = true;
-        API.getInstanceShortName({
-            worldId: L.worldId,
-            instanceId: L.instanceId
-        });
+        if (L.accessType === 'public' || L.userId === API.currentUser.id) {
+            API.getInstanceShortName({
+                worldId: L.worldId,
+                instanceId: L.instanceId
+            });
+        }
     };
 
     $app.methods.locationToLaunchArg = function (location) {
