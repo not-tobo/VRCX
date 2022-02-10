@@ -11639,7 +11639,8 @@ speechSynthesis.getVoices();
             name: this.lastLocation.name,
             playerList: Array.from(this.lastLocation.playerList.values()),
             friendList: Array.from(this.lastLocation.friendList.values()),
-            progressPie
+            progressPie,
+            onlineFor: API.currentUser.$online_for
         };
         var json = JSON.stringify(lastLocation);
         AppApi.ExecuteVrFeedFunction('lastLocationUpdate', json);
