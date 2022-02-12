@@ -5978,17 +5978,16 @@ speechSynthesis.getVoices();
         } else {
             API.endpointDomain = API.endpointDomainVrchat;
         }
-        return new Promise((resolve, reject) => {
-            if (this.enablePrimaryPassword) {
-                API.logout();
-            } else {
-                API.getConfig()
-                    .catch((err) => {
-                        this.loginForm.loading = false;
-                        reject(err);
-                    })
-                    .then(() => {
-                        API.login({
+        if (this.enablePrimaryPassword) {
+            API.logout();
+        } else {
+            API.getConfig()
+                .catch((err) => {
+                    this.loginForm.loading = false;
+                    throw err;
+                })
+                .then(() => {
+                    API.login({
                             username: loginParmas.username,
                             password: loginParmas.password,
                             endpoint: loginParmas.endpoint
@@ -5999,10 +5998,9 @@ speechSynthesis.getVoices();
                             })
                             .then(() => {
                                 this.loginForm.loading = false;
-                            });
-                    });
-            }
-        });
+                        });
+                });
+        }
     };
 
     $app.methods.deleteSavedLogin = function (username) {
@@ -7601,6 +7599,7 @@ speechSynthesis.getVoices();
         this.photonLobbyCurrent = new Map();
         this.photonLobbyMaster = 0;
         this.photonLobbyCurrentUser = 0;
+        this.photonLobbyUserData = new Map();
         this.photonLobbyInVrMode = new Map();
         this.photonLobbyWatcherLoopStop();
         this.photonLobbyAvatars = new Map();
@@ -8104,6 +8103,7 @@ speechSynthesis.getVoices();
     $app.data.photonLobby = new Map();
     $app.data.photonLobbyMaster = 0;
     $app.data.photonLobbyCurrentUser = 0;
+    $app.data.photonLobbyUserData = new Map();
     $app.data.photonLobbyInVrMode = new Map();
     $app.data.photonLobbyCurrent = new Map();
     $app.data.photonLobbyAvatars = new Map();
@@ -8328,13 +8328,14 @@ speechSynthesis.getVoices();
                     this.addEntryPhotonEvent({
                         photonId: id,
                         text,
+                        type: 'PhotonBot',
                         color: 'yellow',
                         created_at: new Date().toJSON()
                     });
                     var entry = {
                         created_at: new Date().toJSON(),
                         type: 'Event',
-                        data: `${text} - ${this.getDisplayNameFromPhotonId(
+                        data: `${text} ${this.getDisplayNameFromPhotonId(
                             id
                         )} (${this.getUserIdFromPhotonId(id)})`
                     };
@@ -8609,6 +8610,7 @@ speechSynthesis.getVoices();
                     ) {
                         this.photonModerationUpdate(
                             ref,
+                            photonId,
                             block,
                             mute,
                             gameLogDate
@@ -8619,14 +8621,6 @@ speechSynthesis.getVoices();
                             mute,
                             gameLogDate
                         });
-                        if (block || mute) {
-                            this.addEntryPhotonEvent({
-                                photonId,
-                                text: `mute:${mute} block:${block}`,
-                                color: 'yellow',
-                                created_at: gameLogDate
-                            });
-                        }
                     }
                 } else {
                     var blockArray = data.Parameters[245]['10'];
@@ -8634,14 +8628,23 @@ speechSynthesis.getVoices();
                     var idList = new Map();
                     blockArray.forEach((photonId1) => {
                         if (muteArray.includes(photonId1)) {
-                            idList.set(photonId1, {mute: true, block: true});
+                            idList.set(photonId1, {
+                                isMute: true,
+                                isBlock: true
+                            });
                         } else {
-                            idList.set(photonId1, {mute: false, block: true});
+                            idList.set(photonId1, {
+                                isMute: false,
+                                isBlock: true
+                            });
                         }
                     });
                     muteArray.forEach((photonId2) => {
                         if (!idList.has(photonId2)) {
-                            idList.set(photonId2, {mute: true, block: false});
+                            idList.set(photonId2, {
+                                isMute: true,
+                                isBlock: false
+                            });
                         }
                     });
                     idList.forEach(({isMute, isBlock}, photonId3) => {
@@ -8652,6 +8655,7 @@ speechSynthesis.getVoices();
                         ) {
                             this.photonModerationUpdate(
                                 ref1,
+                                photonId3,
                                 isBlock,
                                 isMute,
                                 gameLogDate
@@ -8734,6 +8738,7 @@ speechSynthesis.getVoices();
                     this.addEntryPhotonEvent({
                         photonId: senderId,
                         text: `DeletedPortal ${time}`,
+                        type: 'DeletedPortal',
                         created_at: gameLogDate
                     });
                     return;
@@ -8802,6 +8807,7 @@ speechSynthesis.getVoices();
                     this.addEntryPhotonEvent({
                         photonId: senderId,
                         text,
+                        type: 'Event',
                         created_at: gameLogDate
                     });
                 } else {
@@ -8877,6 +8883,7 @@ speechSynthesis.getVoices();
                 this.addEntryPhotonEvent({
                     photonId,
                     text: `Photon Master Migrate`,
+                    type: 'PhotonMasterMigrate',
                     created_at: gameLogDate
                 });
             }
@@ -8907,6 +8914,7 @@ speechSynthesis.getVoices();
             this.addEntryPhotonEvent({
                 photonId,
                 text,
+                type: 'PhotonBot',
                 color: 'yellow',
                 created_at: gameLogDate
             });
@@ -8943,6 +8951,7 @@ speechSynthesis.getVoices();
             this.addEntryPhotonEvent({
                 photonId,
                 text,
+                type: 'PhotonBot',
                 color: 'yellow',
                 created_at: gameLogDate
             });
@@ -8977,6 +8986,7 @@ speechSynthesis.getVoices();
         };
         this.photonLobby.set(photonId, photonUser);
         this.photonLobbyCurrent.set(photonId, photonUser);
+        this.photonLobbyUserDataUpdate(photonId, photonUser, gameLogDate);
 
         var bias = Date.parse(gameLogDate) + 60 * 1000; // 1min
         if (bias > Date.now()) {
@@ -8989,6 +8999,7 @@ speechSynthesis.getVoices();
                     this.addEntryPhotonEvent({
                         photonId,
                         text: `API/Photon platform mismatch ${ref.last_platform}/${photonUser.last_platform}`,
+                        type: 'PhotonBot',
                         color: 'yellow',
                         created_at: Date.parse(gameLogDate)
                     });
@@ -9026,14 +9037,44 @@ speechSynthesis.getVoices();
                 var {block, mute, gameLogDate} =
                     this.moderationEventQueue.get(photonId);
                 this.moderationEventQueue.delete(photonId);
-                this.photonModerationUpdate(ref, block, mute, gameLogDate);
+                this.photonModerationUpdate(
+                    ref,
+                    photonId,
+                    block,
+                    mute,
+                    gameLogDate
+                );
             }
         }
     };
 
+    $app.methods.photonLobbyUserDataUpdate = function (
+        photonId,
+        photonUser,
+        gameLogDate
+    ) {
+        var ref = this.photonLobbyUserData.get(photonId);
+        if (
+            typeof ref !== 'undefined' &&
+            (photonUser.status !== ref.status ||
+                photonUser.statusDescription !== ref.statusDescription)
+        ) {
+            this.addEntryPhotonEvent({
+                photonId,
+                type: 'ChangeStatus',
+                status: photonUser.status,
+                previousStatus: ref.status,
+                statusDescription: photonUser.statusDescription,
+                previousStatusDescription: ref.statusDescription,
+                created_at: Date.parse(gameLogDate)
+            });
+        }
+        this.photonLobbyUserData.set(photonId, photonUser);
+    };
+
     $app.methods.photonUserJoin = function (photonId, ref, gameLogDate) {
         if (
-            photonId !== this.photonLobbyCurrentUser &&
+            photonId === this.photonLobbyCurrentUser ||
             !this.photonEventOverlayJoinLeave
         ) {
             return;
@@ -9041,6 +9082,7 @@ speechSynthesis.getVoices();
         this.addEntryPhotonEvent({
             photonId,
             text: 'has joined',
+            type: 'OnPlayerJoined',
             created_at: gameLogDate
         });
     };
@@ -9052,33 +9094,49 @@ speechSynthesis.getVoices();
         this.addEntryPhotonEvent({
             photonId,
             text: 'has left',
+            type: 'OnPlayerLeft',
             created_at: gameLogDate
         });
     };
 
     $app.methods.photonModerationUpdate = function (
         ref,
+        photonId,
         block,
         mute,
         gameLogDate
     ) {
         database.getModeration(ref.id).then((row) => {
             var type = '';
+            var text = '';
             if (block) {
                 type = 'Blocked';
+                text = 'Blocked';
             } else if (mute) {
                 type = 'Muted';
+                text = 'Muted';
             }
             if (row.userId) {
                 if (!block && row.block) {
                     type = 'Unblocked';
+                    text = 'Unblocked';
                 } else if (!mute && row.mute) {
                     type = 'Unmuted';
+                    text = 'Unmuted';
                 }
                 if (block === row.block && mute === row.mute) {
                     // no change
                     type = '';
                 }
+            }
+            if (text) {
+                this.addEntryPhotonEvent({
+                    photonId,
+                    text: `Moderation ${text}`,
+                    type: 'Moderation',
+                    color: 'yellow',
+                    created_at: gameLogDate
+                });
             }
             if (type) {
                 var noty = {
@@ -9126,7 +9184,7 @@ speechSynthesis.getVoices();
         if (
             oldAvatarId &&
             oldAvatarId !== avatar.id &&
-            user.id !== API.currentUser.id
+            photonId !== this.photonLobbyCurrentUser
         ) {
             this.checkVRChatCache(avatar).then((cacheInfo) => {
                 var inCache = false;
@@ -9153,6 +9211,7 @@ speechSynthesis.getVoices();
                     displayName: user.displayName,
                     userId: user.id,
                     text: `ChangeAvatar ${avatar.name}`,
+                    type: 'AvatarChange',
                     created_at: gameLogDate,
                     avatar,
                     inCache
@@ -19204,6 +19263,15 @@ speechSynthesis.getVoices();
     $app.methods.parseOperationResponse = function (data, dateTime) {
         switch (data.OperationCode) {
             case 226:
+                if (
+                    typeof data.Parameters[248] !== 'undefined' &&
+                    typeof data.Parameters[248][248] !== 'undefined'
+                ) {
+                    this.setPhotonLobbyMaster(data.Parameters[248][248]);
+                }
+                if (typeof data.Parameters[254] !== 'undefined') {
+                    this.photonLobbyCurrentUser = data.Parameters[254];
+                }
                 if (typeof data.Parameters[249] !== 'undefined') {
                     for (var i in data.Parameters[249]) {
                         var id = parseInt(i, 10);
@@ -19230,15 +19298,6 @@ speechSynthesis.getVoices();
                 }
                 if (typeof data.Parameters[252] !== 'undefined') {
                     this.parsePhotonLobbyIds(data.Parameters[252]);
-                }
-                if (
-                    typeof data.Parameters[248] !== 'undefined' &&
-                    typeof data.Parameters[248][248] !== 'undefined'
-                ) {
-                    this.setPhotonLobbyMaster(data.Parameters[248][248]);
-                }
-                if (typeof data.Parameters[254] !== 'undefined') {
-                    this.photonLobbyCurrentUser = data.Parameters[254];
                 }
                 break;
         }
