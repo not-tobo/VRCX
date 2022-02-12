@@ -363,10 +363,12 @@ speechSynthesis.getVoices();
 
     API.pendingGetRequests = new Map();
     API.failedGetRequests = new Map();
+    API.endpointDomainVrchat = 'https://api.vrchat.cloud/api/1';
+    API.endpointDomain = 'https://api.vrchat.cloud/api/1';
 
     API.call = function (endpoint, options) {
         var init = {
-            url: `https://api.vrchat.cloud/api/1/${endpoint}`,
+            url: `${API.endpointDomain}/${endpoint}`,
             method: 'GET',
             ...options
         };
@@ -998,10 +1000,6 @@ speechSynthesis.getVoices();
     API.isLoggedIn = false;
     API.cachedUsers = new Map();
     API.currentUser = {};
-
-    API.$on('LOGOUT', function () {
-        this.isLoggedIn = false;
-    });
 
     API.$on('USER:CURRENT', function (args) {
         var {json} = args;
@@ -1966,11 +1964,16 @@ speechSynthesis.getVoices();
 
     API.refreshFriends = async function () {
         this.isRefreshFriendsLoading = true;
-        var onlineFriends = await this.refreshOnlineFriends();
-        var offlineFriends = await this.refreshOfflineFriends();
-        var friends = onlineFriends.concat(offlineFriends);
-        this.isRefreshFriendsLoading = false;
-        return friends;
+        try {
+            var onlineFriends = await this.refreshOnlineFriends();
+            var offlineFriends = await this.refreshOfflineFriends();
+            var friends = onlineFriends.concat(offlineFriends);
+            this.isRefreshFriendsLoading = false;
+            return friends;
+        } catch (err) {
+            this.isRefreshFriendsLoading = false;
+            throw err;
+        }
     };
 
     API.refreshOnlineFriends = async function () {
@@ -4148,6 +4151,7 @@ speechSynthesis.getVoices();
                 if (--this.nextFriendsRefresh <= 0) {
                     this.nextFriendsRefresh = 7200; // 1hour
                     API.refreshFriends();
+                    this.updateStoredUser(API.currentUser);
                     if (this.isGameRunning) {
                         API.refreshPlayerModerations();
                     }
@@ -5800,12 +5804,15 @@ speechSynthesis.getVoices();
     });
 
     API.$on('LOGOUT', function () {
-        new Noty({
-            type: 'success',
-            text: `See you again, <strong>${escapeTag(
-                this.currentUser.displayName
-            )}</strong>!`
-        }).show();
+        if (this.isLoggedIn) {
+            new Noty({
+                type: 'success',
+                text: `See you again, <strong>${escapeTag(
+                    this.currentUser.displayName
+                )}</strong>!`
+            }).show();
+        }
+        this.isLoggedIn = false;
     });
 
     API.$on('LOGIN', function (args) {
@@ -5816,10 +5823,6 @@ speechSynthesis.getVoices();
             )}</strong>!`
         }).show();
         $app.$refs.menu.activeIndex = 'feed';
-    });
-
-    API.$on('LOGIN', function (args) {
-        $app.updateStoredUser(args.ref);
     });
 
     API.$on('LOGOUT', function () {
@@ -5851,8 +5854,7 @@ speechSynthesis.getVoices();
     };
 
     $app.data.enablePrimaryPassword = configRepository.getBool(
-        'enablePrimaryPassword',
-        false
+        'enablePrimaryPassword'
     );
     $app.data.enablePrimaryPasswordDialog = {
         visible: false,
@@ -5971,6 +5973,11 @@ speechSynthesis.getVoices();
         if (user.cookies) {
             webApiService.setCookies(user.cookies);
         }
+        if (loginParmas.endpoint) {
+            API.endpointDomain = loginParmas.endpoint;
+        } else {
+            API.endpointDomain = API.endpointDomainVrchat;
+        }
         return new Promise((resolve, reject) => {
             if (this.enablePrimaryPassword) {
                 API.logout();
@@ -5983,7 +5990,8 @@ speechSynthesis.getVoices();
                     .then(() => {
                         API.login({
                             username: loginParmas.username,
-                            password: loginParmas.password
+                            password: loginParmas.password,
+                            endpoint: loginParmas.endpoint
                         })
                             .catch(() => {
                                 this.loginForm.loading = false;
@@ -6033,6 +6041,7 @@ speechSynthesis.getVoices();
         loading: true,
         username: '',
         password: '',
+        endpoint: '',
         saveCredentials: false,
         savedCredentials:
             configRepository.getString('lastUserLoggedIn') !== null
@@ -6059,6 +6068,11 @@ speechSynthesis.getVoices();
         this.$refs.loginForm.validate((valid) => {
             if (valid && !this.loginForm.loading) {
                 this.loginForm.loading = true;
+                if (this.loginForm.endpoint) {
+                    API.endpointDomain = this.loginForm.endpoint;
+                } else {
+                    API.endpointDomain = API.endpointDomainVrchat;
+                }
                 API.getConfig()
                     .catch((err) => {
                         this.loginForm.loading = false;
@@ -6103,6 +6117,9 @@ speechSynthesis.getVoices();
                                                         password:
                                                             this.loginForm
                                                                 .password,
+                                                        endpoint:
+                                                            this.loginForm
+                                                                .endpoint,
                                                         saveCredentials:
                                                             this.loginForm
                                                                 .saveCredentials,
@@ -6111,6 +6128,8 @@ speechSynthesis.getVoices();
                                                         this.loginForm.username =
                                                             '';
                                                         this.loginForm.password =
+                                                            '';
+                                                        this.loginForm.endpoint =
                                                             '';
                                                     });
                                                 });
@@ -6124,6 +6143,7 @@ speechSynthesis.getVoices();
                         API.login({
                             username: this.loginForm.username,
                             password: this.loginForm.password,
+                            endpoint: this.loginForm.endpoint,
                             saveCredentials: this.loginForm.saveCredentials
                         }).finally(() => {
                             this.loginForm.username = '';
@@ -7351,8 +7371,7 @@ speechSynthesis.getVoices();
         }
     };
 
-    $app.data.robotUrl =
-        'https://api.vrchat.cloud/api/1/file/file_0e8c4e32-7444-44ea-ade4-313c010d4bae/1/file';
+    $app.data.robotUrl = `${API.endpointDomain}/file/file_0e8c4e32-7444-44ea-ade4-313c010d4bae/1/file`;
 
     API.$on('USER:UPDATE', async function (args) {
         var {ref, props} = args;
@@ -15111,7 +15130,7 @@ speechSynthesis.getVoices();
         }
         var userIcon = '';
         if (fileId) {
-            userIcon = `https://api.vrchat.cloud/api/1/file/${fileId}/1`;
+            userIcon = `${API.endpointDomain}/file/${fileId}/1`;
         }
         if (userIcon === API.currentUser.userIcon) {
             return;
@@ -16467,7 +16486,7 @@ speechSynthesis.getVoices();
         var {fileId, fileVersion} = args.params;
         var parmas = {
             id: $app.avatarImage.avatarId,
-            imageUrl: `https://api.vrchat.cloud/api/1/file/${fileId}/${fileVersion}/file`
+            imageUrl: `${API.endpointDomain}/file/${fileId}/${fileVersion}/file`
         };
         this.setAvatarImage(parmas);
     });
@@ -16801,7 +16820,7 @@ speechSynthesis.getVoices();
         var {fileId, fileVersion} = args.params;
         var parmas = {
             id: $app.worldImage.worldId,
-            imageUrl: `https://api.vrchat.cloud/api/1/file/${fileId}/${fileVersion}/file`
+            imageUrl: `${API.endpointDomain}/file/${fileId}/${fileVersion}/file`
         };
         this.setWorldImage(parmas);
     });
@@ -17024,7 +17043,7 @@ speechSynthesis.getVoices();
         this.changeAvatarImageDialogLoading = true;
         var parmas = {
             id: this.avatarDialog.id,
-            imageUrl: `https://api.vrchat.cloud/api/1/file/${this.previousImagesTableFileId}/${image.version}/file`
+            imageUrl: `${API.endpointDomain}/file/${this.previousImagesTableFileId}/${image.version}/file`
         };
         API.setAvatarImage(parmas).finally(() => {
             this.changeAvatarImageDialogLoading = false;
@@ -17062,7 +17081,7 @@ speechSynthesis.getVoices();
         this.changeWorldImageDialogLoading = true;
         var parmas = {
             id: this.worldDialog.id,
-            imageUrl: `https://api.vrchat.cloud/api/1/file/${this.previousImagesTableFileId}/${image.version}/file`
+            imageUrl: `${API.endpointDomain}/file/${this.previousImagesTableFileId}/${image.version}/file`
         };
         API.setWorldImage(parmas).finally(() => {
             this.changeWorldImageDialogLoading = false;
@@ -17098,7 +17117,7 @@ speechSynthesis.getVoices();
 
     $app.methods.compareCurrentImage = function (image) {
         if (
-            `https://api.vrchat.cloud/api/1/file/${this.previousImagesTableFileId}/${image.version}/file` ===
+            `${API.endpointDomain}/file/${this.previousImagesTableFileId}/${image.version}/file` ===
             this.avatarDialog.ref.imageUrl
         ) {
             return true;
@@ -18651,7 +18670,7 @@ speechSynthesis.getVoices();
         }
         var profilePicOverride = '';
         if (fileId) {
-            profilePicOverride = `https://api.vrchat.cloud/api/1/file/${fileId}/1`;
+            profilePicOverride = `${API.endpointDomain}/file/${fileId}/1`;
         }
         if (profilePicOverride === API.currentUser.profilePicOverride) {
             return;
@@ -19471,6 +19490,17 @@ speechSynthesis.getVoices();
         Vue.filter('formatDate', formatDate1);
     };
     $app.methods.setDatetimeFormat();
+
+    $app.data.enableCustomEndpoint = configRepository.getBool(
+        'VRCX_enableCustomEndpoint'
+    );
+    $app.methods.toggleCustomEndpoint = function () {
+        this.enableCustomEndpoint = !this.enableCustomEndpoint;
+        configRepository.setBool(
+            'VRCX_enableCustomEndpoint',
+            this.enableCustomEndpoint
+        );
+    };
 
     $app = new Vue($app);
     window.$app = $app;
