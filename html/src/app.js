@@ -5988,16 +5988,16 @@ speechSynthesis.getVoices();
                 })
                 .then(() => {
                     API.login({
-                            username: loginParmas.username,
-                            password: loginParmas.password,
-                            endpoint: loginParmas.endpoint
+                        username: loginParmas.username,
+                        password: loginParmas.password,
+                        endpoint: loginParmas.endpoint
+                    })
+                        .catch(() => {
+                            this.loginForm.loading = false;
+                            API.logout();
                         })
-                            .catch(() => {
-                                this.loginForm.loading = false;
-                                API.logout();
-                            })
-                            .then(() => {
-                                this.loginForm.loading = false;
+                        .then(() => {
+                            this.loginForm.loading = false;
                         });
                 });
         }
@@ -10583,13 +10583,13 @@ speechSynthesis.getVoices();
                 var friendLogHistory = {
                     created_at: new Date().toJSON(),
                     type: 'Unfriend',
-            userId: id,
-            displayName: ctx.displayName
-        };
-        this.friendLogTable.data.push(friendLogHistory);
-        database.addFriendLogHistory(friendLogHistory);
-        this.queueFriendLogNoty(friendLogHistory);
-        this.friendLog.delete(id);
+                    userId: id,
+                    displayName: ctx.displayName
+                };
+                this.friendLogTable.data.push(friendLogHistory);
+                database.addFriendLogHistory(friendLogHistory);
+                this.queueFriendLogNoty(friendLogHistory);
+                this.friendLog.delete(id);
                 database.deleteFriendLogCurrent(id);
                 this.notifyMenu('friendLog');
                 this.updateSharedFeed(true);
@@ -10626,30 +10626,30 @@ speechSynthesis.getVoices();
                     if (ctx.displayName) {
                         var friendLogHistory = {
                             created_at: new Date().toJSON(),
-                    type: 'DisplayName',
-                    userId: ref.id,
-                    displayName: ref.displayName,
-                    previousDisplayName: ctx.displayName
-                };
-            } else {
-                var friendLogHistory = {
-                    created_at: new Date().toJSON(),
-                    type: 'Friend',
-                    userId: ref.id,
-                    displayName: ref.displayName
-                };
-            }
-            this.friendLogTable.data.push(friendLogHistory);
-            database.addFriendLogHistory(friendLogHistory);
-            this.queueFriendLogNoty(friendLogHistory);
-            var friendLogCurrent = {
-                userId: ref.id,
-                displayName: ref.displayName,
-                trustLevel: ref.$trustLevel
-            };
-            this.friendLog.set(ref.id, friendLogCurrent);
-            database.setFriendLogCurrent(friendLogCurrent);
-            ctx.displayName = ref.displayName;
+                            type: 'DisplayName',
+                            userId: ref.id,
+                            displayName: ref.displayName,
+                            previousDisplayName: ctx.displayName
+                        };
+                    } else {
+                        var friendLogHistory = {
+                            created_at: new Date().toJSON(),
+                            type: 'Friend',
+                            userId: ref.id,
+                            displayName: ref.displayName
+                        };
+                    }
+                    this.friendLogTable.data.push(friendLogHistory);
+                    database.addFriendLogHistory(friendLogHistory);
+                    this.queueFriendLogNoty(friendLogHistory);
+                    var friendLogCurrent = {
+                        userId: ref.id,
+                        displayName: ref.displayName,
+                        trustLevel: ref.$trustLevel
+                    };
+                    this.friendLog.set(ref.id, friendLogCurrent);
+                    database.setFriendLogCurrent(friendLogCurrent);
+                    ctx.displayName = ref.displayName;
                     this.notifyMenu('friendLog');
                     this.updateSharedFeed(true);
                 }
