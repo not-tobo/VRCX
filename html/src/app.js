@@ -5978,16 +5978,48 @@ speechSynthesis.getVoices();
         } else {
             API.endpointDomain = API.endpointDomainVrchat;
         }
-        if (this.enablePrimaryPassword) {
-            API.logout();
-        } else {
-            API.getConfig()
-                .catch((err) => {
-                    this.loginForm.loading = false;
-                    throw err;
-                })
-                .then(() => {
-                    API.login({
+        return new Promise((resolve, reject) => {
+            if (this.enablePrimaryPassword) {
+                this.checkPrimaryPassword(loginParmas)
+                    .then((pwd) => {
+                        this.loginForm.loading = true;
+                        return API.getConfig()
+                            .catch((err) => {
+                                this.loginForm.loading = false;
+                                reject(err);
+                            })
+                            .then(() => {
+                                API.login({
+                                    username: loginParmas.username,
+                                    password: pwd,
+                                    cipher: loginParmas.password
+                                })
+                                    .catch((err2) => {
+                                        this.loginForm.loading = false;
+                                        API.logout();
+                                        reject(err2);
+                                    })
+                                    .then(() => {
+                                        this.loginForm.loading = false;
+                                        resolve();
+                                    });
+                            });
+                    })
+                    .catch((_) => {
+                        this.$message({
+                            message: 'Incorrect primary password',
+                            type: 'error'
+                        });
+                        reject(_);
+                    });
+            } else {
+                API.getConfig()
+                    .catch((err) => {
+                        this.loginForm.loading = false;
+                        reject(err);
+                    })
+                    .then(() => {
+                        API.login({
                         username: loginParmas.username,
                         password: loginParmas.password,
                         endpoint: loginParmas.endpoint
@@ -5995,12 +6027,14 @@ speechSynthesis.getVoices();
                         .catch(() => {
                             this.loginForm.loading = false;
                             API.logout();
-                        })
-                        .then(() => {
-                            this.loginForm.loading = false;
-                        });
-                });
-        }
+                            })
+                            .then(() => {
+                                this.loginForm.loading = false;
+                                resolve();
+                            });
+                    });
+            }
+        });
     };
 
     $app.methods.deleteSavedLogin = function (username) {
@@ -6026,12 +6060,16 @@ speechSynthesis.getVoices();
         var user =
             $app.loginForm.savedCredentials[$app.loginForm.lastUserLoggedIn];
         if (typeof user !== 'undefined') {
-            $app.relogin(user).then(() => {
-                new Noty({
-                    type: 'success',
-                    text: 'Automatically logged in.'
-                }).show();
-            });
+            if ($app.enablePrimaryPassword) {
+                this.logout();
+            } else {
+                $app.relogin(user).then(() => {
+                    new Noty({
+                        type: 'success',
+                        text: 'Automatically logged in.'
+                    }).show();
+                });
+            }
         }
     });
 
