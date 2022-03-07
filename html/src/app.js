@@ -9267,7 +9267,6 @@ speechSynthesis.getVoices();
         }
         API.applyAvatar({
             id: avatar.id,
-            assetUrl: avatar.assetUrl, // remove this
             authorId: avatar.authorId,
             authorName: avatar.authorName,
             updated_at: avatar.updated_at,
@@ -9300,6 +9299,9 @@ speechSynthesis.getVoices();
             // skip PyPyDance and VRDancing videos
             try {
                 var url = new URL(videoUrl);
+                if (url.origin === 'https://t-ne.x0.to') {
+                    url = new URL(url.searchParams.get('url'));
+                }
                 var id1 = url.pathname;
                 var id2 = url.searchParams.get('v');
                 if (id1 && id1.length === 12) {
@@ -9740,22 +9742,27 @@ speechSynthesis.getVoices();
                         return args;
                     });
                 }
+                if (this.isGameNoVR) {
+                    var platform = 'Desktop';
+                } else {
+                    var platform = 'VR';
+                }
                 switch (L.accessType) {
                     case 'public':
                         L.joinUrl = getLaunchURL(L.worldId, L.instanceId);
-                        L.accessName = `Public #${L.instanceName}`;
+                        L.accessName = `Public #${L.instanceName} (${platform})`;
                         break;
                     case 'invite+':
-                        L.accessName = `Invite+ #${L.instanceName}`;
+                        L.accessName = `Invite+ #${L.instanceName} (${platform})`;
                         break;
                     case 'invite':
-                        L.accessName = `Invite #${L.instanceName}`;
+                        L.accessName = `Invite #${L.instanceName} (${platform})`;
                         break;
                     case 'friends':
-                        L.accessName = `Friends #${L.instanceName}`;
+                        L.accessName = `Friends #${L.instanceName} (${platform})`;
                         break;
                     case 'friends+':
-                        L.accessName = `Friends+ #${L.instanceName}`;
+                        L.accessName = `Friends+ #${L.instanceName} (${platform})`;
                         break;
                 }
             }
@@ -10572,7 +10579,7 @@ speechSynthesis.getVoices();
             API.getFriendStatus({
                 userId: id
             }).then((args) => {
-                if (args.json.isFriend) {
+                if (args.json.isFriend && this.friendLog.has(id)) {
                     var friendLogHistory = {
                         created_at: new Date().toJSON(),
                         type: 'Friend',
@@ -10618,7 +10625,7 @@ speechSynthesis.getVoices();
         API.getFriendStatus({
             userId: id
         }).then((args) => {
-            if (!args.json.isFriend) {
+            if (!args.json.isFriend && this.friendLog.has(id)) {
                 var friendLogHistory = {
                     created_at: new Date().toJSON(),
                     type: 'Unfriend',
@@ -10661,7 +10668,7 @@ speechSynthesis.getVoices();
             API.getFriendStatus({
                 userId: ref.id
             }).then((args) => {
-                if (args.json.isFriend) {
+                if (args.json.isFriend && this.friendLog.has(ref.id)) {
                     if (ctx.displayName) {
                         var friendLogHistory = {
                             created_at: new Date().toJSON(),
