@@ -10219,8 +10219,11 @@ speechSynthesis.getVoices();
 
     $app.data.favoriteObjects = new Map();
     $app.data.favoriteFriends_ = [];
+    $app.data.favoriteFriendsSorted = [];
     $app.data.favoriteWorlds_ = [];
+    $app.data.favoriteWorldsSorted = [];
     $app.data.favoriteAvatars_ = [];
+    $app.data.favoriteAvatarsSorted = [];
     $app.data.sortFavoriteFriends = false;
     $app.data.sortFavoriteWorlds = false;
     $app.data.sortFavoriteAvatars = false;
@@ -10228,8 +10231,11 @@ speechSynthesis.getVoices();
     API.$on('LOGIN', function () {
         $app.favoriteObjects.clear();
         $app.favoriteFriends_ = [];
+        $app.favoriteFriendsSorted = [];
         $app.favoriteWorlds_ = [];
+        $app.favoriteWorldsSorted = [];
         $app.favoriteAvatars_ = [];
+        $app.favoriteAvatarsSorted = [];
         $app.sortFavoriteFriends = false;
         $app.sortFavoriteWorlds = false;
         $app.sortFavoriteAvatars = false;
@@ -10300,10 +10306,13 @@ speechSynthesis.getVoices();
                     isTypeChanged = true;
                     if (type === 'friend') {
                         removeFromArray(this.favoriteFriends_, ctx);
+                        removeFromArray(this.favoriteFriendsSorted, ctx);
                     } else if (type === 'world') {
                         removeFromArray(this.favoriteWorlds_, ctx);
+                        removeFromArray(this.favoriteWorldsSorted, ctx);
                     } else if (type === 'avatar') {
                         removeFromArray(this.favoriteAvatars_, ctx);
+                        removeFromArray(this.favoriteAvatarsSorted, ctx);
                     }
                 }
                 if (type === 'friend') {
@@ -10344,12 +10353,15 @@ speechSynthesis.getVoices();
             if (isTypeChanged) {
                 if (type === 'friend') {
                     this.favoriteFriends_.push(ctx);
+                    this.favoriteFriendsSorted.push(ctx);
                     this.sortFavoriteFriends = true;
                 } else if (type === 'world') {
                     this.favoriteWorlds_.push(ctx);
+                    this.favoriteWorldsSorted.push(ctx);
                     this.sortFavoriteWorlds = true;
                 } else if (type === 'avatar') {
                     this.favoriteAvatars_.push(ctx);
+                    this.favoriteAvatarsSorted.push(ctx);
                     this.sortFavoriteAvatars = true;
                 }
             }
@@ -10357,10 +10369,13 @@ speechSynthesis.getVoices();
             this.favoriteObjects.delete(objectId);
             if (type === 'friend') {
                 removeFromArray(this.favoriteFriends_, ctx);
+                removeFromArray(this.favoriteFriendsSorted, ctx);
             } else if (type === 'world') {
                 removeFromArray(this.favoriteWorlds_, ctx);
+                removeFromArray(this.favoriteWorldsSorted, ctx);
             } else if (type === 'avatar') {
                 removeFromArray(this.favoriteAvatars_, ctx);
+                removeFromArray(this.favoriteAvatarsSorted, ctx);
             }
         }
     };
@@ -10428,25 +10443,37 @@ speechSynthesis.getVoices();
     $app.computed.favoriteFriends = function () {
         if (this.sortFavoriteFriends) {
             this.sortFavoriteFriends = false;
-            this.favoriteFriends_.sort(compareByName);
+            this.favoriteFriendsSorted.sort(compareByName);
         }
-        return this.favoriteFriends_;
+        if (this.sortFavorites) {
+            return this.favoriteFriends_;
+        } else {
+            return this.favoriteFriendsSorted;
+        }
     };
 
     $app.computed.favoriteWorlds = function () {
         if (this.sortFavoriteWorlds) {
             this.sortFavoriteWorlds = false;
-            this.favoriteWorlds_.sort(compareByName);
+            this.favoriteWorldsSorted.sort(compareByName);
         }
-        return this.favoriteWorlds_;
+        if (this.sortFavorites) {
+            return this.favoriteWorlds_;
+        } else {
+            return this.favoriteWorldsSorted;
+        }
     };
 
     $app.computed.favoriteAvatars = function () {
         if (this.sortFavoriteAvatars) {
             this.sortFavoriteAvatars = false;
-            this.favoriteAvatars_.sort(compareByName);
+            this.favoriteAvatarsSorted.sort(compareByName);
         }
-        return this.favoriteAvatars_;
+        if (this.sortFavorites) {
+            return this.favoriteAvatars_;
+        } else {
+            return this.favoriteAvatarsSorted;
+        }
     };
 
     // App: friendLog
@@ -11243,6 +11270,7 @@ speechSynthesis.getVoices();
     $app.data.avatarRemoteDatabaseProvider = configRepository.getString(
         'VRCX_avatarRemoteDatabaseProvider'
     );
+    $app.data.sortFavorites = configRepository.getBool('VRCX_sortFavorites');
     $app.methods.saveOpenVROption = function () {
         configRepository.setBool('openVR', this.openVR);
         configRepository.setBool('openVRAlways', this.openVRAlways);
@@ -11308,6 +11336,7 @@ speechSynthesis.getVoices();
             'VRCX_avatarRemoteDatabase',
             this.avatarRemoteDatabase
         );
+        configRepository.setBool('VRCX_sortFavorites', this.sortFavorites);
         this.updateSharedFeed(true);
         this.updateVRConfigVars();
         AppApi.ExecuteVrOverlayFunction('notyClear', '');
