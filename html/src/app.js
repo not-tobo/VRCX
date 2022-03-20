@@ -5028,7 +5028,6 @@ speechSynthesis.getVoices();
                     fileVersion,
                     appVersion
                 );
-
             }
         } catch (err) {
             console.error(err);
