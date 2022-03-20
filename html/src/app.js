@@ -15137,7 +15137,10 @@ speechSynthesis.getVoices();
     });
 
     API.$on('INSTANCE:SHORTNAME', function (args) {
-        var url = `https://vrch.at/${args.json}`;
+        var url = '';
+        if (args.json) {
+            url = `https://vrch.at/${args.json}`;
+        }
         $app.launchDialog.shortUrl = url;
     });
 
@@ -15156,7 +15159,7 @@ speechSynthesis.getVoices();
         D.shortUrl = '';
         D.url = getLaunchURL(L.worldId, L.instanceId);
         D.visible = true;
-        if (L.accessType === 'public' || L.userId === API.currentUser.id) {
+        if (L.userId === API.currentUser.id) {
             API.getInstanceShortName({
                 worldId: L.worldId,
                 instanceId: L.instanceId
