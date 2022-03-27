@@ -11346,6 +11346,7 @@ speechSynthesis.getVoices();
         configRepository.setBool('VRCX_sortFavorites', this.sortFavorites);
         this.updateSharedFeed(true);
         this.updateVRConfigVars();
+        this.updateVRLastLocation();
         AppApi.ExecuteVrOverlayFunction('notyClear', '');
     };
     $app.methods.saveLegendColorOverride = function () {
