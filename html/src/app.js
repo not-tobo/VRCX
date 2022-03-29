@@ -7562,6 +7562,7 @@ speechSynthesis.getVoices();
     $app.methods.addFeed = function (feed) {
         this.queueFeedNoty(feed);
         this.feedSessionTable.push(feed);
+        this.updateSharedFeed(false);
         if (
             this.feedTable.filter.length > 0 &&
             !this.feedTable.filter.includes(feed.type)
@@ -7579,7 +7580,6 @@ speechSynthesis.getVoices();
         }
         this.feedTable.data.push(feed);
         this.sweepFeed();
-        this.updateSharedFeed(false);
         this.notifyMenu('feed');
     };
 
