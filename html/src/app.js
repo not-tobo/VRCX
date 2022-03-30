@@ -13264,8 +13264,7 @@ speechSynthesis.getVoices();
             this.currentInstanceLocation = {};
         } else if (
             instanceId !== this.currentInstanceLocation.tag &&
-            this.currentInstanceLocation.tag !==
-                this.lastLocationDestination
+            this.currentInstanceLocation.tag !== this.lastLocationDestination
         ) {
             this.currentInstanceWorld = {
                 ref: {},
@@ -13863,8 +13862,8 @@ speechSynthesis.getVoices();
             ) {
                 assetUrl = unityPackage.assetUrl;
                 break;
-                }
             }
+        }
         var fileId = extractFileId(assetUrl);
         var fileVersion = parseInt(extractFileVersion(assetUrl), 10);
         if (fileId) {
