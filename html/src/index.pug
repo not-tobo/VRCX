@@ -932,9 +932,13 @@ html
             .x-container(v-show="$refs.menu && $refs.menu.activeIndex === 'settings'")
                 div.options-container(style="margin-top:0")       
                     span.header Settings
-                    .x-friend-list(style="margin-top:10px")
-                        .x-friend-item(style="cursor:default")
-                            .detail
+                el-tabs(type="card" style="margin-top:10px")
+                    el-tab-pane(label="General")
+                        div.options-container(style="margin-top:0")
+                            span.header General
+                            .x-friend-list(style="margin-top:10px")
+                                .x-friend-item(style="cursor:default")
+                                    .detail
                                 span.name Version
                                 span.extra(v-text="appVersion")
                         .x-friend-item(@click="checkForVRCXUpdate")
@@ -959,13 +963,23 @@ html
                         br
                         el-radio-group(v-model="autoUpdateVRCX" @change="saveAutoUpdateVRCX" size="mini")
                             el-radio-button(label="Off")
-                            el-radio-button(label="Notify")
-                            el-radio-button(label="Auto Download")
-                            el-radio-button(label="Auto Install")
-                div.options-container
-                    span.header Appearance
-                    div.options-container-item
-                        span.name Theme mode
+                                    el-radio-button(label="Notify")
+                                    el-radio-button(label="Auto Download")
+                                    el-radio-button(label="Auto Install")
+                        div.options-container(style="margin-top:45px;border-top:1px solid #eee;padding-top:30px")
+                            span.header Legal Notice
+                            div.options-container-item
+                                p &copy; 2019-2021 #[a(href="https://github.com/pypy-vrc" target="_blank") pypy] (mina#5656)
+                                p VRCX is an assistant application for provide information about manage friendship. this application uses unofficial VRChat API (VRCSDK).
+                                p VRCX isn't endorsed by VRChat and doesn't reflect the views or opinions of VRChat or anyone officially involved in producing or managing VRChat. VRChat is trademark of VRChat Inc. VRChat © VRChat Inc.
+                                p pypy is not responsible for any problems caused by VRCX. Use at your own risk!
+                            div.options-container-item
+                                el-button(@click="ossDialog = true" size="small") Open Source Software Notice
+                    el-tab-pane(label="Appearance")
+                        div.options-container(style="margin-top:0")
+                            span.header Appearance
+                            div.options-container-item
+                                span.name Theme mode
                         el-radio-group(v-model="themeMode" size="mini")
                             el-radio-button(label="system") System
                             el-radio-button(label="light") Light
@@ -1045,33 +1059,67 @@ html
                             el-color-picker(v-model="trustColor.troll" @change="updatetrustColor" size="mini" :predefine="['#782f2f']")
                             span.color-picker(slot="trigger" class="x-tag-troll") Nuisance
                         div
-                            el-color-picker(v-model="trustColor.legendary" @change="updatetrustColor" size="mini" :predefine="['#ff69b4', '#b52626']")
-                            span.color-picker(slot="trigger" class="x-tag-legendary") Legend
-                            el-switch(v-model="legendColorOverride" style="padding-bottom:21px;padding-left:6px" @change="saveLegendColorOverride")
-                div.options-container
-                    span.header Discord Presence
-                    div.options-container-item
-                        span * Only works when VRChat is running.
-                    div.options-container-item
-                        span.name Enable
-                            el-tooltip(placement="top" style="margin-left:5px" content="Recommended to disable Rich Presence in VRChat config.json below to stop it from conflicting")
-                                i.el-icon-warning(style="cursor:pointer" @click="showVRChatConfig")
-                        el-switch(v-model="discordActive" @change="saveDiscordOption")
-                    div.options-container-item
-                        span.name Instance type/player count
-                        el-switch(v-model="discordInstance" @change="saveDiscordOption" :disabled="!discordActive")
-                    div.options-container-item
-                        span.name Join button (public only)
-                        el-switch(v-model="discordJoinButton" @change="saveDiscordOption" :disabled="!discordActive")
-                    div.options-container-item
-                        span.name Hide world details in private
-                        el-switch(v-model="discordHideInvite" @change="saveDiscordOption" :disabled="!discordActive")
-                div.options-container
-                    span.header SteamVR Overlay
-                    div.options-container-item
-                        span * It runs automatically when VRChat is running.
-                        br
-                        br
+                                    el-color-picker(v-model="trustColor.legendary" @change="updatetrustColor" size="mini" :predefine="['#ff69b4', '#b52626']")
+                                    span.color-picker(slot="trigger" class="x-tag-legendary") Legend
+                                    el-switch(v-model="legendColorOverride" style="padding-bottom:21px;padding-left:6px" @change="saveLegendColorOverride")
+                    el-tab-pane(label="Notifications")
+                        div.options-container(style="margin-top:0")
+                            span.header Notifications
+                            div.options-container-item
+                                span.name SteamVR Overlay
+                                el-switch(v-model="openVR" @change="saveOpenVROption")
+                            div.options-container-item
+                                span.name Overlay Notifications
+                                el-switch(v-model="overlayNotifications" @change="saveOpenVROption" :disabled="!openVR")
+                            div.options-container-item
+                                el-button(size="small" icon="el-icon-rank" @click="showNotificationPositionDialog" :disabled="!overlayNotifications || !openVR") Notification Position
+                            div.options-container-item
+                                span.name XSOverlay Notifications
+                                el-switch(v-model="xsNotifications" @change="saveOpenVROption")
+                            div.options-container-item
+                                span.name User images (slower)
+                                el-switch(v-model="imageNotifications" @change="saveOpenVROption")
+                            div.options-container-item
+                                el-button(size="small" icon="el-icon-time" @click="promptNotificationTimeout" :disabled="(!overlayNotifications || !openVR) && !xsNotifications") Notification Timeout
+                            span.sub-header Desktop Notifications
+                            div.options-container-item
+                                span.name When to display:
+                                br
+                                el-radio-group(v-model="desktopToast" @change="saveOpenVROption" size="mini")
+                                    el-radio-button(label="Never")
+                                    el-radio-button(label="Desktop Mode")
+                                    el-radio-button(label="Inside VR")
+                                    el-radio-button(label="Outside VR")
+                                    el-radio-button(label="Game Closed")
+                                    el-radio-button(label="Game Running")
+                                    el-radio-button(label="Always")
+                            div.options-container-item
+                                el-button(size="small" icon="el-icon-chat-square" @click="showNotyFeedFiltersDialog") Notification Filters
+                            br
+                            span.sub-header Text-To-Speech Options
+                            div.options-container-item
+                                span.name Notification TTS, When to play:
+                                br
+                                el-radio-group(v-model="notificationTTS" @change="saveNotificationTTS" size="mini")
+                                    el-radio-button(label="Never")
+                                    el-radio-button(label="Inside VR")
+                                    el-radio-button(label="Game Closed")
+                                    el-radio-button(label="Game Running")
+                                    el-radio-button(label="Always")
+                            div.options-container-item
+                                span.name TTS Voice
+                                el-dropdown(@command="(voice) => changeTTSVoice(voice)" trigger="click" size="small")
+                                    el-button(size="mini" :disabled="notificationTTS === 'Never'")
+                                        span {{ getTTSVoiceName() }} #[i.el-icon-arrow-down.el-icon--right]
+                                    el-dropdown-menu(#default="dropdown")
+                                        el-dropdown-item(v-if="voice" v-for="(voice, index) in TTSvoices" :key="index" v-text="voice.name" :command="index")
+                    el-tab-pane(label="Wrist Overlay")
+                        div.options-container(style="margin-top:0")
+                            span.header SteamVR Wrist Overlay
+                            div.options-container-item
+                                span * It runs automatically when VRChat is running.
+                                br
+                                br
                         span Grip: Vive or Other Controllers Grab, Oculus X/A Buttons
                         br
                         span Menu: Vive Menu, Index B, Oculus Y/B Buttons
@@ -1103,71 +1151,45 @@ html
                         span.name Hide VR Devices
                         el-switch(v-model="hideDevicesFromFeed" @change="saveOpenVROption" :disabled="!openVR || !overlayWrist")
                     div.options-container-item
-                        span.name Hide CPU Usage
-                        el-switch(v-model="hideCpuUsageFromFeed" @change="saveOpenVROption" :disabled="!openVR || !overlayWrist")
-                    div.options-container-item
-                        span.name Hide Uptime
-                        el-switch(v-model="hideUptimeFromFeed" @change="saveOpenVROption" :disabled="!openVR || !overlayWrist")
-                    div.options-container-item
-                        span.name Show PC Uptime
-                        el-switch(v-model="pcUptimeOnFeed" @change="saveOpenVROption" :disabled="!openVR || !overlayWrist")
-                    div.options-container-item
-                        el-button(size="small" icon="el-icon-notebook-2" @click="showWristFeedFiltersDialog" :disabled="!openVR || !overlayWrist") Wrist Feed Filters
-                    br
-                    span.sub-header Notifications
-                    div.options-container-item
-                        span.name Overlay Notifications
-                        el-switch(v-model="overlayNotifications" @change="saveOpenVROption" :disabled="!openVR")
-                    div.options-container-item
-                        el-button(size="small" icon="el-icon-rank" @click="showNotificationPositionDialog" :disabled="!overlayNotifications || !openVR") Notification Position
-                    div.options-container-item
-                        span.name XSOverlay Notifications
-                        el-switch(v-model="xsNotifications" @change="saveOpenVROption")
-                    div.options-container-item
-                        span.name User images (slower)
-                        el-switch(v-model="imageNotifications" @change="saveOpenVROption")
-                    div.options-container-item
-                        el-button(size="small" icon="el-icon-time" @click="promptNotificationTimeout" :disabled="(!overlayNotifications || !openVR) && !xsNotifications") Notification Timeout
-                    div.options-container-item
-                        span.name Desktop Notifications, When to display:
-                        br
-                        el-radio-group(v-model="desktopToast" @change="saveOpenVROption" size="mini")
-                            el-radio-button(label="Never")
-                            el-radio-button(label="Desktop Mode")
-                            el-radio-button(label="Inside VR")
-                            el-radio-button(label="Outside VR")
-                            el-radio-button(label="Game Closed")
-                            el-radio-button(label="Game Running")
-                            el-radio-button(label="Always")
-                    div.options-container-item
-                        el-button(size="small" icon="el-icon-chat-square" @click="showNotyFeedFiltersDialog") Notification Filters
-                    br
-                    span.sub-header Text-To-Speech Options
-                    div.options-container-item
-                        span.name Notification TTS, When to play:
-                        br
-                        el-radio-group(v-model="notificationTTS" @change="saveNotificationTTS" size="mini")
-                            el-radio-button(label="Never")
-                            el-radio-button(label="Inside VR")
-                            el-radio-button(label="Game Closed")
-                            el-radio-button(label="Game Running")
-                            el-radio-button(label="Always")
-                    div.options-container-item
-                        span.name TTS Voice
-                        el-dropdown(@command="(voice) => changeTTSVoice(voice)" trigger="click" size="small")
-                            el-button(size="mini" :disabled="notificationTTS === 'Never'")
-                                span {{ getTTSVoiceName() }} #[i.el-icon-arrow-down.el-icon--right]
-                            el-dropdown-menu(#default="dropdown")
-                                el-dropdown-item(v-if="voice" v-for="(voice, index) in TTSvoices" :key="index" v-text="voice.name" :command="index")
-                div.options-container
-                    span.header VRChat Cache Management
-                    span.sub-header Automatically Manage Cache When Closing VRChat
-                    div.options-container-item
-                        span.name(style="min-width:300px") Auto delete old versions from cache
-                        el-switch(v-model="autoSweepVRChatCache" @change="saveOpenVROption")
-                div.options-container
-                    span.header Application
-                    div.options-container-item
+                                span.name Hide CPU Usage
+                                el-switch(v-model="hideCpuUsageFromFeed" @change="saveOpenVROption" :disabled="!openVR || !overlayWrist")
+                            div.options-container-item
+                                span.name Hide Game Uptime
+                                el-switch(v-model="hideUptimeFromFeed" @change="saveOpenVROption" :disabled="!openVR || !overlayWrist")
+                            div.options-container-item
+                                span.name Show PC Uptime
+                                el-switch(v-model="pcUptimeOnFeed" @change="saveOpenVROption" :disabled="!openVR || !overlayWrist")
+                            div.options-container-item
+                                el-button(size="small" icon="el-icon-notebook-2" @click="showWristFeedFiltersDialog" :disabled="!openVR || !overlayWrist") Wrist Feed Filters
+                    el-tab-pane(label="Discord Presence")
+                        div.options-container(style="margin-top:0")
+                            span.header Discord Presence
+                            div.options-container-item
+                                span * Only works when VRChat is running.
+                            div.options-container-item
+                                span.name Enable
+                                    el-tooltip(placement="top" style="margin-left:5px" content="Recommended to disable Rich Presence in VRChat config.json below to stop it from conflicting")
+                                        i.el-icon-warning(style="cursor:pointer" @click="showVRChatConfig")
+                                el-switch(v-model="discordActive" @change="saveDiscordOption")
+                            div.options-container-item
+                                span.name Instance type/player count
+                                el-switch(v-model="discordInstance" @change="saveDiscordOption" :disabled="!discordActive")
+                            div.options-container-item
+                                span.name Join button (public only)
+                                el-switch(v-model="discordJoinButton" @change="saveDiscordOption" :disabled="!discordActive")
+                            div.options-container-item
+                                span.name Hide world details in private
+                                el-switch(v-model="discordHideInvite" @change="saveDiscordOption" :disabled="!discordActive")
+                    el-tab-pane(label="Advanced")
+                        div.options-container(style="margin-top:0")
+                            span.header Advanced
+                            div.options-container-item
+                                el-button-group
+                                    el-button(size="small" icon="el-icon-s-operation" @click="showVRChatConfig()") VRChat config.json
+                                    el-button(size="small" icon="el-icon-s-operation" @click="showLaunchOptions()") Launch Options
+                            div.options-container
+                                span.header Application
+                                div.options-container-item
                         span.name(style="min-width:236px") Encrypt password (disables auto login)
                         el-switch(v-model="enablePrimaryPassword" @change="enablePrimaryPasswordChange" :disabled="!loginForm.savedCredentials[API.currentUser.username]")
                     div.options-container-item
@@ -1179,16 +1201,17 @@ html
                     div.options-container-item
                         span.name Close to tray
                         el-switch(v-model="isCloseToTray")
-                    div.options-container-item
-                        span.name Time Format
-                        el-switch(v-model="dtHour12" @change="setDatetimeFormat" inactive-text="24 Hour" active-text="12 Hour")
-                    div.options-container-item
-                        el-button-group
-                            el-button(size="small" icon="el-icon-s-operation" @click="showLaunchOptions()") Launch Options
-                            el-button(size="small" icon="el-icon-s-operation" @click="showVRChatConfig()") VRChat config.json
-                div.options-container
-                    span.header Remote Avatar Database
-                    div.options-container-item
+                                div.options-container-item
+                                    span.name Time Format
+                                    el-switch(v-model="dtHour12" @change="setDatetimeFormat" inactive-text="24 Hour" active-text="12 Hour")
+                                div.options-container
+                                    span.sub-header Automatically Manage Cache When Closing VRChat
+                                    div.options-container-item
+                                        span.name(style="min-width:300px") Auto delete old versions from cache
+                                        el-switch(v-model="autoSweepVRChatCache" @change="saveOpenVROption")
+                            div.options-container
+                                span.header Remote Avatar Database
+                                div.options-container-item
                         span.name Enable
                         el-switch(v-model="avatarRemoteDatabase" @change="saveOpenVROption")
                     div.options-container-item
@@ -1248,24 +1271,24 @@ html
                             el-radio-button(label="Everyone")
                     div.options-container-item
                         el-button(size="small" icon="el-icon-time" @click="promptPhotonLobbyTimeoutThreshold" :disabled="!openVR") Timeout Threshold
-                div.options-container
-                    span.header VRCX Instance Cache/Debug
-                    div.options-container-item
-                        span.name User cache: #[span(v-text="API.cachedUsers.size")]
-                    div.options-container-item
-                        span.name World cache: #[span(v-text="API.cachedWorlds.size")]
+                            div.options-container
+                                span.header VRCX Instance Cache/Debug
+                                div.options-container-item
+                                    span.name Disable GameLog
+                                    el-switch(v-model="gameLogDisabled" @change="disableGameLogDialog")
+                                    span.name(style="margin-left:15px") (will likely break things)
+                                div.options-container-item
+                                    span.name User cache: #[span(v-text="API.cachedUsers.size")]
+                                div.options-container-item
+                                    span.name World cache: #[span(v-text="API.cachedWorlds.size")]
                     div.options-container-item
                         span.name Avatar cache: #[span(v-text="API.cachedAvatars.size")]
-                    div.options-container-item
-                        span.name Avatar Name cache: #[span(v-text="API.cachedAvatarNames.size")]
-                    div.options-container-item
-                        span.name Disable GameLog
-                        el-switch(v-model="gameLogDisabled" @change="disableGameLogDialog")
-                        span.name(style="margin-left:15px") (will likely break things)
-                    div.options-container-item
-                        el-button(size="small" icon="el-icon-delete-solid" @click="clearVRCXCache") Clear Cache
-                        el-button(size="small" icon="el-icon-time" @click="promptAutoClearVRCXCacheFrequency") Auto Clear Cache
-                    div.options-container-item
+                                div.options-container-item
+                                    span.name Avatar Name cache: #[span(v-text="API.cachedAvatarNames.size")]
+                                div.options-container-item
+                                    el-button(size="small" icon="el-icon-delete-solid" @click="clearVRCXCache") Clear Cache
+                                    el-button(size="small" icon="el-icon-time" @click="promptAutoClearVRCXCacheFrequency") Auto Clear Cache
+                                div.options-container-item
                         el-button(size="small" icon="el-icon-download" @click="showDownloadDialog") Download History
                         el-button(size="small" icon="el-icon-tickets" @click="showConsole") Show Console
                 div.options-container
@@ -1291,18 +1314,9 @@ html
                     div.options-container-item
                         span.name Portal Spawn: #[span(v-text="sqliteTableSizes.portalSpawn")]
                     div.options-container-item
-                        span.name Video Play: #[span(v-text="sqliteTableSizes.videoPlay")]
-                    div.options-container-item
-                        span.name Event: #[span(v-text="sqliteTableSizes.event")]
-                div.options-container(style="margin-top:45px;border-top:1px solid #eee;padding-top:30px")
-                    span.header Legal Notice
-                    div.options-container-item
-                        p &copy; 2019-2021 #[a(href="https://github.com/pypy-vrc" target="_blank") pypy] (mina#5656)
-                        p VRCX is an assistant application for provide information about manage friendship. this application uses unofficial VRChat API (VRCSDK).
-                        p VRCX isn't endorsed by VRChat and doesn't reflect the views or opinions of VRChat or anyone officially involved in producing or managing VRChat. VRChat is trademark of VRChat Inc. VRChat © VRChat Inc.
-                        p pypy is not responsible for any problems caused by VRCX. Use at your own risk!
-                    div.options-container-item
-                        el-button(@click="ossDialog = true" size="small") Open Source Software Notice
+                                    span.name Video Play: #[span(v-text="sqliteTableSizes.videoPlay")]
+                                div.options-container-item
+                                    span.name Event: #[span(v-text="sqliteTableSizes.event")]
 
             //- friends
             .x-aside-container(v-show="$refs.menu && $refs.menu.activeIndex !== 'friendsList'" id="aside") 
@@ -1492,7 +1506,7 @@ html
                                                 el-dropdown-item(icon="el-icon-delete" command="Unfriend" divided) Unfriend
                     el-tabs(ref="userDialogTabs" @tab-click="userDialogTabClick")
                         el-tab-pane(label="Info")
-                            div(v-if="userDialog.ref.location" style="display:flex;flex-direction:column;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #eee;max-height:190px")
+                            div(v-if="userDialog.ref.location" style="display:flex;flex-direction:column;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #eee;max-height:180px")
                                 div(style="flex:none")
                                     location(:location="userDialog.ref.location")
                                     template(v-if="userDialog.ref.location && userDialog.ref.location !== 'private' && userDialog.ref.location !== 'offline'")
@@ -1607,12 +1621,14 @@ html
                                         span.extra(v-if="world.occupants") ({{ world.occupants }})
                         el-tab-pane(label="Favorite Worlds")
                             el-button(type="default" :loading="userDialog.isFavoriteWorldsLoading" @click="getUserFavoriteWorlds(userDialog.id)" size="mini" icon="el-icon-refresh" circle)
-                            div(v-loading="userDialog.isFavoriteWorldsLoading" style="min-height:60px")
+                            el-tabs(type="card" v-loading="userDialog.isFavoriteWorldsLoading" style="margin-top:10px")
                                 template(v-for="(list, index) in userFavoriteWorlds" v-if="list")
-                                    span(style="font-weight:bold;font-size:16px") {{ list[0] }}
-                                    i.x-user-status(style="margin-left:5px" :class="userFavoriteWorldsStatus(list[1])")
-                                    span(style="color:#909399;font-size:12px;margin-left:5px") {{ list[2].length }}/64
-                                    .x-friend-list(style="margin-top:10px;margin-bottom:15px;min-height:60px")
+                                    el-tab-pane
+                                        span(slot="label")
+                                            span(v-text="list[0]" style="font-weight:bold;font-size:16px")
+                                            i.x-user-status(style="margin-left:5px" :class="userFavoriteWorldsStatus(list[1])")
+                                            span(style="color:#909399;font-size:12px;margin-left:5px") {{ list[2].length }}/64
+                                        .x-friend-list(style="margin-top:10px;margin-bottom:15px;min-height:60px")
                                         .x-friend-item(v-for="world in list[2]" :key="world.id" @click="showWorldDialog(world.id)" class="x-friend-item-border")
                                             .avatar
                                                 img(v-lazy="world.thumbnailImageUrl")
