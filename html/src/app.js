@@ -13,6 +13,7 @@ import locale from 'element-ui/lib/locale/lang/en';
 import {v4 as uuidv4} from 'uuid';
 import * as workerTimers from 'worker-timers';
 import 'default-passive-events';
+import Konami from 'konami';
 
 import {appVersion} from './constants.js';
 import configRepository from './repository/config.js';
@@ -77,6 +78,10 @@ speechSynthesis.getVoices();
         } else if (e.key === 'R') {
             $app.refreshCustomCss();
         }
+    });
+
+    var konamiCode = new Konami(() => {
+        $app.toggleCustomEndpoint();
     });
 
     VRCXStorage.GetArray = function (key) {
@@ -10727,7 +10732,7 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.getFriendLog = async function () {
-        await database.cleanLegendFromFriendLog(); // fix dataebase spam crap
+        await database.cleanLegendFromFriendLog(); // fix database spam crap
         var friendLogCurrentArray = await database.getFriendLogCurrent();
         for (var friend of friendLogCurrentArray) {
             this.friendLog.set(friend.userId, friend);
@@ -19503,6 +19508,19 @@ speechSynthesis.getVoices();
     );
     $app.methods.toggleCustomEndpoint = function () {
         this.enableCustomEndpoint = !this.enableCustomEndpoint;
+        if (this.enableCustomEndpoint) {
+            this.$message({
+                message:
+                'Custom endpoint option enabled',
+                type: 'success'
+            });
+        } else {
+            this.$message({
+                message:
+                'Custom endpoint option disabled',
+                type: 'success'
+            });
+        }
         configRepository.setBool(
             'VRCX_enableCustomEndpoint',
             this.enableCustomEndpoint
