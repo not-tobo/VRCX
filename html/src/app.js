@@ -10253,6 +10253,9 @@ speechSynthesis.getVoices();
         if (!this.searchAvatarFilterRemote) {
             this.searchAvatarFilterRemote = 'all';
         }
+        if (this.searchAvatarFilterRemote !== 'local') {
+            this.searchAvatarSort = 'name';
+        }
         var avatars = new Map();
         var query = this.searchText.toUpperCase();
         if (!query) {
@@ -13522,6 +13525,8 @@ speechSynthesis.getVoices();
                     }
                 });
             }
+            this.userDialog.avatarSorting = 'name';
+            this.userDialog.avatarReleaseStatus = 'all';
         }
         this.sortUserDialogAvatars(this.userDialog.avatars);
     };
