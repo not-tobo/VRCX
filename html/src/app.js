@@ -12759,6 +12759,13 @@ speechSynthesis.getVoices();
             return;
         }
         D.ref = ref;
+        D.incomingRequest = false;
+        D.outgoingRequest = false;
+        if (D.ref.friendRequestStatus === 'incoming') {
+            D.incomingRequest = true;
+        } else if (D.ref.friendRequestStatus === 'outgoing') {
+            D.outgoingRequest = true;
+        }
         $app.applyUserDialogLocation();
     });
 
@@ -12994,6 +13001,11 @@ speechSynthesis.getVoices();
                         }
                     }
                     D.isFavorite = API.cachedFavoritesByObjectId.has(D.id);
+                    if (D.ref.friendRequestStatus === 'incoming') {
+                        D.incomingRequest = true;
+                    } else if (D.ref.friendRequestStatus === 'outgoing') {
+                        D.outgoingRequest = true;
+                    }
                     this.applyUserDialogLocation();
                     if (this.$refs.userDialogTabs.currentName === '0') {
                         this.userDialogLastActiveTab = 'Info';
@@ -13032,9 +13044,6 @@ speechSynthesis.getVoices();
                         this.userDialogLastActiveTab = 'JSON';
                         this.refreshUserDialogTreeData();
                     }
-                    API.getFriendStatus({
-                        userId: D.id
-                    });
                     if (args.cache) {
                         API.getUser(args.params);
                     }
