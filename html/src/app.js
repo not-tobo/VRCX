@@ -6551,8 +6551,8 @@ speechSynthesis.getVoices();
             this.getMemo(id).then((memo) => {
                 ctx.memo = memo;
                 ctx.$nickName = '';
-            if (memo) {
-                var array = memo.split('\n');
+                if (memo) {
+                    var array = memo.split('\n');
                     ctx.$nickName = array[0];
                 }
             });
