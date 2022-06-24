@@ -7548,6 +7548,12 @@ speechSynthesis.getVoices();
                     this.lastLocation.friendList.delete(ctx.displayName);
                 }
             }
+            this.lastLocation.playerList.forEach((ref1) => {
+                if (ref1.userId && !API.cachedUsers.has(ref1.userId)) {
+                    API.getUser({userId: ref1.userId});
+                }
+            });
+
             this.updateVRLastLocation();
             this.getCurrentInstanceUserList();
         }
