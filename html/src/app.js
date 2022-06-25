@@ -13444,8 +13444,7 @@ speechSynthesis.getVoices();
                     if (typeof ref !== 'undefined') {
                         if (
                             !ref.isFriend ||
-                            ref.status === 'ask me' ||
-                            ref.status === 'busy'
+                            ref.location !== this.lastLocation.location
                         ) {
                             // fix $location_at
                             var {joinTime} = this.lastLocation.playerList.get(
