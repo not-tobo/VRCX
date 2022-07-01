@@ -11783,9 +11783,6 @@ speechSynthesis.getVoices();
     }
     if (!configRepository.getString('VRCX_branch')) {
         $app.data.branch = 'Stable';
-        if (appVersion.substring(0, 24) === 'VRCX.PyPyDance.Companion') {
-            $app.data.branch = 'Beta';
-        }
         configRepository.setString('VRCX_branch', $app.data.branch);
     }
     if (configRepository.getString('VRCX_lastVRCXVersion')) {
@@ -18540,11 +18537,14 @@ speechSynthesis.getVoices();
                 this.downloadFileComplete('Failed');
                 return;
             case -16:
-                if (this.downloadCurrent.autoInstall) {
-                    this.restartVRCX();
-                } else {
-                    this.downloadDialog.visible = false;
-                    this.showVRCXUpdateDialog();
+                if (this.downloadCurrent.ref.id === 'VRCXUpdate') {
+                    if (this.downloadCurrent.autoInstall) {
+                        this.restartVRCX();
+                    } else {
+                        this.downloadDialog.visible = false;
+                        this.pendingVRCXUpdate = this.downloadCurrent.ref.name;
+                        this.showVRCXUpdateDialog();
+                    }
                 }
                 this.downloadFileComplete('Success');
                 return;
@@ -19003,11 +19003,13 @@ speechSynthesis.getVoices();
     $app.data.VRCXUpdateDialog = {
         visible: false,
         updatePending: false,
+        updatePendingIsLatest: false,
         release: '',
         releases: []
     };
 
     $app.data.checkingForVRCXUpdate = false;
+    $app.data.pendingVRCXUpdate = '';
 
     $app.data.branches = {
         Stable: {
@@ -19015,8 +19017,8 @@ speechSynthesis.getVoices();
             urlReleases: 'https://vrcx.pypy.moe/releases/pypy-vrc.json',
             urlLatest: 'https://vrcx.pypy.moe/releases/latest/pypy-vrc.json'
         },
-        Beta: {
-            name: 'Beta',
+        Nightly: {
+            name: 'Nightly',
             urlReleases: 'https://vrcx.pypy.moe/releases/natsumi-sama.json',
             urlLatest: 'https://vrcx.pypy.moe/releases/latest/natsumi-sama.json'
         }
@@ -19026,6 +19028,7 @@ speechSynthesis.getVoices();
         this.$nextTick(() => adjustDialogZ(this.$refs.VRCXUpdateDialog.$el));
         var D = this.VRCXUpdateDialog;
         D.visible = true;
+        D.updatePendingIsLatest = false;
         D.updatePending = await AppApi.CheckForUpdateExe();
         this.loadBranchVersions();
     };
@@ -19115,6 +19118,13 @@ speechSynthesis.getVoices();
             return;
         }
         for (var release of json) {
+            if (
+                release.target_commitish === 'PyPyDanceCompanion' ||
+                release.prerelease
+            ) {
+                // skip old branch name and prerelease builds
+                continue;
+            }
             for (var asset of release.assets) {
                 if (
                     asset.content_type === 'application/x-msdownload' &&
@@ -19126,6 +19136,11 @@ speechSynthesis.getVoices();
         }
         D.releases = releases;
         D.release = json[0].name;
+        this.VRCXUpdateDialog.updatePendingIsLatest = false;
+        if (D.release === this.pendingVRCXUpdate) {
+            // update already downloaded and latest version
+            this.VRCXUpdateDialog.updatePendingIsLatest = true;
+        }
         if (configRepository.getString('VRCX_branch') !== this.branch) {
             configRepository.setString('VRCX_branch', this.branch);
         }
@@ -19136,8 +19151,10 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.checkForVRCXUpdate = async function () {
-        if (await AppApi.CheckForUpdateExe()) {
-            return;
+        if (this.branch === 'Beta') {
+            // move Beta users to stable
+            this.branch = 'Stable';
+            configRepository.setString('VRCX_branch', this.branch);
         }
         var url = this.branches[this.branch].urlLatest;
         this.checkingForVRCXUpdate = true;
@@ -19158,7 +19175,12 @@ speechSynthesis.getVoices();
                 json.published_at,
                 'YYYY-MM-DD HH24:MI:SS'
             )})`;
-            if (json.name > this.appVersion) {
+            var name = json.name;
+            this.VRCXUpdateDialog.updatePendingIsLatest = false;
+            if (name === this.pendingVRCXUpdate) {
+                // update already downloaded
+                this.VRCXUpdateDialog.updatePendingIsLatest = true;
+            } else if (name > this.appVersion) {
                 for (var asset of json.assets) {
                     if (
                         asset.content_type === 'application/x-msdownload' &&
@@ -19173,7 +19195,6 @@ speechSynthesis.getVoices();
                     return;
                 }
                 this.notifyMenu('settings');
-                var name = json.name;
                 var type = 'Auto';
                 if (this.autoUpdateVRCX === 'Notify') {
                     this.showVRCXUpdateDialog();
