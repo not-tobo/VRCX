@@ -19148,7 +19148,8 @@ speechSynthesis.getVoices();
             }
             for (var asset of release.assets) {
                 if (
-                    asset.content_type === 'application/x-msdownload' &&
+                    (asset.content_type === 'application/x-msdownload' ||
+                        asset.content_type === 'application/x-msdos-program') &&
                     asset.state === 'uploaded'
                 ) {
                     releases.push(release);
