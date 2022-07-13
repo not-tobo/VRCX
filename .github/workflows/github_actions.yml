@@ -112,13 +112,21 @@ jobs:
           7z a -tzip ${file_name} * -mx=7 -xr0!*.log
           mv ${file_name} ../../../${file_name}
           echo "Zip FileName: ${file_name}"
-
-      - uses: "marvinpinto/action-automatic-releases@latest"
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "${{ needs.set_version.outputs.version }}"
+          tag_name: "${{ needs.set_version.outputs.version }}"
+          release_name: "VRCX Nightly ${{ needs.set_version.outputs.version }}"
+          draft: false
           prerelease: false
-          title: "VRCX Nightly ${{ needs.set_version.outputs.version }}"
+      - name: Upload multiple assets to release
+        uses: csexton/release-asset-action@v2
+        with:
           files: |
             VRCX_${{ needs.set_version.outputs.version }}_Setup.exe
             VRCX_${{ needs.set_version.outputs.version }}.zip
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          release-url: ${{ steps.create_release.outputs.upload_url }}
