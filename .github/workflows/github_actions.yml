@@ -3,41 +3,122 @@ name: VRCX
 on:
   push:
     branches:
-    - PyPyDanceCompanion
-  pull_request:
-    branches:
-    - PyPyDanceCompanion
+      - Nightly
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build_dotnet:
-    runs-on: windows-latest
+  set_version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Setup Nuget.exe
-      uses: nuget/setup-nuget@v1
-    - name: Restore packages
-      run: nuget restore VRCX.sln
-    - name: Setup MSBuild.exe
-      uses: microsoft/setup-msbuild@v1.0.2
-    - name: Build with MSBuild
-      run: msbuild VRCX.sln -p:Configuration=Release -p:Platform=x64
+      - uses: actions/checkout@v2
+      - id: version
+        run: |
+          git_hash=$(git rev-parse --short "$GITHUB_SHA")
+          export FILENAME="$(date '+%Y-%m-%dT%H.%M')-${git_hash}"
+          echo "::set-output name=version::${FILENAME}"
+
+  build_dotnet:
+    runs-on: windows-latest
+    needs: set_version
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Nuget.exe
+        uses: nuget/setup-nuget@v1
+      - name: Restore packages
+        run: nuget restore VRCX.sln
+      - name: Setup MSBuild.exe
+        uses: microsoft/setup-msbuild@v1.0.2
+      - name: Build with MSBuild
+        run: msbuild VRCX.sln -p:Configuration=Release -p:Platform=x64
+      - name: Upload dotnet artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: Release
+          path: bin/x64/Release
 
   build_node:
     runs-on: ubuntu-latest
+    needs: set_version
     defaults:
       run:
         working-directory: html
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: Restore dependencies
-      run: npm ci
-    - name: Lint
-      run: npm run lint
-    - name: Build
-      run: npm run production
+      - uses: actions/checkout@v2
+
+      - name: Set version
+        run: |
+          echo "export var appVersion = 'VRCX Nightly ${{ needs.set_version.outputs.version }}';" > src/constants.js
+          cat src/constants.js
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Restore dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run production
+      - name: Upload html artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: html
+          path: html/dist
+
+  create_setup:
+    runs-on: ubuntu-latest
+    needs: [set_version, build_node, build_dotnet]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install 7-zip and makensis
+        run: sudo apt update && sudo apt install -y p7zip-full nsis nsis-pluginapi
+      - name: Set plugin permissions
+        run: sudo chown -R $(whoami) /usr/share/nsis/Plugins/
+      - name: Download dotnet artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: Release
+          path: bin/x64/Release
+      - name: Download html artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: html
+          path: bin/x64/Release/html
+      - name: Create nsis installer
+        uses: joncloud/makensis-action@v3.3
+        with:
+          script-file: Installer/installer.nsi
+          additional-plugin-paths: Installer/Plugins
+      - name: Rename setup
+        run: |
+          file_name="VRCX_${{ needs.set_version.outputs.version }}_Setup.exe"
+          echo "Setup FileName: ${file_name}"
+          mv Installer/VRCX_Setup.exe $file_name
+      - name: Make zip
+        run: |
+          file_name="VRCX_${{ needs.set_version.outputs.version }}.zip"
+          cd bin/x64/Release
+          7z a -tzip ${file_name} * -mx=7 -xr0!*.log
+          mv ${file_name} ../../../${file_name}
+          echo "Zip FileName: ${file_name}"
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "${{ needs.set_version.outputs.version }}"
+          prerelease: false
+          title: "VRCX Nightly ${{ needs.set_version.outputs.version }}"
+          files: |
+            VRCX_${{ needs.set_version.outputs.version }}_Setup.exe
+            VRCX_${{ needs.set_version.outputs.version }}.zip
