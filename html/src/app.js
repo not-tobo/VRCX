@@ -1329,9 +1329,6 @@ speechSynthesis.getVoices();
     API.applyCurrentUser = function (json) {
         var ref = this.currentUser;
         if (this.isLoggedIn) {
-            if (json.currentAvatar !== ref.currentAvatar) {
-                $app.addAvatarToHistory(json.currentAvatar);
-            }
             Object.assign(ref, json);
             if (ref.homeLocation !== ref.$homeLocation.tag) {
                 ref.$homeLocation = this.parseLocation(ref.homeLocation);
