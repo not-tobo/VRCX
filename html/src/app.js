@@ -15,7 +15,6 @@ import locale from 'element-ui/lib/locale/lang/en';
 import {v4 as uuidv4} from 'uuid';
 import * as workerTimers from 'worker-timers';
 import 'default-passive-events';
-import Konami from 'konami';
 
 import {appVersion} from './constants.js';
 import configRepository from './repository/config.js';
@@ -80,10 +79,6 @@ speechSynthesis.getVoices();
         } else if (e.key === 'R') {
             $app.refreshCustomCss();
         }
-    });
-
-    Konami(() => {
-        $app.toggleCustomEndpoint();
     });
 
     VRCXStorage.GetArray = function (key) {
@@ -10073,7 +10068,9 @@ speechSynthesis.getVoices();
             case 'ask me':
                 L.statusName = 'Ask Me';
                 L.statusImage = 'askme';
-                hidePrivate = true;
+                if (this.discordHideInvite) {
+                    hidePrivate = true;
+                }
                 break;
             case 'busy':
                 L.statusName = 'Do Not Disturb';
@@ -13430,12 +13427,8 @@ speechSynthesis.getVoices();
         var users = [];
         var pushUser = function (ref) {
             var photonId = '';
-            var masterId = 0;
             var isFriend = false;
             $app.photonLobbyCurrent.forEach((ref1, id) => {
-                if (masterId === 0 || masterId > id) {
-                    masterId = id;
-                }
                 if (typeof ref1 !== 'undefined') {
                     if (
                         (typeof ref.id !== 'undefined' &&
@@ -13450,11 +13443,10 @@ speechSynthesis.getVoices();
                 }
             });
             var isMaster = false;
-            if ($app.photonLobbyMaster !== 0) {
-                if (photonId === $app.photonLobbyMaster) {
-                    isMaster = true;
-                }
-            } else if (photonId === masterId) {
+            if (
+                $app.photonLobbyMaster !== 0 &&
+                photonId === $app.photonLobbyMaster
+            ) {
                 isMaster = true;
             }
             var inVrMode = $app.photonLobbyInVrMode.get(photonId);
@@ -13612,6 +13604,7 @@ speechSynthesis.getVoices();
                         this.currentInstanceWorld.fileSize = fileSize;
                     }
                 );
+                return args;
             });
         } else {
             API.getCachedWorld({
@@ -19891,22 +19884,12 @@ speechSynthesis.getVoices();
         'VRCX_enableCustomEndpoint'
     );
     $app.methods.toggleCustomEndpoint = function () {
-        this.enableCustomEndpoint = !this.enableCustomEndpoint;
-        if (this.enableCustomEndpoint) {
-            this.$message({
-                message: 'Custom endpoint option enabled',
-                type: 'success'
-            });
-        } else {
-            this.$message({
-                message: 'Custom endpoint option disabled',
-                type: 'success'
-            });
-        }
         configRepository.setBool(
             'VRCX_enableCustomEndpoint',
             this.enableCustomEndpoint
         );
+        this.loginForm.endpoint = '';
+        this.loginForm.websocket = '';
     };
 
     $app.data.mouseDownClass = [];
