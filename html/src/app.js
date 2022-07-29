@@ -7594,7 +7594,6 @@ speechSynthesis.getVoices();
             props.location[0] === 'traveling' &&
             props.location[1] !== 'traveling'
         ) {
-            // $app.onPlayerTraveling(ref);
             // store previous location when user is traveling
             ref.$previousLocation = props.location[1];
             ref.$travelingToTime = Date.now();
@@ -19239,10 +19238,7 @@ speechSynthesis.getVoices();
             console.log(json, response);
         }
         if (json === Object(json) && json.name && json.published_at) {
-            this.latestAppVersion = `${json.name} (${formatDate(
-                json.published_at,
-                'YYYY-MM-DD HH24:MI:SS'
-            )})`;
+            this.latestAppVersion = json.name;
             var name = json.name;
             this.VRCXUpdateDialog.updatePendingIsLatest = false;
             if (name === this.pendingVRCXUpdate) {
@@ -19251,7 +19247,8 @@ speechSynthesis.getVoices();
             } else if (name > this.appVersion) {
                 for (var asset of json.assets) {
                     if (
-                        asset.content_type === 'application/x-msdownload' &&
+                        (asset.content_type === 'application/x-msdownload' ||
+                        asset.content_type === 'application/x-msdos-program') &&
                         asset.state === 'uploaded'
                     ) {
                         var downloadUrl = asset.browser_download_url;
