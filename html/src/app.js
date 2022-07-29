@@ -767,9 +767,9 @@ speechSynthesis.getVoices();
         },
         methods: {
             parse() {
-                var L = API.parseLocation(this.location);
-                this.$el.style.display =
-                    L.isOffline || L.isPrivate || L.isTraveling ? 'none' : '';
+                this.$el.style.display = $app.checkCanInviteSelf()
+                    ? 'none'
+                    : '';
             },
             confirm() {
                 API.$emit('SHOW_LAUNCH_DIALOG', this.location);
@@ -793,9 +793,9 @@ speechSynthesis.getVoices();
         },
         methods: {
             parse() {
-                var L = API.parseLocation(this.location);
-                this.$el.style.display =
-                    L.isOffline || L.isPrivate || L.isTraveling ? 'none' : '';
+                this.$el.style.display = $app.checkCanInviteSelf()
+                    ? 'none'
+                    : '';
             },
             confirm() {
                 var L = API.parseLocation(this.location);
@@ -2018,7 +2018,7 @@ speechSynthesis.getVoices();
     */
     API.selfInvite = function (params) {
         return this.call(
-            `instances/${params.worldId}:${params.instanceId}/invite`,
+            `invite/myself/to/${params.worldId}:${params.instanceId}`,
             {
                 method: 'POST'
             }
@@ -19047,6 +19047,14 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.checkCanInvite = function (location) {
+        var L = API.parseLocation(location);
+        if (L.accessType === 'public' || L.userId === API.currentUser.id) {
+            return true;
+        }
+        return false;
+    };
+
+    $app.methods.checkCanInviteSelf = function (location) {
         var L = API.parseLocation(location);
         if (L.accessType === 'invite' || L.accessType === 'friends') {
             if (L.userId === API.currentUser.id) {
