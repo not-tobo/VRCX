@@ -732,6 +732,8 @@ speechSynthesis.getVoices();
                 }
             } else {
                 ctx.worldId = _tag;
+                ctx.instanceId = _tag;
+                ctx.instanceName = _tag;
             }
         }
         return ctx;
@@ -1424,6 +1426,7 @@ speechSynthesis.getVoices();
                 travelingToInstance: '',
                 travelingToLocation: '',
                 travelingToWorld: '',
+                note: '',
                 // VRCX
                 $location: {},
                 $location_at: Date.now(),
@@ -1769,6 +1772,9 @@ speechSynthesis.getVoices();
                 privateOccupants: 0,
                 occupants: 0,
                 instances: [],
+                featured: false,
+                organization: '',
+                previewYoutubeId: '',
                 // VRCX
                 $isLabs: false,
                 //
