@@ -1301,7 +1301,7 @@ speechSynthesis.getVoices();
                 travelingToWorld: '',
                 // VRCX
                 $online_for: Date.now(),
-                $offline_for: Date.now(),
+                $offline_for: '',
                 $travelingToTime: Date.now(),
                 $homeLocation: {},
                 $isVRCPlus: false,
@@ -6790,8 +6790,10 @@ speechSynthesis.getVoices();
                 (newState === 'offline' || newState === 'active') &&
                 ctx.state === 'online'
             ) {
-                ctx.ref.$online_for = '';
-                ctx.ref.$offline_for = Date.now();
+                if (ctx.ref !== 'undefined') {
+                    ctx.ref.$online_for = '';
+                    ctx.ref.$offline_for = Date.now();
+                }
                 var ts = Date.now();
                 var time = ts - $location_at;
                 var worldName = await this.getWorldName(location);
@@ -6807,9 +6809,11 @@ speechSynthesis.getVoices();
                 this.addFeed(feed);
                 database.addOnlineOfflineToDatabase(feed);
             } else if (newState === 'online') {
-                ctx.ref.$location_at = Date.now();
-                ctx.ref.$online_for = Date.now();
-                ctx.ref.$offline_for = '';
+                if (ctx.ref !== 'undefined') {
+                    ctx.ref.$location_at = Date.now();
+                    ctx.ref.$online_for = Date.now();
+                    ctx.ref.$offline_for = '';
+                }
                 var worldName = await this.getWorldName(newRef.location);
                 var feed = {
                     created_at: new Date().toJSON(),
@@ -10934,9 +10938,11 @@ speechSynthesis.getVoices();
         }
         var ref = API.cachedUsers.get(id);
         if (typeof ref === 'undefined') {
-            API.getUser({
-                userId: id
-            });
+            try {
+                API.getUser({
+                    userId: id
+                });
+            } catch {}
             return;
         }
         API.getFriendStatus({
@@ -13289,8 +13295,8 @@ speechSynthesis.getVoices();
                     instanceId: L.instanceId
                 });
             }
-            D.$location = L;
         }
+        D.$location = L;
         if (L.userId) {
             var ref = API.cachedUsers.get(L.userId);
             if (typeof ref === 'undefined') {
@@ -20130,6 +20136,17 @@ speechSynthesis.getVoices();
         API.currentUser.location = this.lastLocation.location;
         API.currentUser.travelingToLocation = this.lastLocationDestination;
         API.currentUser.$travelingToTime = this.lastLocationDestinationTime;
+        var ref = API.cachedUsers.get(API.currentUser.id);
+        if (typeof ref !== 'undefined') {
+            var currentLocation = this.lastLocation.location;
+            if (this.lastLocation.location === 'traveling') {
+                currentLocation = this.lastLocationDestination;
+            }
+            ref.$location = API.parseLocation(currentLocation);
+            ref.location = this.lastLocation.location;
+            ref.travelingToLocation = this.lastLocationDestination;
+            ref.$travelingToTime = this.lastLocationDestinationTime;
+        }
     };
 
     $app.data.avatarHistory = new Set();
