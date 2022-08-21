@@ -15282,7 +15282,7 @@ speechSynthesis.getVoices();
         var D = this.newInstanceDialog;
         var tags = [];
         if (D.instanceName) {
-            D.instanceName = D.instanceName.replace(/[^A-Za-z0-9]/g, '');
+            D.instanceName = D.instanceName.replace(/[^A-Za-z0-9-_]/g, '');
             tags.push(D.instanceName);
         } else {
             tags.push((99999 * Math.random() + 1).toFixed(0));
@@ -20133,6 +20133,9 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.updateCurrentUserLocation = function () {
+        if (this.gameLogDisabled) {
+            return;
+        }
         API.currentUser.location = this.lastLocation.location;
         API.currentUser.travelingToLocation = this.lastLocationDestination;
         API.currentUser.$travelingToTime = this.lastLocationDestinationTime;
