@@ -8107,6 +8107,7 @@ speechSynthesis.getVoices();
         switch (gameLog.type) {
             case 'location-destination':
                 if (this.isGameRunning) {
+                    this.lastLocationReset();
                     this.lastLocation.location = 'traveling';
                     this.lastLocationDestination = gameLog.location;
                     this.lastLocationDestinationTime = Date.parse(gameLog.dt);
@@ -8187,6 +8188,11 @@ speechSynthesis.getVoices();
                 database.addGamelogJoinLeaveToDatabase(entry);
                 break;
             case 'player-left':
+                if (
+                    !this.lastLocation.playerList.has(gameLog.userDisplayName)
+                ) {
+                    return;
+                }
                 var time = 0;
                 var ref = this.lastLocation.playerList.get(
                     gameLog.userDisplayName
@@ -10921,6 +10927,7 @@ speechSynthesis.getVoices();
 
     $app.methods.getFriendLog = async function () {
         await database.cleanLegendFromFriendLog(); // fix database spam crap
+        await database.fixGameLogTraveling(); // fix past bug with incorrect gameLog locations
         var friendLogCurrentArray = await database.getFriendLogCurrent();
         for (var friend of friendLogCurrentArray) {
             this.friendLog.set(friend.userId, friend);
