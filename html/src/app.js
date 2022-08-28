@@ -7810,7 +7810,12 @@ speechSynthesis.getVoices();
         friendList: new Map()
     };
 
-    $app.methods.lastLocationReset = function () {
+    $app.methods.lastLocationReset = function (gameLogDate) {
+        var dateTime = gameLogDate;
+        if (!gameLogDate) {
+            dateTime = new Date().toJSON();
+        }
+        var dateTimeStamp = Date.parse(dateTime);
         this.photonLobby = new Map();
         this.photonLobbyCurrent = new Map();
         this.photonLobbyMaster = 0;
@@ -7829,23 +7834,23 @@ speechSynthesis.getVoices();
             this.photonEventTable.data = [];
         }
         var playerList = Array.from(this.lastLocation.playerList.values());
+        var dataBaseEntries = [];
         for (var ref of playerList) {
-            var time = new Date().getTime() - ref.joinTime;
             var entry = {
-                created_at: new Date().toJSON(),
+                created_at: dateTime,
                 type: 'OnPlayerLeft',
                 displayName: ref.displayName,
                 location: this.lastLocation.location,
                 userId: ref.userId,
-                time
+                time: dateTimeStamp - ref.joinTime
             };
-            database.addGamelogJoinLeaveToDatabase(entry);
+            dataBaseEntries.unshift(entry);
             this.addGameLog(entry);
         }
+        database.addGamelogJoinLeaveBulk(dataBaseEntries);
         if (this.lastLocation.date !== 0) {
-            var timeLocation = new Date().getTime() - this.lastLocation.date;
             var update = {
-                time: timeLocation,
+                time: dateTimeStamp - this.lastLocation.date,
                 created_at: new Date(this.lastLocation.date).toJSON()
             };
             database.updateGamelogLocationTimeToDatabase(update);
@@ -8116,7 +8121,7 @@ speechSynthesis.getVoices();
                         type: 'LocationDestination',
                         location: gameLog.location
                     });
-                    this.lastLocationReset();
+                    this.lastLocationReset(gameLog.dt);
                     this.lastLocation.location = 'traveling';
                     this.lastLocationDestination = gameLog.location;
                     this.lastLocationDestinationTime = Date.parse(gameLog.dt);
@@ -8129,7 +8134,7 @@ speechSynthesis.getVoices();
                 break;
             case 'location':
                 if (this.isGameRunning) {
-                    this.lastLocationReset();
+                    this.lastLocationReset(gameLog.dt);
                     this.clearNowPlaying();
                     this.lastLocation = {
                         date: Date.parse(gameLog.dt),
