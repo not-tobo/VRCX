@@ -6539,6 +6539,7 @@ speechSynthesis.getVoices();
             name: '',
             no: ++this.friendsNo,
             memo: '',
+            pendingOffline: false,
             $nickName: ''
         };
         if (this.friendLogInitStatus) {
@@ -6631,6 +6632,7 @@ speechSynthesis.getVoices();
         }
         if (stateInput === 'online') {
             this.APILastOnline.set(id, Date.now());
+            ctx.pendingOffline = false;
         }
         var ref = API.cachedUsers.get(id);
         var isVIP = API.cachedFavoritesByObjectId.has(id);
@@ -6716,6 +6718,9 @@ speechSynthesis.getVoices();
             ctx.state === 'online' &&
             (stateInput === 'active' || stateInput === 'offline')
         ) {
+            ctx.ref = ref;
+            ctx.isVIP = isVIP;
+            ctx.name = ref.displayName;
             // delayed second check to prevent status flapping
             var date = this.updateFriendInProgress.get(id);
             if (date && date > Date.now() - 120000) {
@@ -6730,9 +6735,11 @@ speechSynthesis.getVoices();
                 }
                 return;
             }
+            ctx.pendingOffline = true;
             this.updateFriendInProgress.set(id, Date.now());
             // wait 2minutes then check if user came back online
             workerTimers.setTimeout(() => {
+                ctx.pendingOffline = false;
                 this.updateFriendInProgress.delete(id);
                 this.updateFriendDelayedCheck(
                     id,
@@ -6744,6 +6751,9 @@ speechSynthesis.getVoices();
                 );
             }, 110000);
         } else {
+            ctx.ref = ref;
+            ctx.isVIP = isVIP;
+            ctx.name = ref.displayName;
             this.updateFriendDelayedCheck(
                 id,
                 ctx,
@@ -6775,7 +6785,8 @@ speechSynthesis.getVoices();
                     ctx.name,
                     new Date().toJSON(),
                     'falsePositiveOffline',
-                    stateInput
+                    stateInput,
+                    ctx.ref.state
                 );
             }
             return;
@@ -6790,8 +6801,8 @@ speechSynthesis.getVoices();
                 ctx.name,
                 new Date().toJSON(),
                 'updateFriendState',
-                newState,
-                stateInput
+                stateInput,
+                ctx.ref.state
             );
         }
         var newRef = args.ref;
@@ -7147,7 +7158,7 @@ speechSynthesis.getVoices();
         return this.friendsGroup3_;
     };
 
-    $app.methods.userStatusClass = function (user) {
+    $app.methods.userStatusClass = function (user, pendingOffline) {
         var style = {};
         if (typeof user !== 'undefined') {
             var id = '';
@@ -7162,14 +7173,17 @@ speechSynthesis.getVoices();
             if (!user.isFriend) {
                 return '';
             }
-            // temp fix
-            if (
+            if (pendingOffline) {
+                // Pending offline
+                style.offline = true;
+            } else if (
                 user.status !== 'active' &&
                 user.location === 'private' &&
                 user.state === '' &&
                 id &&
                 !API.currentUser.onlineFriends.includes(id)
             ) {
+                // temp fix
                 if (API.currentUser.activeFriends.includes(id)) {
                     // Active
                     style.active = true;
