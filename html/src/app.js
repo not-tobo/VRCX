@@ -7652,6 +7652,9 @@ speechSynthesis.getVoices();
                 $app.addFeed(feed);
                 database.addGPSToDatabase(feed);
                 $app.updateFriendGPS(ref.id);
+                // clear previousLocation after GPS
+                ref.$previousLocation = '';
+                ref.$travelingToTime = Date.now();
             }
         }
         if (
@@ -9799,7 +9802,7 @@ speechSynthesis.getVoices();
         if (displayName === 'Random') {
             displayName = '';
         }
-        if (videoId === 0) {
+        if (videoId === 9999) {
             videoId = 'YouTube';
         }
         if (videoUrl === this.nowPlaying.url) {
@@ -13881,12 +13884,11 @@ speechSynthesis.getVoices();
                             description: '',
                             id: '',
                             imageUrl: '',
-                            // thumbnailImageUrl: '',
+                            thumbnailImageUrl: '',
                             created_at: '0001-01-01T00:00:00.0000000Z',
                             updated_at: '0001-01-01T00:00:00.0000000Z',
                             releaseStatus: 'public',
-                            ...avatar,
-                            thumbnailImageUrl: avatar.imageUrl
+                            ...avatar
                         };
                         avatars.set(ref1.id, ref1);
                     }
