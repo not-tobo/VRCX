@@ -731,8 +731,6 @@ speechSynthesis.getVoices();
                 }
             } else {
                 ctx.worldId = _tag;
-                ctx.instanceId = _tag;
-                ctx.instanceName = _tag;
             }
         }
         return ctx;
@@ -14409,11 +14407,6 @@ speechSynthesis.getVoices();
             return;
         }
         L.shortName = shortName;
-        if (L.worldId === L.instanceId) {
-            // very janky fix for removing empty worldId instance
-            L.instanceId = '';
-            L.instanceName = '';
-        }
         D.id = L.worldId;
         D.$location = L;
         D.treeData = [];
