@@ -57,6 +57,9 @@
   <PropertyGroup>
     <StartupObject />
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Blake2Sharp">
       <HintPath>librsync.net\Blake2Sharp.dll</HintPath>
@@ -142,6 +145,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <None Include="app.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -174,13 +178,13 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CefSharp.Common">
-      <Version>105.3.330</Version>
+      <Version>104.4.240</Version>
     </PackageReference>
     <PackageReference Include="CefSharp.OffScreen">
-      <Version>105.3.330</Version>
+      <Version>104.4.240</Version>
     </PackageReference>
     <PackageReference Include="CefSharp.WinForms">
-      <Version>105.3.330</Version>
+      <Version>104.4.240</Version>
     </PackageReference>
     <PackageReference Include="LiteDB">
       <Version>5.0.12</Version>
