@@ -1965,15 +1965,21 @@ speechSynthesis.getVoices();
             instanceId: string
         }
     */
-    API.getInstanceShortName = function (params) {
+    API.getInstanceShortName = function (instance) {
+        var params = {};
+        if (instance.shortName) {
+            params.shortName = instance.shortName;
+        }
         return this.call(
-            `instances/${params.worldId}:${params.instanceId}/shortName`,
+            `instances/${instance.worldId}:${instance.instanceId}/shortName`,
             {
-                method: 'GET'
+                method: 'GET',
+                params
             }
         ).then((json) => {
             var args = {
                 json,
+                instance,
                 params
             };
             this.$emit('INSTANCE:SHORTNAME', args);
@@ -6846,15 +6852,13 @@ speechSynthesis.getVoices();
             );
         }
         var newRef = args.ref;
-        if (ctx.state !== newState) {
+        if (ctx.state !== newState && ctx.ref !== 'undefined') {
             if (
                 (newState === 'offline' || newState === 'active') &&
                 ctx.state === 'online'
             ) {
-                if (ctx.ref !== 'undefined') {
-                    ctx.ref.$online_for = '';
-                    ctx.ref.$offline_for = Date.now();
-                }
+                ctx.ref.$online_for = '';
+                ctx.ref.$offline_for = Date.now();
                 var ts = Date.now();
                 var time = ts - $location_at;
                 var worldName = await this.getWorldName(location);
@@ -6870,13 +6874,11 @@ speechSynthesis.getVoices();
                 this.addFeed(feed);
                 database.addOnlineOfflineToDatabase(feed);
             } else if (newState === 'online') {
-                if (ctx.ref !== 'undefined') {
-                    ctx.ref.$previousLocation = '';
-                    ctx.ref.$travelingToTime = Date.now();
-                    ctx.ref.$location_at = Date.now();
-                    ctx.ref.$online_for = Date.now();
-                    ctx.ref.$offline_for = '';
-                }
+                ctx.ref.$previousLocation = '';
+                ctx.ref.$travelingToTime = Date.now();
+                ctx.ref.$location_at = Date.now();
+                ctx.ref.$online_for = Date.now();
+                ctx.ref.$offline_for = '';
                 var worldName = await this.getWorldName(newRef.location);
                 var feed = {
                     created_at: new Date().toJSON(),
@@ -7641,7 +7643,8 @@ speechSynthesis.getVoices();
 
     API.$on('USER:UPDATE', async function (args) {
         var {ref, props} = args;
-        if ($app.friends.has(ref.id) === false) {
+        var friend = $app.friends.get(ref.id);
+        if (typeof friend === 'undefined') {
             return;
         }
         if (props.location && ref.id === $app.userDialog.id) {
@@ -7688,6 +7691,9 @@ speechSynthesis.getVoices();
                 // clear previousLocation after GPS
                 ref.$previousLocation = '';
                 ref.$travelingToTime = Date.now();
+            }
+            if (friend.state !== 'online') {
+                API.getUser({userId: ref.id});
             }
         }
         if (
