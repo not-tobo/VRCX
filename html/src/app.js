@@ -21734,6 +21734,10 @@ speechSynthesis.getVoices();
             this.worldDialog.isFavorite =
                 API.cachedFavoritesByObjectId.has(worldId);
         }
+
+        // update UI
+        this.localWorldFavoriteGroups.sort();
+        this.localWorldFavorites.sort();
     };
 
     $app.methods.getLocalWorldFavorites = async function () {
@@ -21786,6 +21790,14 @@ speechSynthesis.getVoices();
             }
         }
         return false;
+    };
+
+    $app.methods.getLocalWorldFavoriteGroupLength = function (group) {
+        var favoriteGroup = this.localWorldFavorites[group];
+        if (!favoriteGroup) {
+            return 0;
+        }
+        return favoriteGroup.length;
     };
 
     $app.methods.promptNewLocalWorldFavoriteGroup = function () {
