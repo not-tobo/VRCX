@@ -201,7 +201,8 @@ speechSynthesis.getVoices();
         observerOptions: {
             rootMargin: '0px',
             threshold: 0.1
-        }
+        },
+        attempt: 3
     });
 
     Vue.use(DataTables);
@@ -20334,6 +20335,21 @@ speechSynthesis.getVoices();
                 break;
             case 'addavatardb':
                 this.addAvatarProvider(input.replace('addavatardb/', ''));
+                break;
+            case 'import':
+                var type = args[1];
+                if (!type) break;
+                var data = input.replace(`import/${type}/`, '');
+                if (type === 'avatar') {
+                    this.showAvatarImportDialog();
+                    this.worldImportDialog.input = data;
+                } else if (type === 'world') {
+                    this.showWorldImportDialog();
+                    this.worldImportDialog.input = data;
+                } else if (type === 'friend') {
+                    this.showFriendImportDialog();
+                    this.friendImportDialog.input = data;
+                }
                 break;
         }
     };
