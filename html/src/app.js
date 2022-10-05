@@ -12334,7 +12334,13 @@ speechSynthesis.getVoices();
     );
     $app.data.isStartAsMinimizedState =
         VRCXStorage.Get('VRCX_StartAsMinimizedState') === 'true';
-    $app.data.isCloseToTray = configRepository.getBool('VRCX_CloseToTray');
+    $app.data.isCloseToTray = VRCXStorage.Get('VRCX_CloseToTray') === 'true';
+    if (configRepository.getBool('VRCX_CloseToTray')) {
+        // move back to JSON
+        $app.data.isCloseToTray = configRepository.getBool('VRCX_CloseToTray');
+        VRCXStorage.Set('VRCX_CloseToTray', $app.data.isCloseToTray.toString());
+        configRepository.remove('VRCX_CloseToTray');
+    }
     var saveVRCXWindowOption = function () {
         configRepository.setBool(
             'VRCX_StartAtWindowsStartup',
@@ -12344,7 +12350,7 @@ speechSynthesis.getVoices();
             'VRCX_StartAsMinimizedState',
             this.isStartAsMinimizedState.toString()
         );
-        configRepository.setBool('VRCX_CloseToTray', this.isCloseToTray);
+        VRCXStorage.Set('VRCX_CloseToTray', this.isCloseToTray.toString());
         AppApi.SetStartup(this.isStartAtWindowsStartup);
     };
     $app.watch.isStartAtWindowsStartup = saveVRCXWindowOption;
