@@ -1140,7 +1140,12 @@ speechSynthesis.getVoices();
                 params,
                 origin: true
             };
-            if (json.requiresTwoFactorAuth) {
+            if (
+                json.requiresTwoFactorAuth &&
+                json.requiresTwoFactorAuth.includes('emailOtp')
+            ) {
+                this.$emit('USER:EMAILOTP', args);
+            } else if (json.requiresTwoFactorAuth) {
                 this.$emit('USER:2FA', args);
             } else {
                 this.$emit('USER:CURRENT', args);
@@ -1183,6 +1188,25 @@ speechSynthesis.getVoices();
                 params
             };
             this.$emit('TOTP', args);
+            return args;
+        });
+    };
+
+    /*
+        params: {
+            code: string
+        }
+    */
+    API.verifyEmailOTP = function (params) {
+        return this.call('auth/twofactorauth/emailotp/verify', {
+            method: 'POST',
+            params
+        }).then((json) => {
+            var args = {
+                json,
+                params
+            };
+            this.$emit('EMAILOTP', args);
             return args;
         });
     };
@@ -1356,7 +1380,12 @@ speechSynthesis.getVoices();
                 json,
                 origin: true
             };
-            if (json.requiresTwoFactorAuth) {
+            if (
+                json.requiresTwoFactorAuth &&
+                json.requiresTwoFactorAuth.includes('emailOtp')
+            ) {
+                this.$emit('USER:EMAILOTP', args);
+            } else if (json.requiresTwoFactorAuth) {
                 this.$emit('USER:2FA', args);
             } else {
                 this.$emit('USER:CURRENT', args);
@@ -6045,6 +6074,36 @@ speechSynthesis.getVoices();
         );
     };
 
+    $app.methods.promptEmailOTP = function () {
+        this.$prompt(
+            'Enter a numeric code that was sent to your email',
+            'Email Two-factor Authentication',
+            {
+                distinguishCancelAndClose: true,
+                cancelButtonText: 'Cancel',
+                confirmButtonText: 'Verify',
+                inputPlaceholder: 'Code',
+                inputPattern: /^[0-9]{6}$/,
+                inputErrorMessage: 'Invalid Code',
+                callback: (action, instance) => {
+                    if (action === 'confirm') {
+                        API.verifyEmailOTP({
+                            code: instance.inputValue
+                        })
+                            .catch((err) => {
+                                this.promptEmailOTP();
+                                throw err;
+                            })
+                            .then((args) => {
+                                API.getCurrentUser();
+                                return args;
+                            });
+                    }
+                }
+            }
+        );
+    };
+
     $app.methods.showExportFriendsListDialog = function () {
         var {friends} = API.currentUser;
         if (Array.isArray(friends) === false) {
@@ -6122,6 +6181,10 @@ speechSynthesis.getVoices();
 
     API.$on('USER:2FA', function () {
         $app.promptTOTP();
+    });
+
+    API.$on('USER:EMAILOTP', function () {
+        $app.promptEmailOTP();
     });
 
     API.$on('LOGOUT', function () {
