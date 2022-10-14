@@ -7087,7 +7087,7 @@ speechSynthesis.getVoices();
             }
             // delayed second check to prevent status flapping
             var date = this.updateFriendInProgress.get(id);
-            if (date && date > Date.now() - 120000) {
+            if (date && date > Date.now() - this.pendingOfflineDelay + 5000) {
                 // check if already waiting
                 if (this.debugFriendState) {
                     console.log(
@@ -7113,7 +7113,7 @@ speechSynthesis.getVoices();
                     location,
                     $location_at
                 );
-            }, 110000);
+            }, this.pendingOfflineDelay);
         } else {
             ctx.ref = ref;
             ctx.isVIP = isVIP;
@@ -12246,6 +12246,16 @@ speechSynthesis.getVoices();
             configRepository.getString('VRCX_avatarRemoteDatabaseProviderList')
         );
     }
+    $app.data.pendingOfflineDelay = configRepository.getInt(
+        'VRCX_pendingOfflineDelay'
+    );
+    if (!configRepository.getInt('VRCX_pendingOfflineDelay')) {
+        $app.data.pendingOfflineDelay = 110000;
+        configRepository.setInt(
+            'VRCX_pendingOfflineDelay',
+            $app.data.pendingOfflineDelay
+        );
+    }
     if (configRepository.getString('VRCX_avatarRemoteDatabaseProvider')) {
         // move existing provider to new list
         var avatarRemoteDatabaseProvider = configRepository.getString(
@@ -12535,7 +12545,7 @@ speechSynthesis.getVoices();
     }
     if (!configRepository.getInt('VRCX_maxTableSize')) {
         $app.data.maxTableSize = 1000;
-        configRepository.getInt('VRCX_maxTableSize', $app.data.maxTableSize);
+        configRepository.setInt('VRCX_maxTableSize', $app.data.maxTableSize);
         database.setmaxTableSize($app.data.maxTableSize);
     }
     if (!configRepository.getString('VRCX_photonLobbyTimeoutThreshold')) {
@@ -22312,6 +22322,38 @@ speechSynthesis.getVoices();
     API.$on('LOGIN', function () {
         $app.getLocalWorldFavorites();
     });
+
+    // pending offline timer
+
+    $app.methods.promptSetPendingOffline = function () {
+        this.$prompt(
+            'Set pending offline delay in seconds (default: 110)',
+            'Pending Offline',
+            {
+                distinguishCancelAndClose: true,
+                confirmButtonText: 'Save',
+                cancelButtonText: 'Cancel',
+                inputValue: this.pendingOfflineDelay,
+                inputPattern: /\d+$/,
+                inputErrorMessage: 'Valid number is required',
+                callback: (action, instance) => {
+                    if (
+                        action === 'confirm' &&
+                        instance.inputValue &&
+                        !isNaN(instance.inputValue)
+                    ) {
+                        this.pendingOfflineDelay = Math.trunc(
+                            Number(instance.inputValue) * 1000
+                        );
+                        configRepository.setInt(
+                            'VRCX_pendingOfflineDelay',
+                            this.pendingOfflineDelay
+                        );
+                    }
+                }
+            }
+        );
+    };
 
     $app = new Vue($app);
     window.$app = $app;
