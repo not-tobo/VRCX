@@ -1054,7 +1054,6 @@ speechSynthesis.getVoices();
         args.ref = this.applyCurrentUser(json);
         this.applyUser({
             id: json.id,
-            username: json.username,
             displayName: json.displayName,
             bio: json.bio,
             bioLinks: json.bioLinks,
@@ -1456,7 +1455,6 @@ speechSynthesis.getVoices();
         if (typeof ref === 'undefined') {
             ref = {
                 id: '',
-                username: '',
                 displayName: '',
                 userIcon: '',
                 bio: '',
@@ -7644,12 +7642,6 @@ speechSynthesis.getVoices();
                 }
                 var NAME = ctx.name.toUpperCase();
                 var match = NAME.includes(QUERY);
-                if (!match) {
-                    var uname = String(ctx.ref.username);
-                    match =
-                        uname.toUpperCase().includes(QUERY) &&
-                        !uname.startsWith('steam_');
-                }
                 if (!match && ctx.memo) {
                     match = String(ctx.memo).toUpperCase().includes(QUERY);
                 }
@@ -17624,14 +17616,7 @@ speechSynthesis.getVoices();
     $app.methods.friendsListSearchChange = function () {
         var filters = [...this.friendsListSearchFilters];
         if (filters.length === 0) {
-            filters = [
-                'Display Name',
-                'User Name',
-                'Rank',
-                'Status',
-                'Bio',
-                'Memo'
-            ];
+            filters = ['Display Name', 'Rank', 'Status', 'Bio', 'Memo'];
         }
         var results = [];
         if (this.friendsListSearch) {
@@ -17646,12 +17631,6 @@ speechSynthesis.getVoices();
             }
             if (query && filters) {
                 var match = false;
-                if (!match && filters.includes('User Name')) {
-                    var uname = String(ctx.ref.username);
-                    match =
-                        uname.toUpperCase().includes(query) &&
-                        !uname.startsWith('steam_');
-                }
                 if (
                     !match &&
                     filters.includes('Display Name') &&
