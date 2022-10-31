@@ -189,7 +189,7 @@ html
                                             span(v-else-if="scope.row.type === 'OnPlayerJoined'")
                                                 span.x-link(v-text="scope.row.avatar.name" @click="showAvatarDialog(scope.row.avatar.id)")
                                                 | &nbsp;
-                                                span(v-if="!scope.row.inCache" style="color:#aaa;margin-left:10px") #[i.el-icon-download]&nbsp;
+                                                span(v-if="!scope.row.inCache" style="color:#aaa") #[i.el-icon-download]&nbsp;
                                                 span.avatar-info-public(v-if="scope.row.avatar.releaseStatus === 'public'") (Public)
                                                 span.avatar-info-own(v-else-if="scope.row.avatar.releaseStatus === 'private'") (Private)
                                             span(v-else-if="scope.row.color === 'yellow'" v-text="scope.row.text" style="color:yellow")
@@ -243,7 +243,7 @@ html
                                             span(v-else-if="scope.row.type === 'OnPlayerJoined'")
                                                 span.x-link(v-text="scope.row.avatar.name" @click="showAvatarDialog(scope.row.avatar.id)")
                                                 | &nbsp;
-                                                span(v-if="!scope.row.inCache" style="color:#aaa;margin-left:10px") #[i.el-icon-download]&nbsp;
+                                                span(v-if="!scope.row.inCache" style="color:#aaa") #[i.el-icon-download]&nbsp;
                                                 span.avatar-info-public(v-if="scope.row.avatar.releaseStatus === 'public'") (Public)
                                                 span.avatar-info-own(v-else-if="scope.row.avatar.releaseStatus === 'private'") (Private)
                                             span(v-else-if="scope.row.color === 'yellow'" v-text="scope.row.text" style="color:yellow")
