@@ -12483,8 +12483,8 @@ speechSynthesis.getVoices();
     $app.data.photonEventOverlayFilter = configRepository.getString(
         'VRCX_PhotonEventOverlayFilter'
     );
-    $app.data.photonOverlayMessageTimeout = configRepository.getString(
-        'VRCX_photonOverlayMessageTimeout'
+    $app.data.photonOverlayMessageTimeout = Number(
+        configRepository.getString('VRCX_photonOverlayMessageTimeout')
     );
     $app.data.photonLoggingEnabled = false;
     $app.data.gameLogDisabled = configRepository.getBool(
