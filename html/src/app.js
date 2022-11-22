@@ -4521,7 +4521,11 @@ speechSynthesis.getVoices();
                     }
                 }
                 if (--this.nextAppUpdateCheck <= 0) {
-                    this.nextAppUpdateCheck = 1800; // 15mins
+                    if (this.branch === 'Stable') {
+                        this.nextAppUpdateCheck = 14400; // 2hours
+                    } else {
+                        this.nextAppUpdateCheck = 1800; // 15mins
+                    }
                     if (this.autoUpdateVRCX !== 'Off') {
                         this.checkForVRCXUpdate();
                     }
@@ -6519,7 +6523,8 @@ speechSynthesis.getVoices();
         }
     };
 
-    $app.methods.login = function () {
+    $app.methods.login = async function () {
+        await webApiService.clearCookies();
         this.$refs.loginForm.validate((valid) => {
             if (valid && !this.loginForm.loading) {
                 this.loginForm.loading = true;
@@ -12251,6 +12256,10 @@ speechSynthesis.getVoices();
     $app.data.openVR = configRepository.getBool('openVR');
     $app.data.openVRAlways = configRepository.getBool('openVRAlways');
     $app.data.overlaybutton = configRepository.getBool('VRCX_overlaybutton');
+    $app.data.overlayHand = configRepository.getInt('VRCX_overlayHand');
+    if (typeof $app.data.overlayHand !== 'number') {
+        $app.data.overlayHand = 0;
+    }
     $app.data.hidePrivateFromFeed = configRepository.getBool(
         'VRCX_hidePrivateFromFeed'
     );
@@ -12366,6 +12375,11 @@ speechSynthesis.getVoices();
         configRepository.setBool('openVR', this.openVR);
         configRepository.setBool('openVRAlways', this.openVRAlways);
         configRepository.setBool('VRCX_overlaybutton', this.overlaybutton);
+        this.overlayHand = parseInt(this.overlayHand, 10);
+        if (isNaN(this.overlayHand)) {
+            this.overlayHand = 0;
+        }
+        configRepository.setInt('VRCX_overlayHand', this.overlayHand);
         configRepository.setBool(
             'VRCX_hidePrivateFromFeed',
             this.hidePrivateFromFeed
@@ -12425,6 +12439,7 @@ speechSynthesis.getVoices();
         this.updateVRConfigVars();
         this.updateVRLastLocation();
         AppApi.ExecuteVrOverlayFunction('notyClear', '');
+        this.updateOpenVR(this.isGameRunning, this.isSteamVRRunning);
     };
     $app.methods.saveSortFavoritesOption = function () {
         this.getLocalWorldFavorites();
@@ -13029,15 +13044,16 @@ speechSynthesis.getVoices();
             ) {
                 hmdOverlay = true;
             }
-            // active, hmdOverlay, wristOverlay, menuButton
+            // active, hmdOverlay, wristOverlay, menuButton, overlayHand
             AppApi.SetVR(
                 true,
                 hmdOverlay,
                 this.overlayWrist,
-                this.overlaybutton
+                this.overlaybutton,
+                this.overlayHand
             );
         } else {
-            AppApi.SetVR(false, false, false, false);
+            AppApi.SetVR(false, false, false, false, 0);
         }
     };
 
