@@ -9054,6 +9054,9 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.photonBotCheck = function (dtNow) {
+        if (this.photonLobbyCurrentUser === 0) {
+            return;
+        }
         var photonBots = [];
         this.photonLobbyCurrent.forEach((ref, id) => {
             if (this.photonLobbyJointime.has(id)) {
@@ -9339,7 +9342,11 @@ speechSynthesis.getVoices();
                             joinTime: Date.parse(gameLogDate),
                             hasInstantiated,
                             inVRMode: user.inVRMode,
-                            avatarEyeHeight: user.avatarEyeHeight
+                            avatarEyeHeight: user.avatarEyeHeight,
+                            canModerateInstance: user.canModerateInstance,
+                            groupOnNameplate: user.groupOnNameplate,
+                            showGroupBadgeToOthers: user.showGroupBadgeToOthers,
+                            showSocialRank: user.showSocialRank
                         });
                         this.photonUserJoin(id, user.avatarDict, gameLogDate);
                     }
@@ -9431,7 +9438,13 @@ speechSynthesis.getVoices();
                     joinTime: Date.parse(gameLogDate),
                     hasInstantiated,
                     inVRMode: data.Parameters[249].inVRMode,
-                    avatarEyeHeight: data.Parameters[249].avatarEyeHeight
+                    avatarEyeHeight: data.Parameters[249].avatarEyeHeight,
+                    canModerateInstance:
+                        data.Parameters[249].canModerateInstance,
+                    groupOnNameplate: data.Parameters[249].groupOnNameplate,
+                    showGroupBadgeToOthers:
+                        data.Parameters[249].showGroupBadgeToOthers,
+                    showSocialRank: data.Parameters[249].showSocialRank
                 });
                 this.photonUserJoin(
                     data.Parameters[254],
@@ -9902,7 +9915,6 @@ speechSynthesis.getVoices();
         var ref = API.cachedUsers.get(user.id);
         var photonUser = {
             id: user.id,
-            username: user.username,
             displayName: user.displayName,
             developerType: user.developerType,
             profilePicOverride: user.profilePicOverride,
@@ -17721,8 +17733,76 @@ speechSynthesis.getVoices();
     $app.data.friendsListSearch = '';
     $app.data.friendsListSearchFilterVIP = false;
     $app.data.friendsListSearchFilters = [];
+    $app.data.friendsListSelectAllCheckbox = false;
+    $app.data.friendsListBulkUnfriendMode = false;
+
+    $app.methods.showBulkUnfriendSelectionConfirm = function () {
+        var elementsTicked = 0;
+        for (var ctx of this.friendsListTable.data) {
+            if (ctx.$selected) {
+                elementsTicked++;
+            }
+        }
+        if (elementsTicked === 0) {
+            return;
+        }
+        this.$confirm(
+            `Are you sure you want to delete ${elementsTicked} friends?
+            This can negatively affect your trust rank,
+            This action cannot be undone.`,
+            `Delete ${elementsTicked} friends?`,
+            {
+                confirmButtonText: 'Confirm',
+                cancelButtonText: 'Cancel',
+                type: 'info',
+                callback: (action) => {
+                    if (action === 'confirm') {
+                        this.bulkUnfriendSelection();
+                    }
+                }
+            }
+        );
+    };
+
+    $app.methods.bulkUnfriendSelection = function () {
+        for (var ctx of this.friendsListTable.data) {
+            if (ctx.$selected) {
+                API.deleteFriend({
+                    userId: ctx.id
+                });
+            }
+        }
+    };
+
+    // $app.methods.showBulkUnfriendAllConfirm = function () {
+    //     this.$confirm(
+    //         `Are you sure you want to delete all your friends?
+    //         This can negatively affect your trust rank,
+    //         This action cannot be undone.`,
+    //         'Delete all friends?',
+    //         {
+    //             confirmButtonText: 'Confirm',
+    //             cancelButtonText: 'Cancel',
+    //             type: 'info',
+    //             callback: (action) => {
+    //                 if (action === 'confirm') {
+    //                     this.bulkUnfriendAll();
+    //                 }
+    //             }
+    //         }
+    //     );
+    // };
+
+    // $app.methods.bulkUnfriendAll = function () {
+    //     for (var ctx of this.friendsListTable.data) {
+    //         API.deleteFriend({
+    //             userId: ctx.id
+    //         });
+    //     }
+    // };
 
     $app.methods.friendsListSearchChange = function () {
+        this.friendsListTable.data = [];
         var filters = [...this.friendsListSearchFilters];
         if (filters.length === 0) {
             filters = ['Display Name', 'Rank', 'Status', 'Bio', 'Memo'];
@@ -17734,6 +17814,9 @@ speechSynthesis.getVoices();
         for (var ctx of this.friends.values()) {
             if (typeof ctx.ref === 'undefined') {
                 continue;
+            }
+            if (typeof ctx.$selected === 'undefined') {
+                ctx.$selected = false;
             }
             if (this.friendsListSearchFilterVIP && !ctx.isVIP) {
                 continue;
@@ -20653,7 +20736,11 @@ speechSynthesis.getVoices();
                             joinTime: Date.parse(dateTime),
                             hasInstantiated,
                             inVRMode: user.inVRMode,
-                            avatarEyeHeight: user.avatarEyeHeight
+                            avatarEyeHeight: user.avatarEyeHeight,
+                            canModerateInstance: user.canModerateInstance,
+                            groupOnNameplate: user.groupOnNameplate,
+                            showGroupBadgeToOthers: user.showGroupBadgeToOthers,
+                            showSocialRank: user.showSocialRank
                         });
                     }
                 }
