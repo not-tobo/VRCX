@@ -19922,7 +19922,7 @@ speechSynthesis.getVoices();
             case -16:
                 if (this.downloadCurrent.ref.id === 'VRCXUpdate') {
                     if (this.downloadCurrent.autoInstall) {
-                        this.restartVRCX();
+                        workerTimers.setTimeout(() => this.restartVRCX(), 2000);
                     } else {
                         this.downloadDialog.visible = false;
                         this.pendingVRCXUpdate = this.downloadCurrent.ref.name;
