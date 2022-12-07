@@ -14451,7 +14451,7 @@ speechSynthesis.getVoices();
                 isMaster = true;
             }
             var lobbyJointime = $app.photonLobbyJointime.get(photonId);
-            var inVRMode = false;
+            var inVRMode = null;
             var groupOnNameplate = '';
             if (typeof lobbyJointime !== 'undefined') {
                 inVRMode = lobbyJointime.inVRMode;
@@ -23648,6 +23648,9 @@ speechSynthesis.getVoices();
             offset: 0,
             groupId: this.groupDialog.id
         };
+        if (this.groupDialog.ref.membershipStatus !== 'member') {
+            return;
+        }
         await API.getGroupMember({
             groupId: this.groupDialog.id,
             userId: API.currentUser.id
@@ -23698,6 +23701,7 @@ speechSynthesis.getVoices();
         if (
             D.ref &&
             D.ref.myMember &&
+            D.ref.myMember.permissions &&
             D.ref.myMember.permissions.includes('group-members-viewall')
         ) {
             return true;
