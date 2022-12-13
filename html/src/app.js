@@ -4623,6 +4623,7 @@ speechSynthesis.getVoices();
             this.updateLoop();
             this.getGameLogTable();
             this.refreshCustomCss();
+            this.refreshCustomScript();
             this.$nextTick(function () {
                 this.$el.style.display = '';
                 if (!this.enablePrimaryPassword) {
@@ -4657,6 +4658,21 @@ speechSynthesis.getVoices();
                 $appCustomStyle.rel = 'stylesheet';
                 $appCustomStyle.href = `file://${customCss}?_=${Date.now()}`;
                 head.appendChild($appCustomStyle);
+            }
+        });
+    };
+
+    $app.methods.refreshCustomScript = function () {
+        if (document.contains(document.getElementById('app-custom-script'))) {
+            document.getElementById('app-custom-script').remove();
+        }
+        AppApi.CustomScriptPath().then((customScript) => {
+            var head = document.head;
+            if (customScript) {
+                var $appCustomScript = document.createElement('script');
+                $appCustomScript.setAttribute('id', 'app-custom-script');
+                $appCustomScript.src = `file://${customScript}?_=${Date.now()}`;
+                head.appendChild($appCustomScript);
             }
         });
     };
@@ -6336,7 +6352,7 @@ speechSynthesis.getVoices();
                 callback: (action, instance) => {
                     if (action === 'confirm') {
                         API.verifyTOTP({
-                            code: instance.inputValue
+                            code: instance.inputValue.trim()
                         })
                             .catch((err) => {
                                 this.promptTOTP();
@@ -6368,7 +6384,7 @@ speechSynthesis.getVoices();
                 callback: (action, instance) => {
                     if (action === 'confirm') {
                         API.verifyOTP({
-                            code: instance.inputValue
+                            code: instance.inputValue.trim()
                         })
                             .catch((err) => {
                                 this.promptOTP();
@@ -6400,7 +6416,7 @@ speechSynthesis.getVoices();
                 callback: (action, instance) => {
                     if (action === 'confirm') {
                         API.verifyEmailOTP({
-                            code: instance.inputValue
+                            code: instance.inputValue.trim()
                         })
                             .catch((err) => {
                                 this.promptEmailOTP();
@@ -20761,7 +20777,11 @@ speechSynthesis.getVoices();
 
     $app.methods.checkCanInvite = function (location) {
         var L = API.parseLocation(location);
-        if (L.accessType === 'public' || L.userId === API.currentUser.id) {
+        if (
+            L.accessType === 'public' ||
+            L.accessType === 'group' ||
+            L.userId === API.currentUser.id
+        ) {
             return true;
         }
         if (L.accessType === 'invite') {
@@ -23314,7 +23334,7 @@ speechSynthesis.getVoices();
         });
         if ($app.groupDialog.visible && $app.groupDialog.id === groupId) {
             $app.groupDialog.inGroup = json.membershipStatus === 'member';
-            this.getGroupDialogGroup(groupId);
+            $app.getGroupDialogGroup(groupId);
         }
     });
 
@@ -23340,7 +23360,7 @@ speechSynthesis.getVoices();
         var groupId = args.params.groupId;
         if ($app.groupDialog.visible && $app.groupDialog.id === groupId) {
             $app.groupDialog.inGroup = false;
-            this.getGroupDialogGroup(groupId);
+            $app.getGroupDialogGroup(groupId);
         }
         if (
             $app.userDialog.visible &&
@@ -24203,6 +24223,13 @@ speechSynthesis.getVoices();
                 this.showUserDialog(data[1]);
                 break;
         }
+    };
+
+    $app.methods.showNullLogWarning = function () {
+        this.$alert(
+            'VRCX noticed your last log file is empty this is normally caused by disabling debug logging. VRCX requires debug logging to be enabled to function correctly. Please enable debug logging in VRChat quick menu settings > debug > enable debug logging, then rejoin the instance or restart VRChat.',
+            'Enable debug logging'
+        );
     };
 
     $app = new Vue($app);
