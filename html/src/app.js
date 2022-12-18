@@ -814,7 +814,7 @@ speechSynthesis.getVoices();
             "<span><span @click=\"showWorldDialog\" :class=\"{ 'x-link': link && this.location !== 'private' && this.location !== 'offline'}\">" +
             '<i v-if="isTraveling" class="el-icon el-icon-loading" style="display:inline-block;margin-right:5px"></i>' +
             '<span style="margin-right:5px">{{ text }}</span></span>' +
-            '<span v-if="groupName" @click="showGroupDialog" class="x-link" style="margin-right:5px">{{ groupName }}</span>' +
+            '<span v-if="groupName" @click="showGroupDialog" class="x-link" style="margin-right:5px">({{ groupName }})</span>' +
             '<span class="flags" :class="region" style="display:inline-block"></span>' +
             '<i v-if="strict" class="el-icon el-icon-lock" style="display:inline-block;margin-left:5px"></i></span>',
         props: {
@@ -947,7 +947,7 @@ speechSynthesis.getVoices();
             '<span><span @click="showLaunchDialog" class="x-link">' +
             '<i v-if="isUnlocked" class="el-icon el-icon-unlock" style="display:inline-block;margin-right:5px"></i>' +
             '<span style="margin-right:5px"> #{{ instanceName }} {{ accessType }}</span></span>' +
-            '<span v-if="groupName" @click="showGroupDialog" class="x-link" style="margin-right:5px">{{ groupName }}</span>' +
+            '<span v-if="groupName" @click="showGroupDialog" class="x-link" style="margin-right:5px">({{ groupName }})</span>' +
             '<span class="flags" :class="region" style="display:inline-block"></span>' +
             '<i v-if="strict" class="el-icon el-icon-lock" style="display:inline-block;margin-left:5px"></i></span>',
         props: {
@@ -1230,6 +1230,7 @@ speechSynthesis.getVoices();
 
     API.logout = function () {
         this.$emit('LOGOUT');
+        webApiService.clearCookies();
         // return this.call('logout', {
         //     method: 'PUT'
         // }).finally(() => {
@@ -5525,7 +5526,9 @@ speechSynthesis.getVoices();
             playOverlayNotification = true;
         }
         var message = '';
-        if (noty.message) {
+        if (noty.title) {
+            message = `${noty.title}, ${noty.message}`;
+        } else if (noty.message) {
             message = noty.message;
         }
         var messageList = [
@@ -11991,6 +11994,10 @@ speechSynthesis.getVoices();
                 this.updateSharedFeed(true);
                 API.getUser({
                     userId: id
+                }).then(() => {
+                    if (this.userDialog.visible && id === this.userDialog.id) {
+                        this.applyUserDialogLocation(true);
+                    }
                 });
             }
         });
@@ -13531,7 +13538,7 @@ speechSynthesis.getVoices();
 
     $app.methods.promptOmniDirectDialog = function () {
         this.$prompt(
-            'Enter a User/World/Instance/Avatar URL or ID (UUID)',
+            'Enter a User/World/Instance/Avatar/Group URL or ID (UUID)',
             'Direct Access',
             {
                 distinguishCancelAndClose: true,
@@ -23275,9 +23282,11 @@ speechSynthesis.getVoices();
         }
     */
     API.getGroup = function (params) {
-        // includeRoles=true
         return this.call(`groups/${params.groupId}`, {
-            method: 'GET'
+            method: 'GET',
+            params: {
+                includeRoles: params.includeRoles || false
+            }
         }).then((json) => {
             var args = {
                 json,
@@ -23688,8 +23697,7 @@ speechSynthesis.getVoices();
 
     API.getGroupInstances = function (params) {
         return this.call(`groups/${params.groupId}/instances`, {
-            method: 'GET',
-            params
+            method: 'GET'
         }).then((json) => {
             var args = {
                 json,
@@ -23801,6 +23809,8 @@ speechSynthesis.getVoices();
                     _updated_at: ''
                 },
                 updatedAt: '',
+                // includeRoles: true
+                roles: [],
                 // group list
                 $memberId: '',
                 groupId: '',
@@ -23865,7 +23875,6 @@ speechSynthesis.getVoices();
         announcement: {},
         members: [],
         instances: [],
-        roles: [],
         memberRoles: []
     };
 
@@ -23884,7 +23893,6 @@ speechSynthesis.getVoices();
         D.treeData = [];
         D.announcement = {};
         D.instances = [];
-        D.roles = [];
         D.memberRoles = [];
         if (this.groupDialogLastMembers !== groupId) {
             D.members = [];
@@ -23920,7 +23928,7 @@ speechSynthesis.getVoices();
 
     $app.methods.getGroupDialogGroup = function (groupId) {
         var D = this.groupDialog;
-        return API.getGroup({groupId})
+        return API.getGroup({groupId, includeRoles: true})
             .catch((err) => {
                 throw err;
             })
@@ -23928,6 +23936,16 @@ speechSynthesis.getVoices();
                 if (D.id === args1.ref.id) {
                     D.ref = args1.ref;
                     D.inGroup = args1.ref.membershipStatus === 'member';
+                    for (var role of args1.ref.roles) {
+                        if (
+                            D.ref &&
+                            D.ref.myMember &&
+                            Array.isArray(D.ref.myMember.roleIds) &&
+                            D.ref.myMember.roleIds.includes(role.id)
+                        ) {
+                            D.memberRoles.push(role);
+                        }
+                    }
                     if (D.inGroup) {
                         API.getGroupAnnouncement({
                             groupId
@@ -23960,23 +23978,6 @@ speechSynthesis.getVoices();
                         }).then((args3) => {
                             if (groupId === args3.params.groupId) {
                                 this.applyGroupDialogInstances(args3.json);
-                            }
-                        });
-                        API.getGroupRoles({
-                            groupId
-                        }).then((args4) => {
-                            if (groupId === args4.params.groupId) {
-                                D.roles = args4.json;
-                                for (var role of args4.json) {
-                                    if (
-                                        D.ref &&
-                                        D.ref.myMember &&
-                                        Array.isArray(D.ref.myMember.roleIds) &&
-                                        D.ref.myMember.roleIds.includes(role.id)
-                                    ) {
-                                        D.memberRoles.push(role);
-                                    }
-                                }
                             }
                         });
                     }
@@ -24051,7 +24052,6 @@ speechSynthesis.getVoices();
         D.treeData = buildTreeData({
             group: D.ref,
             announcement: D.announcement,
-            roles: D.roles,
             instances: D.instances,
             members: D.members
         });
