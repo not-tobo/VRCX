@@ -7,3 +7,5 @@ More info [here](https://github.com/pypy-vrc/VRCX#readme)
 Download Stable build [here](https://github.com/pypy-vrc/VRCX/releases/)
 
 Download Nightly build [here](https://github.com/Natsumi-sama/VRCX/releases/)
+
+Join the Discord for nightly change logs [here](https://vrcx.pypy.moe/discord)
