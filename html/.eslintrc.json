@@ -32,7 +32,8 @@
         "AppApi": "readonly",
         "SharedVariable": "readonly",
         "WebApi": "readonly",
-        "AssetBundleCacher": "readonly"
+        "AssetBundleCacher": "readonly",
+        "LiteDB": "readonly"
     },
     "rules": {
         "arrow-body-style": 0,
