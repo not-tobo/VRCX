@@ -64,7 +64,10 @@ speechSynthesis.getVoices();
             'launchAsDesktop'
         ];
         for (var _key of legacyConfigKeys) {
-            configRepository.setBool(_key, VRCXStorage.Get(_key) === 'true');
+            configRepository.setBool(
+                _key,
+                (await VRCXStorage.Get(_key)) === 'true'
+            );
         }
         configRepository.setBool('migrate_config_20201101', true);
     }
@@ -81,9 +84,9 @@ speechSynthesis.getVoices();
         }
     });
 
-    VRCXStorage.GetArray = function (key) {
+    VRCXStorage.GetArray = async function (key) {
         try {
-            var array = JSON.parse(this.Get(key));
+            var array = JSON.parse(await this.Get(key));
             if (Array.isArray(array)) {
                 return array;
             }
@@ -97,9 +100,9 @@ speechSynthesis.getVoices();
         this.Set(key, JSON.stringify(value));
     };
 
-    VRCXStorage.GetObject = function (key) {
+    VRCXStorage.GetObject = async function (key) {
         try {
-            var object = JSON.parse(this.Get(key));
+            var object = JSON.parse(await this.Get(key));
             if (object === Object(object)) {
                 return object;
             }
@@ -7060,7 +7063,7 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.migrateMemos = async function () {
-        var json = JSON.parse(VRCXStorage.GetAll());
+        var json = JSON.parse(await VRCXStorage.GetAll());
         database.begin();
         for (var line in json) {
             if (line.substring(0, 8) === 'memo_usr') {
@@ -8370,7 +8373,7 @@ speechSynthesis.getVoices();
         }
         $app.vrInit();
         // remove old data from json file and migrate to SQLite
-        if (VRCXStorage.Get(`${args.json.id}_friendLogUpdatedAt`)) {
+        if (await VRCXStorage.Get(`${args.json.id}_friendLogUpdatedAt`)) {
             VRCXStorage.Remove(`${args.json.id}_feedTable`);
             $app.migrateMemos();
             $app.migrateFriendLog(args.json.id);
@@ -12091,10 +12094,10 @@ speechSynthesis.getVoices();
         this.friendLogInitStatus = true;
     };
 
-    $app.methods.migrateFriendLog = function (userId) {
+    $app.methods.migrateFriendLog = async function (userId) {
         VRCXStorage.Remove(`${userId}_friendLogUpdatedAt`);
         VRCXStorage.Remove(`${userId}_friendLog`);
-        this.friendLogTable.data = VRCXStorage.GetArray(
+        this.friendLogTable.data = await VRCXStorage.GetArray(
             `${userId}_friendLogTable`
         );
         database.addFriendLogHistoryArray(this.friendLogTable.data);
@@ -12995,12 +12998,15 @@ speechSynthesis.getVoices();
         'VRCX_StartAtWindowsStartup'
     );
     $app.data.isStartAsMinimizedState =
-        VRCXStorage.Get('VRCX_StartAsMinimizedState') === 'true';
+        (await VRCXStorage.Get('VRCX_StartAsMinimizedState')) === 'true';
     $app.data.isCloseToTray = VRCXStorage.Get('VRCX_CloseToTray') === 'true';
     if (configRepository.getBool('VRCX_CloseToTray')) {
         // move back to JSON
         $app.data.isCloseToTray = configRepository.getBool('VRCX_CloseToTray');
-        VRCXStorage.Set('VRCX_CloseToTray', $app.data.isCloseToTray.toString());
+        await VRCXStorage.Set(
+            'VRCX_CloseToTray',
+            $app.data.isCloseToTray.toString()
+        );
         configRepository.remove('VRCX_CloseToTray');
     }
     var saveVRCXWindowOption = function () {
