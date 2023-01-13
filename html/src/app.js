@@ -5053,7 +5053,7 @@ speechSynthesis.getVoices();
             }
             return 0;
         });
-        wristFeed.splice(15);
+        wristFeed.splice(16);
         AppApi.ExecuteVrFeedFunction(
             'wristFeedUpdate',
             JSON.stringify(wristFeed)
