@@ -1192,7 +1192,10 @@ speechSynthesis.getVoices();
         if (json.presence?.world && $app.isRealInstance(json.presence.world)) {
             location = `${json.presence.world}:${json.presence.instance}`;
         }
-        if (json.presence?.travelingToWorld && $app.isRealInstance(json.presence.travelingToWorld)) {
+        if (
+            json.presence?.travelingToWorld &&
+            $app.isRealInstance(json.presence.travelingToWorld)
+        ) {
             travelingToLocation = `${json.presence.travelingToWorld}:${json.presence.travelingToInstance}`;
         }
         this.applyUser({
