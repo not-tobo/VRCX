@@ -1187,6 +1187,14 @@ speechSynthesis.getVoices();
     API.$on('USER:CURRENT', function (args) {
         var {json} = args;
         args.ref = this.applyCurrentUser(json);
+        var location = '';
+        var travelingToLocation = '';
+        if (json.presence?.world && $app.isRealInstance(json.presence.world)) {
+            location = `${json.presence.world}:${json.presence.instance}`;
+        }
+        if (json.presence?.travelingToWorld && $app.isRealInstance(json.presence.travelingToWorld)) {
+            travelingToLocation = `${json.presence.travelingToWorld}:${json.presence.travelingToInstance}`;
+        }
         this.applyUser({
             id: json.id,
             displayName: json.displayName,
@@ -1208,10 +1216,14 @@ speechSynthesis.getVoices();
             fallbackAvatar: json.fallbackAvatar,
             profilePicOverride: json.profilePicOverride,
             isFriend: false,
-            location: json.location,
-            travelingToInstance: json.travelingToInstance,
-            travelingToLocation: json.travelingToLocation,
-            travelingToWorld: json.travelingToWorld
+
+            // Presence
+            location,
+            travelingToLocation,
+            instanceId: json.presence?.instance,
+            worldId: json.presence?.world,
+            travelingToInstance: json.presence?.travelingToInstance,
+            travelingToWorld: json.presence?.travelingToWorld
         });
     });
 
@@ -1452,6 +1464,7 @@ speechSynthesis.getVoices();
                 username: '',
                 displayName: '',
                 userIcon: '',
+                profilePicOverride: '',
                 bio: '',
                 bioLinks: [],
                 pastDisplayNames: [],
@@ -1460,6 +1473,7 @@ speechSynthesis.getVoices();
                 currentAvatarThumbnailImageUrl: '',
                 currentAvatar: '',
                 currentAvatarAssetUrl: '',
+                fallbackAvatar: '',
                 homeLocation: '',
                 twoFactorAuthEnabled: false,
                 status: '',
@@ -1475,9 +1489,22 @@ speechSynthesis.getVoices();
                 onlineFriends: [],
                 activeFriends: [],
                 offlineFriends: [],
-                travelingToInstance: '',
-                travelingToLocation: '',
-                travelingToWorld: '',
+                presence: {
+                    avatarThumbnail: '',
+                    displayName: '',
+                    groups: [],
+                    id: '',
+                    instance: '',
+                    instanceType: '',
+                    isRejoining: '0',
+                    platform: '',
+                    profilePicOverride: '',
+                    status: '',
+                    travelingToInstance: '',
+                    travelingToWorld: '',
+                    world: '',
+                    ...json.presence
+                },
                 // VRCX
                 $online_for: Date.now(),
                 $offline_for: '',
@@ -1593,10 +1620,12 @@ speechSynthesis.getVoices();
                 id: '',
                 displayName: '',
                 userIcon: '',
+                profilePicOverride: '',
                 bio: '',
                 bioLinks: [],
                 currentAvatarImageUrl: '',
                 currentAvatarThumbnailImageUrl: '',
+                fallbackAvatar: '',
                 status: '',
                 statusDescription: '',
                 state: '',
@@ -5681,7 +5710,7 @@ speechSynthesis.getVoices();
         if (noty.thumbnailImageUrl) {
             imageUrl = noty.thumbnailImageUrl;
         } else if (noty.details && noty.details.imageUrl) {
-            imageUrl = noty.details.imageURL;
+            imageUrl = noty.details.imageUrl;
         } else if (noty.imageUrl) {
             imageUrl = noty.imageUrl;
         } else if (userId) {
@@ -7617,7 +7646,7 @@ speechSynthesis.getVoices();
             );
         }
         var newRef = args.ref;
-        if (ctx.state !== newState && ctx.ref !== 'undefined') {
+        if (ctx.state !== newState && typeof ctx.ref !== 'undefined') {
             if (
                 (newState === 'offline' || newState === 'active') &&
                 ctx.state === 'online'
@@ -9786,7 +9815,7 @@ speechSynthesis.getVoices();
                             showGroupBadgeToOthers: user.showGroupBadgeToOthers,
                             showSocialRank: user.showSocialRank
                         });
-                        this.photonUserJoin(id, user.avatarDict, gameLogDate);
+                        this.photonUserJoin(id, user, gameLogDate);
                     }
                 } else {
                     console.log('oldSetUserProps', data);
@@ -9823,7 +9852,7 @@ speechSynthesis.getVoices();
                             user.user.showGroupBadgeToOthers,
                         showSocialRank: user.user.showSocialRank
                     });
-                    this.photonUserJoin(id, user.avatarDict, gameLogDate);
+                    this.photonUserJoin(id, user, gameLogDate);
                 }
                 break;
             case 42:
@@ -9906,7 +9935,7 @@ speechSynthesis.getVoices();
                 });
                 this.photonUserJoin(
                     data.Parameters[254],
-                    data.Parameters[249].avatarDict,
+                    data.Parameters[249],
                     gameLogDate
                 );
                 this.checkPhotonBotJoin(
@@ -10444,9 +10473,18 @@ speechSynthesis.getVoices();
         this.photonLobbyUserData.set(photonId, photonUser);
     };
 
-    $app.methods.photonUserJoin = function (photonId, avatar, gameLogDate) {
+    $app.methods.photonUserJoin = function (photonId, user, gameLogDate) {
         if (photonId === this.photonLobbyCurrentUser) {
             return;
+        }
+        var avatar = user.avatarDict;
+        var platform = '';
+        if (user.last_platform === 'android') {
+            platform = 'Quest';
+        } else if (user.inVRMode) {
+            platform = 'VR';
+        } else {
+            platform = 'Desktop';
         }
         this.checkVRChatCache(avatar).then((cacheInfo) => {
             var inCache = false;
@@ -10459,7 +10497,8 @@ speechSynthesis.getVoices();
                 type: 'OnPlayerJoined',
                 created_at: gameLogDate,
                 avatar,
-                inCache
+                inCache,
+                platform
             });
         });
     };
@@ -10622,6 +10661,7 @@ speechSynthesis.getVoices();
         }
         var {groupOnNameplate} = this.photonLobbyJointime.get(photonId);
         if (
+            groupOnNameplate &&
             groupOnNameplate !== groupId &&
             photonId !== this.photonLobbyCurrentUser
         ) {
@@ -15696,6 +15736,10 @@ speechSynthesis.getVoices();
 
     $app.methods.refreshUserDialogTreeData = function () {
         var D = this.userDialog;
+        if (D.id === API.currentUser.id) {
+            D.treeData = buildTreeData(API.currentUser);
+            return;
+        }
         D.treeData = buildTreeData(D.ref);
     };
 
@@ -20579,7 +20623,7 @@ speechSynthesis.getVoices();
                         workerTimers.setTimeout(() => this.restartVRCX(), 2000);
                     } else {
                         this.downloadDialog.visible = false;
-                        this.pendingVRCXUpdate = this.downloadCurrent.ref.name;
+                        this.pendingVRCXInstall = this.downloadCurrent.ref.name;
                         this.showVRCXUpdateDialog();
                     }
                 }
@@ -21190,7 +21234,8 @@ speechSynthesis.getVoices();
     };
 
     $app.data.checkingForVRCXUpdate = false;
-    $app.data.pendingVRCXUpdate = '';
+    $app.data.pendingVRCXInstall = '';
+    $app.data.pendingVRCXUpdate = false;
 
     $app.data.branches = {
         Stable: {
@@ -21318,7 +21363,7 @@ speechSynthesis.getVoices();
         D.releases = releases;
         D.release = json[0].name;
         this.VRCXUpdateDialog.updatePendingIsLatest = false;
-        if (D.release === this.pendingVRCXUpdate) {
+        if (D.release === this.pendingVRCXInstall) {
             // update already downloaded and latest version
             this.VRCXUpdateDialog.updatePendingIsLatest = true;
         }
@@ -21328,6 +21373,9 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.saveAutoUpdateVRCX = function () {
+        if (this.autoUpdateVRCX === 'Off') {
+            this.pendingVRCXUpdate = false;
+        }
         configRepository.setString('VRCX_autoUpdateVRCX', this.autoUpdateVRCX);
     };
 
@@ -21350,6 +21398,7 @@ speechSynthesis.getVoices();
             url,
             method: 'GET'
         });
+        this.pendingVRCXUpdate = false;
         this.checkingForVRCXUpdate = false;
         var json = JSON.parse(response.data);
         if (this.debugWebRequests) {
@@ -21359,7 +21408,7 @@ speechSynthesis.getVoices();
             this.latestAppVersion = json.name;
             var name = json.name;
             this.VRCXUpdateDialog.updatePendingIsLatest = false;
-            if (name === this.pendingVRCXUpdate) {
+            if (name === this.pendingVRCXInstall) {
                 // update already downloaded
                 this.VRCXUpdateDialog.updatePendingIsLatest = true;
             } else if (name > this.appVersion) {
@@ -21378,12 +21427,13 @@ speechSynthesis.getVoices();
                 if (!downloadUrl) {
                     return;
                 }
+                this.pendingVRCXUpdate = true;
                 this.notifyMenu('settings');
                 var type = 'Auto';
                 if (!API.isLoggedIn) {
                     this.showVRCXUpdateDialog();
                 } else if (this.autoUpdateVRCX === 'Notify') {
-                    this.showVRCXUpdateDialog();
+                    // this.showVRCXUpdateDialog();
                 } else if (this.autoUpdateVRCX === 'Auto Download') {
                     var autoInstall = false;
                     this.downloadVRCXUpdate(
