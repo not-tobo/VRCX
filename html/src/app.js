@@ -9218,7 +9218,7 @@ speechSynthesis.getVoices();
                 var entry = {
                     created_at: gameLog.dt,
                     type: 'OnPlayerLeft',
-                    displayName: gameLog.userDisplayName,
+                    displayName: gameLog.displayName,
                     location,
                     userId,
                     time
