@@ -20572,7 +20572,7 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.saveScreenshotHelperModifyFilename = function () {
-        configRepository.setBool('VRCX_screenshotHelperSaveFilename', this.screenshotHelperModifyFilename);
+        configRepository.setBool('VRCX_screenshotHelperModifyFilename', this.screenshotHelperModifyFilename);
     };
 
     // YouTube API
