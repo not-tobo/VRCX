@@ -6630,7 +6630,7 @@ speechSynthesis.getVoices();
             $t('prompt.email_otp.header'),
             {
                 distinguishCancelAndClose: true,
-                cancelButtonText: $t('prompt.email_otp.cancel'),
+                cancelButtonText: $t('prompt.email_otp.resend'),
                 confirmButtonText: $t('prompt.email_otp.verify'),
                 inputPlaceholder: $t('prompt.email_otp.input_placeholder'),
                 inputPattern: /^[0-9]{6}$/,
@@ -6648,6 +6648,8 @@ speechSynthesis.getVoices();
                                 API.getCurrentUser();
                                 return args;
                             });
+                    } else if (action === 'cancel') {
+                        this.resendEmail2fa();
                     }
                 },
                 beforeClose: (action, instance, done) => {
@@ -6656,6 +6658,30 @@ speechSynthesis.getVoices();
                 }
             }
         );
+    };
+
+    $app.methods.resendEmail2fa = function () {
+        if (this.loginForm.lastUserLoggedIn) {
+            var user =
+                this.loginForm.savedCredentials[
+                    this.loginForm.lastUserLoggedIn
+                ];
+            if (typeof user !== 'undefined') {
+                webApiService.clearCookies();
+                this.relogin(user).then(() => {
+                    new Noty({
+                        type: 'success',
+                        text: 'Successfully relogged in.'
+                    }).show();
+                });
+                return;
+            }
+        }
+        new Noty({
+            type: 'error',
+            text: 'Cannot send 2FA email without saved credentials. Please login again.'
+        }).show();
+        this.promptEmailOTP();
     };
 
     $app.methods.showExportFriendsListDialog = function () {
@@ -6766,6 +6792,8 @@ speechSynthesis.getVoices();
     API.$on('LOGOUT', async function () {
         await $app.updateStoredUser(this.currentUser);
         webApiService.clearCookies();
+        // eslint-disable-next-line require-atomic-updates
+        $app.loginForm.lastUserLoggedIn = '';
         configRepository.remove('lastUserLoggedIn');
     });
 
@@ -6933,7 +6961,9 @@ speechSynthesis.getVoices();
                                 API.login({
                                     username: loginParmas.username,
                                     password: pwd,
-                                    cipher: loginParmas.password
+                                    cipher: loginParmas.password,
+                                    endpoint: loginParmas.endpoint,
+                                    websocket: loginParmas.websocket
                                 })
                                     .catch((err2) => {
                                         this.loginForm.loading = false;
@@ -6966,9 +6996,10 @@ speechSynthesis.getVoices();
                             endpoint: loginParmas.endpoint,
                             websocket: loginParmas.websocket
                         })
-                            .catch(() => {
+                            .catch((err2) => {
                                 this.loginForm.loading = false;
                                 API.logout();
+                                reject(err2);
                             })
                             .then(() => {
                                 this.loginForm.loading = false;
