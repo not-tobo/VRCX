@@ -6552,6 +6552,7 @@ speechSynthesis.getVoices();
         if (this.twoFactorAuthDialogVisible) {
             return;
         }
+        AppApi.FlashWindow();
         this.twoFactorAuthDialogVisible = true;
         this.$prompt($t('prompt.totp.description'), $t('prompt.totp.header'), {
             distinguishCancelAndClose: true,
@@ -6624,6 +6625,7 @@ speechSynthesis.getVoices();
         if (this.twoFactorAuthDialogVisible) {
             return;
         }
+        AppApi.FlashWindow();
         this.twoFactorAuthDialogVisible = true;
         this.$prompt(
             $t('prompt.email_otp.description'),
