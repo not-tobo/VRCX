@@ -2585,7 +2585,15 @@ speechSynthesis.getVoices();
             };
             this.cachedAvatars.set(ref.id, ref);
         } else {
+            var {unityPackages} = ref;
             Object.assign(ref, json);
+            if (
+                json.unityPackages.length > 0 &&
+                unityPackages.length > 0 &&
+                !json.unityPackages.assetUrl
+            ) {
+                ref.unityPackages = unityPackages;
+            }
         }
         ref.name = $app.replaceBioSymbols(ref.name);
         ref.description = $app.replaceBioSymbols(ref.description);
@@ -10776,10 +10784,24 @@ speechSynthesis.getVoices();
                 }
                 if (block === row.block && mute === row.mute) {
                     // no change
-                    type = '';
+                    if (type) {
+                        this.addEntryPhotonEvent({
+                            photonId,
+                            text: `Moderation ${text}`,
+                            type: 'Moderation',
+                            color: 'yellow',
+                            created_at: gameLogDate
+                        });
+                    }
+                    return;
                 }
             }
-            if (text) {
+            this.moderationAgainstTable.forEach((item) => {
+                if (item.userId === ref.id && item.type === type) {
+                    removeFromArray(this.moderationAgainstTable, item);
+                }
+            });
+            if (type) {
                 this.addEntryPhotonEvent({
                     photonId,
                     text: `Moderation ${text}`,
@@ -10787,8 +10809,6 @@ speechSynthesis.getVoices();
                     color: 'yellow',
                     created_at: gameLogDate
                 });
-            }
-            if (type) {
                 var noty = {
                     created_at: new Date().toJSON(),
                     userId: ref.id,
@@ -10802,12 +10822,9 @@ speechSynthesis.getVoices();
                     displayName: ref.displayName,
                     type
                 };
-                this.moderationAgainstTable.forEach((item) => {
-                    if (item.userId === ref.id && item.type === type) {
-                        removeFromArray(this.moderationAgainstTable, item);
-                    }
-                });
                 this.moderationAgainstTable.push(entry);
+            }
+            if (block || mute || block !== row.block || mute !== row.mute) {
                 this.updateSharedFeed(true);
             }
             if (block || mute) {
@@ -10818,7 +10835,7 @@ speechSynthesis.getVoices();
                     block,
                     mute
                 });
-            } else {
+            } else if (row.block || row.mute) {
                 database.deleteModeration(ref.id);
             }
         });
@@ -14927,6 +14944,9 @@ speechSynthesis.getVoices();
                     D.$homeLocationName = worldName;
                 }
             );
+        }
+        if (this.ipcEnabled) {
+            AppApi.SendIpc('ShowUserDialog', userId);
         }
         API.getCachedUser({
             userId
@@ -22042,6 +22062,8 @@ speechSynthesis.getVoices();
                 this.ipcEnabled = true;
                 this.ipcTimeout = 60; // 30secs
                 break;
+            case 'MsgPing':
+                break;
             case 'LaunchCommand':
                 AppApi.FocusWindow();
                 this.eventLaunchCommand(data.command);
@@ -22069,10 +22091,22 @@ speechSynthesis.getVoices();
     $app.data.customUserTags = new Map();
 
     $app.methods.addCustomTag = function (data) {
-        this.customUserTags.set(data.UserId, {
-            tag: data.Tag,
+        if (data.Tag) {
+            this.customUserTags.set(data.UserId, {
+                tag: data.Tag,
+                colour: data.TagColour
+            });
+        } else {
+            this.customUserTags.delete(data.UserId);
+        }
+        var feedUpdate = {
+            userId: data.UserId,
             colour: data.TagColour
-        });
+        };
+        AppApi.ExecuteVrOverlayFunction(
+            'updateHudFeedTag',
+            JSON.stringify(feedUpdate)
+        );
         var ref = API.cachedUsers.get(data.UserId);
         if (typeof ref !== 'undefined') {
             ref.$customTag = data.Tag;
