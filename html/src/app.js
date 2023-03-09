@@ -1384,16 +1384,17 @@ speechSynthesis.getVoices();
     API.applyUserTrustLevel = function (ref) {
         ref.$isModerator = ref.developerType && ref.developerType !== 'none';
         ref.$isTroll = false;
+        ref.$isProbableTroll = false;
         var trustColor = '';
         var {tags} = ref;
         if (tags.includes('admin_moderator')) {
             ref.$isModerator = true;
         }
-        if (
-            tags.includes('system_troll') ||
-            tags.includes('system_probable_troll')
-        ) {
+        if (tags.includes('system_troll')) {
             ref.$isTroll = true;
+        }
+        if (tags.includes('system_probable_troll') && !ref.$isTroll) {
+            ref.$isProbableTroll = true;
         }
         if (tags.includes('system_trust_veteran')) {
             ref.$trustLevel = 'Trusted User';
@@ -1421,7 +1422,7 @@ speechSynthesis.getVoices();
             trustColor = 'untrusted';
             ref.$trustSortNum = 1;
         }
-        if (ref.$isTroll) {
+        if (ref.$isTroll || ref.$isProbableTroll) {
             trustColor = 'troll';
             ref.$trustSortNum += 0.1;
         }
@@ -1536,6 +1537,7 @@ speechSynthesis.getVoices();
                 $isVRCPlus: false,
                 $isModerator: false,
                 $isTroll: false,
+                $isProbableTroll: false,
                 $trustLevel: 'Visitor',
                 $trustClass: 'x-tag-untrusted',
                 $userColour: '',
@@ -1676,6 +1678,7 @@ speechSynthesis.getVoices();
                 $isVRCPlus: false,
                 $isModerator: false,
                 $isTroll: false,
+                $isProbableTroll: false,
                 $trustLevel: 'Visitor',
                 $trustClass: 'x-tag-untrusted',
                 $userColour: '',
@@ -4263,7 +4266,22 @@ speechSynthesis.getVoices();
     });
 
     API.$on('PIPELINE', function (args) {
-        var {type, content} = args.json;
+        var {type, content, err} = args.json;
+        if (typeof err !== 'undefined') {
+            console.error('PIPELINE: error', args);
+            if (this.errorNoty) {
+                this.errorNoty.close();
+            }
+            this.errorNoty = new Noty({
+                type: 'error',
+                text: `WebSocket Error: ${err}`
+            }).show();
+            return;
+        }
+        if (typeof content === 'undefined') {
+            console.error('PIPELINE: missing content', args);
+            return;
+        }
         if (typeof content.user !== 'undefined') {
             delete content.user.state;
         }
@@ -4544,6 +4562,11 @@ speechSynthesis.getVoices();
     API.connectWebSocket = function (token) {
         if (this.webSocket === null) {
             var socket = new WebSocket(`${API.websocketDomain}/?auth=${token}`);
+            socket.onopen = () => {
+                if ($app.debugWebSocket) {
+                    console.log('WebSocket connected');
+                }
+            };
             socket.onclose = () => {
                 if (this.webSocket === socket) {
                     this.webSocket = null;
@@ -4551,6 +4574,9 @@ speechSynthesis.getVoices();
                 try {
                     socket.close();
                 } catch (err) {}
+                if ($app.debugWebSocket) {
+                    console.log('WebSocket closed');
+                }
             };
             socket.onerror = () => {
                 if (this.errorNoty) {
@@ -4950,19 +4976,20 @@ speechSynthesis.getVoices();
     $app.methods.updateLoop = function () {
         try {
             if (API.isLoggedIn === true) {
+                if (--this.nextFriendsRefresh <= 0) {
+                    this.nextFriendsRefresh = 7200; // 1hour
+                    this.nextCurrentUserRefresh = 60; // 30secs
+                    this.refreshFriendsList();
+                    this.updateStoredUser(API.currentUser);
+                    if (this.isGameRunning) {
+                        API.refreshPlayerModerations();
+                    }
+                }
                 if (--this.nextCurrentUserRefresh <= 0) {
                     this.nextCurrentUserRefresh = 60; // 30secs
                     API.getCurrentUser().catch((err1) => {
                         throw err1;
                     });
-                }
-                if (--this.nextFriendsRefresh <= 0) {
-                    this.nextFriendsRefresh = 7200; // 1hour
-                    API.refreshFriends();
-                    this.updateStoredUser(API.currentUser);
-                    if (this.isGameRunning) {
-                        API.refreshPlayerModerations();
-                    }
                 }
                 if (--this.nextAppUpdateCheck <= 0) {
                     if (this.branch === 'Stable') {
@@ -7427,6 +7454,15 @@ speechSynthesis.getVoices();
     API.$on('LOGIN', function () {
         $app.nextFriendsRefresh = 0;
     });
+
+    $app.methods.refreshFriendsList = async function () {
+        await API.getCurrentUser();
+        this.nextCurrentUserRefresh = 60; // 30secs
+        await API.refreshFriends();
+        API.closeWebSocket();
+        await API.getCurrentUser();
+        this.nextCurrentUserRefresh = 60; // 30secs
+    };
 
     $app.methods.refreshFriends = function (ref, origin) {
         var map = new Map();
@@ -10283,7 +10319,6 @@ speechSynthesis.getVoices();
                     );
                 } else if (data.Parameters[245][0] === 22) {
                     var portalId = data.Parameters[245][1];
-                    this.lastPortalList.delete(portalId);
                     var date = this.lastPortalList.get(portalId);
                     var time = timeToText(Date.parse(gameLogDate) - date);
                     this.addEntryPhotonEvent({
@@ -10291,6 +10326,7 @@ speechSynthesis.getVoices();
                         type: 'DeletedPortal',
                         created_at: gameLogDate
                     });
+                    this.lastPortalList.delete(portalId);
                 }
                 break;
         }
@@ -10304,76 +10340,15 @@ speechSynthesis.getVoices();
         if (this.debugPhotonLogging) {
             console.log('VrcEvent:', json);
         }
-        if (
-            eventData.EventName === '_InstantiateObject' &&
-            eventData.Data[0] === 'Portals/PortalInternalDynamic'
-        ) {
-            this.lastPortalList.set(eventData.Data[3], Date.parse(datetime));
-            return;
-        } else if (
-            eventData.EventName === '_DestroyObject' &&
-            this.lastPortalList.has(eventData.Data[0])
-        ) {
-            var portalId = eventData.Data[0];
-            var date = this.lastPortalList.get(portalId);
-            var time = timeToText(Date.parse(datetime) - date);
-            this.addEntryPhotonEvent({
-                photonId: senderId,
-                text: `DeletedPortal ${time}`,
-                type: 'DeletedPortal',
-                created_at: datetime
-            });
-            return;
-        } else if (eventData.EventName === 'ConfigurePortal') {
-            var shortName = eventData.Data[0];
-            var displayName = this.getDisplayNameFromPhotonId(senderId);
-            var ref = {
-                id: this.getUserIdFromPhotonId(senderId),
-                displayName
-            };
-            workerTimers.setTimeout(() => {
-                // Delay to fix 404? lol
-                API.getInstanceFromShortName({shortName})
-                    .then((args) => {
-                        var location = args.json.location;
-                        var newShortName = args.json.shortName;
-                        var portalType = 'Secure';
-                        if (shortName === newShortName) {
-                            portalType = 'Unlocked';
-                        }
-                        this.parsePhotonPortalSpawn(
-                            datetime,
-                            location,
-                            ref,
-                            portalType,
-                            newShortName,
-                            senderId
-                        );
-                        return args;
-                    })
-                    .catch((err) => {
-                        console.log('PortalSpawn', err);
-                        this.parsePhotonPortalSpawn(
-                            datetime,
-                            '',
-                            ref,
-                            'Error',
-                            shortName,
-                            senderId
-                        );
-                        API.failedGetRequests.delete(
-                            `instances/s/${shortName}`
-                        );
-                    });
-            }, 1000);
-            return;
-        } else if (eventData.EventName === '_SendOnSpawn') {
+        if (eventData.EventName === '_SendOnSpawn') {
             return;
         } else if (eventData.EventType > 34) {
             var entry = {
                 created_at: datetime,
                 type: 'Event',
-                data: `${displayName} called non existent RPC ${eventData.EventType}`
+                data: `${this.getDisplayNameFromPhotonId(
+                    senderId
+                )} called non existent RPC ${eventData.EventType}`
             };
             this.addPhotonEventToGameLog(entry);
             return;
@@ -14945,9 +14920,7 @@ speechSynthesis.getVoices();
                 }
             );
         }
-        if (this.ipcEnabled) {
-            AppApi.SendIpc('ShowUserDialog', userId);
-        }
+        AppApi.SendIpc('ShowUserDialog', userId);
         API.getCachedUser({
             userId
         })
@@ -21823,6 +21796,10 @@ speechSynthesis.getVoices();
         }
         if (json === Object(json) && json.name && json.published_at) {
             this.VRCXUpdateDialog.updateJson = json;
+            this.changeLogDialog.buildName = json.name;
+            this.changeLogDialog.changeLog = this.changeLogRemoveLinks(
+                json.body
+            );
             this.latestAppVersion = json.name;
             var name = json.name;
             this.VRCXUpdateDialog.updatePendingIsLatest = false;
@@ -25507,7 +25484,9 @@ speechSynthesis.getVoices();
     };
 
     $app.data.changeLogDialog = {
-        visible: false
+        visible: false,
+        buildName: '',
+        changeLog: ''
     };
 
     $app.methods.showChangeLogDialog = function () {
@@ -25573,6 +25552,10 @@ speechSynthesis.getVoices();
             this.$emit('FEEDBACK:REPORT:USER', args);
             return args;
         });
+    };
+
+    $app.methods.changeLogRemoveLinks = function (text) {
+        return text.replace(/([^!])\[[^\]]+\]\([^)]+\)/g, '$1');
     };
 
     $app = new Vue($app);
