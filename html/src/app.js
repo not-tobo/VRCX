@@ -13070,7 +13070,7 @@ speechSynthesis.getVoices();
     $app.data.autoSweepVRChatCache = configRepository.getBool(
         'VRCX_autoSweepVRChatCache'
     );
-    $app.data.relaunchVRChatAfterCrash = configRepository.getString(
+    $app.data.relaunchVRChatAfterCrash = configRepository.getBool(
         'VRCX_relaunchVRChatAfterCrash'
     );
     $app.data.vrcQuitFix = configRepository.getBool('VRCX_vrcQuitFix');
