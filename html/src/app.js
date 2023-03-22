@@ -5028,6 +5028,7 @@ speechSynthesis.getVoices();
                                 API.currentUser.$online_for = '';
                                 API.currentUser.$offline_for = Date.now();
                                 this.autoVRChatCacheManagement();
+                                this.checkIfGameCrashed();
                                 this.ipcTimeout = 0;
                             }
                             this.lastLocationReset();
@@ -9199,7 +9200,8 @@ speechSynthesis.getVoices();
         if (
             this.debugGameLog &&
             gameLog.type !== 'photon-id' &&
-            gameLog.type !== 'api-request'
+            gameLog.type !== 'api-request' &&
+            gameLog.type !== 'udon-exception'
         ) {
             console.log('gameLog:', gameLog);
         }
@@ -9526,6 +9528,15 @@ speechSynthesis.getVoices();
             case 'desktop-mode':
                 this.isGameNoVR = true;
                 configRepository.setBool('isGameNoVR', this.isGameNoVR);
+                break;
+            case 'udon-exception':
+                console.log('UdonException', gameLog.data);
+                // var entry = {
+                //     created_at: gameLog.dt,
+                //     type: 'Event',
+                //     data: gameLog.data
+                // };
+                // database.addGamelogEventToDatabase(entry);
                 break;
         }
         if (entry) {
@@ -13059,6 +13070,9 @@ speechSynthesis.getVoices();
     $app.data.autoSweepVRChatCache = configRepository.getBool(
         'VRCX_autoSweepVRChatCache'
     );
+    $app.data.relaunchVRChatAfterCrash = configRepository.getString(
+        'VRCX_relaunchVRChatAfterCrash'
+    );
     $app.data.vrcQuitFix = configRepository.getBool('VRCX_vrcQuitFix');
     $app.data.vrBackgroundEnabled = configRepository.getBool(
         'VRCX_vrBackgroundEnabled'
@@ -13178,6 +13192,10 @@ speechSynthesis.getVoices();
         configRepository.setBool(
             'VRCX_autoSweepVRChatCache',
             this.autoSweepVRChatCache
+        );
+        configRepository.setBool(
+            'VRCX_relaunchVRChatAfterCrash',
+            this.relaunchVRChatAfterCrash
         );
         configRepository.setBool('VRCX_vrcQuitFix', this.vrcQuitFix);
         configRepository.setBool(
@@ -17794,9 +17812,29 @@ speechSynthesis.getVoices();
             args.push('--no-vr');
         }
         if (vrcLaunchPathOverride) {
-            AppApi.StartGameFromPath(vrcLaunchPathOverride, args.join(' '));
+            AppApi.StartGameFromPath(
+                vrcLaunchPathOverride,
+                args.join(' ')
+            ).then((result) => {
+                if (!result) {
+                    this.$message({
+                        message:
+                            'Failed to launch VRChat, invalid custom path set',
+                        type: 'error'
+                    });
+                } else {
+                    this.$message({
+                        message: 'VRChat launched',
+                        type: 'success'
+                    });
+                }
+            });
         } else {
             AppApi.StartGame(args.join(' '));
+            this.$message({
+                message: 'VRChat launched',
+                type: 'success'
+            });
         }
         D.visible = false;
     };
@@ -21112,6 +21150,28 @@ speechSynthesis.getVoices();
         if (this.VRChatConfigDialog.visible) {
             this.getVRChatCacheSize();
         }
+    };
+
+    $app.methods.checkIfGameCrashed = function () {
+        if (!this.relaunchVRChatAfterCrash) {
+            return;
+        }
+        var lastLocation = this.lastLocation.location;
+        AppApi.VrcClosedGracefully().then((result) => {
+            console.log(result, lastLocation);
+            if (result || !this.isRealInstance(lastLocation)) {
+                return;
+            }
+            var entry = {
+                created_at: new Date().toJSON(),
+                type: 'Event',
+                data: 'VRChat crashed, attempting to rejoin last instance'
+            };
+            database.addGamelogEventToDatabase(entry);
+            this.queueGameLogNoty(entry);
+            this.addGameLog(entry);
+            this.launchGame(lastLocation);
+        });
     };
 
     $app.data.VRChatUsedCacheSize = '';
