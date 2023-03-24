@@ -4658,6 +4658,9 @@ speechSynthesis.getVoices();
     var buildTreeData = (json) => {
         var node = [];
         for (var key in json) {
+            if (key[0] === '$') {
+                continue;
+            }
             var value = json[key];
             if (Array.isArray(value) && value.length === 0) {
                 node.push({
@@ -8979,6 +8982,7 @@ speechSynthesis.getVoices();
         this.updateVRLastLocation();
         this.getCurrentInstanceUserList();
         this.lastVideoUrl = '';
+        this.lastResourceloadUrl = '';
         this.applyUserDialogLocation();
         this.applyWorldDialogInstances();
         this.applyGroupDialogInstances();
@@ -9211,6 +9215,7 @@ speechSynthesis.getVoices();
     $app.data.lastLocationDestination = '';
     $app.data.lastLocationDestinationTime = 0;
     $app.data.lastVideoUrl = '';
+    $app.data.lastResourceloadUrl = '';
 
     $app.methods.addGameLogEntry = function (gameLog, location) {
         if (this.gameLogDisabled) {
@@ -9380,15 +9385,22 @@ speechSynthesis.getVoices();
                     this.nowPlaying.offset = parseInt(timestamp, 10);
                 }
                 break;
-            case 'resource-load':
-                if (!this.logResourceLoad) {
+            case 'resource-load-string':
+            case 'resource-load-image':
+                if (
+                    !this.logResourceLoad ||
+                    this.lastResourceloadUrl === gameLog.resourceUrl
+                ) {
                     break;
                 }
+                this.lastResourceloadUrl = gameLog.resourceUrl;
                 var entry = {
                     created_at: gameLog.dt,
-                    type: gameLog.resourceType === 'string' ? 'StringLoad' : 'ImageLoad',
+                    type:
+                        gameLog.type === 'resource-load-string'
+                            ? 'StringLoad'
+                            : 'ImageLoad',
                     resourceUrl: gameLog.resourceUrl,
-                    resourceType: gameLog.resourceType,
                     location
                 };
                 database.addGamelogResourceLoadToDatabase(entry);
@@ -13371,8 +13383,10 @@ speechSynthesis.getVoices();
             AppApi.ExecuteVrOverlayFunction('updateHudTimeout', '[]');
         }
     };
-    $app.data.logResourceLoad = configRepository.getBool('VRCX_logResourceLoad', false);
-    $app.methods.saveGameLogOptions = function() {
+    $app.data.logResourceLoad = configRepository.getBool(
+        'VRCX_logResourceLoad'
+    );
+    $app.methods.saveGameLogOptions = function () {
         configRepository.setBool('VRCX_logResourceLoad', this.logResourceLoad);
     };
 
@@ -21179,6 +21193,7 @@ speechSynthesis.getVoices();
             if (result || !this.isRealInstance(lastLocation)) {
                 return;
             }
+            AppApi.FocusWindow();
             var entry = {
                 created_at: new Date().toJSON(),
                 type: 'Event',
