@@ -9380,6 +9380,19 @@ speechSynthesis.getVoices();
                     this.nowPlaying.offset = parseInt(timestamp, 10);
                 }
                 break;
+            case 'resource-load':
+                if (!this.logResourceLoad) {
+                    break;
+                }
+                var entry = {
+                    created_at: gameLog.dt,
+                    type: gameLog.resourceType === 'string' ? 'StringLoad' : 'ImageLoad',
+                    resourceUrl: gameLog.resourceUrl,
+                    resourceType: gameLog.resourceType,
+                    location
+                };
+                database.addGamelogResourceLoadToDatabase(entry);
+                break;
             case 'screenshot':
                 if (!this.screenshotHelper) {
                     break;
@@ -13357,6 +13370,10 @@ speechSynthesis.getVoices();
         if (!this.timeoutHudOverlay) {
             AppApi.ExecuteVrOverlayFunction('updateHudTimeout', '[]');
         }
+    };
+    $app.data.logResourceLoad = configRepository.getBool('VRCX_logResourceLoad', false);
+    $app.methods.saveGameLogOptions = function() {
+        configRepository.setBool('VRCX_logResourceLoad', this.logResourceLoad);
     };
 
     // setting defaults
