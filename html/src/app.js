@@ -1724,6 +1724,9 @@ speechSynthesis.getVoices();
                 var tag = $app.customUserTags.get(json.id);
                 ref.$customTag = tag.tag;
                 ref.$customTagColour = tag.colour;
+            } else if (ref.$customTag) {
+                ref.$customTag = '';
+                ref.$customTagColour = '';
             }
             ref.$isVRCPlus = ref.tags.includes('system_supporter');
             this.applyUserTrustLevel(ref);
@@ -14104,7 +14107,7 @@ speechSynthesis.getVoices();
                 inputErrorMessage: $t('prompt.direct_access_omni.input_error'),
                 callback: (action, instance) => {
                     if (action === 'confirm' && instance.inputValue) {
-                        var input = instance.inputValue;
+                        var input = instance.inputValue.trim();
                         if (!this.directAccessParse(input)) {
                             this.$message({
                                 message: $t(
@@ -14121,7 +14124,7 @@ speechSynthesis.getVoices();
 
     $app.methods.directAccessPaste = function () {
         AppApi.GetClipboard().then((clipboard) => {
-            if (!this.directAccessParse(clipboard)) {
+            if (!this.directAccessParse(clipboard.trim())) {
                 this.promptOmniDirectDialog();
             }
         });
@@ -14191,7 +14194,7 @@ speechSynthesis.getVoices();
         if (!input) {
             return false;
         }
-        if (this.directAccessWorld(input.trim())) {
+        if (this.directAccessWorld(input)) {
             return true;
         }
         if (input.startsWith('https://vrchat.')) {
@@ -14228,13 +14231,13 @@ speechSynthesis.getVoices();
             input.substring(0, 4) === 'usr_' ||
             /^[A-Za-z0-9]{10}$/g.test(input)
         ) {
-            this.showUserDialog(input.trim());
+            this.showUserDialog(input);
             return true;
         } else if (input.substring(0, 5) === 'avtr_') {
-            this.showAvatarDialog(input.trim());
+            this.showAvatarDialog(input);
             return true;
         } else if (input.substring(0, 4) === 'grp_') {
-            this.showGroupDialog(input.trim());
+            this.showGroupDialog(input);
             return true;
         }
         return false;
@@ -22154,6 +22157,9 @@ speechSynthesis.getVoices();
                 this.photonLastEvent7List = Date.parse(data.dt);
                 break;
             case 'VrcxMessage':
+                if (this.debugPhotonLogging) {
+                    console.log('VrcxMessage:', data);
+                }
                 this.eventVrcxMessage(data);
                 break;
             case 'Ping':
@@ -22225,6 +22231,16 @@ speechSynthesis.getVoices();
             case 'CustomTag':
                 this.addCustomTag(data);
                 break;
+            case 'ClearCustomTags':
+                this.customUserTags.forEach((value, key) => {
+                    this.customUserTags.delete(key);
+                    var ref = API.cachedUsers.get(key);
+                    if (typeof ref !== 'undefined') {
+                        ref.$customTag = '';
+                        ref.$customTagColour = '';
+                    }
+                });
+                break;
             case 'Noty':
                 var entry = {
                     created_at: new Date().toJSON(),
@@ -22234,9 +22250,6 @@ speechSynthesis.getVoices();
                 database.addGamelogEventToDatabase(entry);
                 this.queueGameLogNoty(entry);
                 this.addGameLog(entry);
-                if (data.Tag) {
-                    this.addCustomTag(data);
-                }
                 break;
             default:
                 console.log('VRCXMessage:', data);
