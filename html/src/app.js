@@ -23025,7 +23025,7 @@ speechSynthesis.getVoices();
     $app.data.databaseVersion = configRepository.getInt('VRCX_databaseVersion');
 
     $app.methods.updateDatabaseVersion = async function () {
-        var databaseVersion = 4;
+        var databaseVersion = 5;
         if (this.databaseVersion !== databaseVersion) {
             var msgBox = this.$message({
                 message: 'DO NOT CLOSE VRCX, database upgrade in process...',
@@ -23042,6 +23042,7 @@ speechSynthesis.getVoices();
                 await database.fixBrokenLeaveEntries(); // fix user instance timer being higher than current user location timer
                 await database.fixBrokenGroupInvites(); // fix notification v2 in wrong table
                 await database.updateTableForGroupNames(); // alter tables to include group name
+                database.fixBrokenNotifications(); // fix notifications being null
                 this.databaseVersion = databaseVersion;
                 configRepository.setInt(
                     'VRCX_databaseVersion',
