@@ -2300,6 +2300,10 @@ speechSynthesis.getVoices();
         var D = $app.userDialog;
         if ($app.userDialog.visible && D.ref.$location.tag === json.id) {
             D.instance.occupants = json.n_users;
+            D.instance.full =
+                typeof json.hasCapacityForYou !== 'undefined' &&
+                !json.hasCapacityForYou;
+            D.instance.json = json;
         }
     });
 
@@ -2313,6 +2317,10 @@ speechSynthesis.getVoices();
             for (var instance of D.rooms) {
                 if (instance.id === json.instanceId) {
                     instance.occupants = json.n_users;
+                    instance.full =
+                        typeof json.hasCapacityForYou !== 'undefined' &&
+                        !json.hasCapacityForYou;
+                    instance.json = json;
                     break;
                 }
             }
@@ -2329,6 +2337,10 @@ speechSynthesis.getVoices();
             for (var instance of D.instances) {
                 if (instance.id === json.instanceId) {
                     instance.occupants = json.n_users;
+                    instance.full =
+                        typeof json.hasCapacityForYou !== 'undefined' &&
+                        !json.hasCapacityForYou;
+                    instance.json = json;
                     break;
                 }
             }
@@ -15022,8 +15034,14 @@ speechSynthesis.getVoices();
         D.worlds = [];
         D.instance = {
             id: '',
+            tag: '',
+            $location: {},
             occupants: 0,
-            friendCount: 0
+            friendCount: 0,
+            full: false,
+            users: [],
+            shortName: '',
+            json: {}
         };
         D.representedGroup = {
             bannerUrl: '',
@@ -15316,14 +15334,27 @@ speechSynthesis.getVoices();
             playersInInstance.size > 0
         ) {
             D.instance = {
-                id: L.tag,
-                occupants: this.lastLocation.playerList.size
+                id: L.instanceId,
+                tag: L.tag,
+                $location: L,
+                occupants: this.lastLocation.playerList.size,
+                friendCount: 0,
+                full: false,
+                users: [],
+                shortName: '',
+                json: {}
             };
         }
         if (L.isOffline || L.isPrivate || L.isTraveling || L.worldId === '') {
             D.instance = {
-                id: L.tag,
-                occupants: 0
+                id: L.instanceId,
+                tag: L.tag,
+                $location: L,
+                occupants: 0,
+                full: false,
+                users: [],
+                shortName: '',
+                json: {}
             };
         }
         D.instance.friendCount = friendCount;
@@ -16184,7 +16215,11 @@ speechSynthesis.getVoices();
         D.ref = ref;
         $app.applyWorldDialogInstances();
         for (var room of D.rooms) {
-            if (room.occupants === 0) {
+            if (
+                $app.isRealInstance(room.tag) &&
+                room.tag !== $app.lastLocation.location &&
+                (room.$location.accessType !== 'public' || room.occupants === 0)
+            ) {
                 API.getInstance({
                     worldId: D.id,
                     instanceId: room.id
@@ -16364,19 +16399,27 @@ speechSynthesis.getVoices();
         for (var [id, occupants] of D.ref.instances) {
             instances[id] = {
                 id,
+                tag: `${D.id}:${id}`,
                 occupants,
                 friendCount: 0,
-                users: []
+                full: false,
+                users: [],
+                shortName: '',
+                json: {}
             };
         }
         var {instanceId, shortName} = D.$location;
         if (instanceId && typeof instances[instanceId] === 'undefined') {
             instances[instanceId] = {
                 id: instanceId,
+                tag: `${D.id}:${instanceId}`,
+                $location: {},
                 occupants: 0,
                 friendCount: 0,
+                full: false,
+                users: [],
                 shortName,
-                users: []
+                json: {}
             };
         }
         var currentLocation = this.lastLocation.location;
@@ -16389,9 +16432,14 @@ speechSynthesis.getVoices();
             var friendsInInstance = this.lastLocation.friendList;
             var instance = {
                 id: lastLocation$.instanceId,
+                tag: currentLocation,
+                $location: {},
                 occupants: playersInInstance.size,
                 friendCount: friendsInInstance.size,
-                users: []
+                full: false,
+                users: [],
+                shortName: '',
+                json: {}
             };
             instances[instance.id] = instance;
             var ref = API.cachedUsers.get(API.currentUser.id);
@@ -16434,9 +16482,14 @@ speechSynthesis.getVoices();
             if (typeof instance === 'undefined') {
                 instance = {
                     id: instanceId,
+                    tag: `${D.id}:${instanceId}`,
+                    $location: {},
                     occupants: 0,
                     friendCount: 0,
-                    users: []
+                    full: false,
+                    users: [],
+                    shortName: '',
+                    json: {}
                 };
                 instances[instanceId] = instance;
             }
@@ -16477,10 +16530,16 @@ speechSynthesis.getVoices();
         }
         // reuse instance occupants from getInstance
         for (var room of rooms) {
-            if (room.occupants === 0) {
+            if (
+                $app.isRealInstance(room.tag) &&
+                room.tag !== $app.lastLocation.location &&
+                (room.$location.accessType !== 'public' || room.occupants === 0)
+            ) {
                 for (var instance of D.rooms) {
                     if (instance.id === room.id) {
                         room.occupants = instance.occupants;
+                        room.full = instance.full;
+                        room.json = instance.json;
                         break;
                     }
                 }
@@ -16512,9 +16571,13 @@ speechSynthesis.getVoices();
                 instances[instance.location] = {
                     id: instance.instanceId,
                     tag: instance.location,
+                    $location: {},
                     occupants: instance.memberCount,
                     friendCount: 0,
-                    users: []
+                    full: false,
+                    users: [],
+                    shortName: '',
+                    json: {}
                 };
             }
         }
@@ -16529,9 +16592,13 @@ speechSynthesis.getVoices();
             var instance = {
                 id: lastLocation$.instanceId,
                 tag: currentLocation,
+                $location: {},
                 occupants: playersInInstance.size,
                 friendCount: friendsInInstance.size,
-                users: []
+                full: false,
+                users: [],
+                shortName: '',
+                json: {}
             };
             instances[currentLocation] = instance;
             var ref = API.cachedUsers.get(API.currentUser.id);
@@ -16575,9 +16642,13 @@ speechSynthesis.getVoices();
                 instance = {
                     id: instanceId,
                     tag,
+                    $location: {},
                     occupants: 0,
                     friendCount: 0,
-                    users: []
+                    full: false,
+                    users: [],
+                    shortName: '',
+                    json: {}
                 };
                 instances[tag] = instance;
             }
