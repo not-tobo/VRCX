@@ -4,15 +4,16 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT>.
 
+// #region | Imports
 import '@fontsource/noto-sans-kr';
 import '@fontsource/noto-sans-jp';
 import Noty from 'noty';
 import Vue from 'vue';
 import VueLazyload from 'vue-lazyload';
 import VueI18n from 'vue-i18n';
-import {DataTables} from 'vue-data-tables';
+import { DataTables } from 'vue-data-tables';
 import ElementUI from 'element-ui';
-import {v4 as uuidv4} from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import * as workerTimers from 'worker-timers';
 import VueMarkdown from 'vue-markdown';
 import 'default-passive-events';
@@ -24,11 +25,15 @@ import security from './security.js';
 import database from './repository/database.js';
 import * as localizedStrings from './localization/localizedStrings.js';
 
+// #endregion
+
 speechSynthesis.getVoices();
 
+// #region | Hey look it's most of VRCX!
 (async function () {
     var $app = null;
 
+    // #region | Init
     await CefSharp.BindObjectAsync(
         'AppApi',
         'WebApi',
@@ -43,6 +48,7 @@ speechSynthesis.getVoices();
 
     await configRepository.init();
 
+    // #region | Init: Migrate old legacy database data to new format
     if (configRepository.getBool('migrate_config_20201101') === null) {
         var legacyConfigKeys = [
             'orderFriendGroup0',
@@ -73,6 +79,8 @@ speechSynthesis.getVoices();
         configRepository.setBool('migrate_config_20201101', true);
     }
 
+    // #endregion
+    // #region | Init: drop/keyup event listeners
     // Make sure file drops outside of the screenshot manager don't navigate to the file path dropped.
     // This issue persists on prompts created with prompt(), unfortunately. Not sure how to fix that.
     document.body.addEventListener('drop', function (e) {
@@ -90,7 +98,7 @@ speechSynthesis.getVoices();
             $app.refreshCustomCss();
         }
 
-        let carouselNavigation = {ArrowLeft: 0, ArrowRight: 2}[e.key];
+        let carouselNavigation = { ArrowLeft: 0, ArrowRight: 2 }[e.key];
         if (
             typeof carouselNavigation !== 'undefined' &&
             $app.screenshotMetadataDialog?.visible
@@ -98,6 +106,8 @@ speechSynthesis.getVoices();
             $app.screenshotMetadataCarouselChange(carouselNavigation);
         }
     });
+    // #endregion
+    // #region | Init: Define VRCX database helper functions, flush timer
 
     VRCXStorage.GetArray = async function (key) {
         try {
@@ -134,6 +144,8 @@ speechSynthesis.getVoices();
     workerTimers.setInterval(function () {
         VRCXStorage.Flush();
     }, 5 * 60 * 1000);
+    // #endregion
+    // #region | Init: Noty, Vue, Vue-Markdown, ElementUI, VueI18n, VueLazyLoad, Vue filters, dark stylesheet
 
     Noty.overrideDefaults({
         animation: {
@@ -162,7 +174,7 @@ speechSynthesis.getVoices();
     });
 
     var removeFromArray = function (array, item) {
-        var {length} = array;
+        var { length } = array;
         for (var i = 0; i < length; ++i) {
             if (array[i] === item) {
                 array.splice(i, 1);
@@ -242,10 +254,8 @@ speechSynthesis.getVoices();
     $appDarkStyle.rel = 'stylesheet';
     $appDarkStyle.href = `app.dark.css?_=${Date.now()}`;
     document.head.appendChild($appDarkStyle);
-
-    //
-    // Languages
-    //
+    // #endregion
+    // #region | Init: Languages
 
     var subsetOfLanguages = {
         eng: 'English',
@@ -311,11 +321,11 @@ speechSynthesis.getVoices();
         fsl: 'fr',
         kvk: 'kr'
     };
+    // #endregion
+    // #endregion
+    // #region | API: This is NOT all the api functions, not even close :(
 
-    //
-    // API
-    //
-
+    // #region | API: Base
     var API = {};
 
     API.eventHandlers = new Map();
@@ -351,7 +361,7 @@ speechSynthesis.getVoices();
         if (typeof handlers === 'undefined') {
             return;
         }
-        var {length} = handlers;
+        var { length } = handlers;
         for (var i = 0; i < length; ++i) {
             if (handlers[i] === handler) {
                 if (length > 1) {
@@ -377,7 +387,7 @@ speechSynthesis.getVoices();
             method: 'GET',
             ...options
         };
-        var {params} = init;
+        var { params } = init;
         if (init.method === 'GET') {
             // don't retry recent 404/403
             if (this.failedGetRequests.has(endpoint)) {
@@ -393,7 +403,7 @@ speechSynthesis.getVoices();
             // transform body to url
             if (params === Object(params)) {
                 var url = new URL(init.url);
-                var {searchParams} = url;
+                var { searchParams } = url;
                 for (var key in params) {
                     searchParams.set(key, params[key]);
                 }
@@ -426,7 +436,7 @@ speechSynthesis.getVoices();
                         console.log(init, response.data);
                     }
                     return response;
-                } catch (e) {}
+                } catch (e) { }
                 if (response.status === 200) {
                     this.$throw(0, 'Invalid JSON response');
                 }
@@ -439,7 +449,7 @@ speechSynthesis.getVoices();
                 this.$throw(response.status, endpoint);
                 return {};
             })
-            .then(({data, status}) => {
+            .then(({ data, status }) => {
                 if (status === 200) {
                     if (!data) {
                         return data;
@@ -646,12 +656,12 @@ speechSynthesis.getVoices();
         if (
             args.json.length > 0 &&
             ((options.params.offset += args.json.length),
-            // eslint-disable-next-line no-nested-ternary
-            options.N > 0
-                ? options.N > options.params.offset
-                : options.N < 0
-                ? args.json.length
-                : options.params.n === args.json.length)
+                // eslint-disable-next-line no-nested-ternary
+                options.N > 0
+                    ? options.N > options.params.offset
+                    : options.N < 0
+                        ? args.json.length
+                        : options.params.n === args.json.length)
         ) {
             this.bulk(options);
         } else if ('done' in options) {
@@ -671,7 +681,8 @@ speechSynthesis.getVoices();
             .then((args) => this.$bulk(options, args));
     };
 
-    // API: Config
+    // #endregion
+    // #region | API: Config
 
     API.cachedConfig = {};
 
@@ -700,7 +711,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // API: Location
+    // #endregion
+    // #region | API: Location
 
     API.parseLocation = function (tag) {
         var _tag = String(tag || '');
@@ -1021,7 +1033,7 @@ speechSynthesis.getVoices();
                     (this.worlddialogshortname &&
                         this.locationobject.shortName &&
                         this.worlddialogshortname ===
-                            this.locationobject.shortName) ||
+                        this.locationobject.shortName) ||
                     this.currentuserid === this.locationobject.userId
                 ) {
                     this.isUnlocked = true;
@@ -1103,7 +1115,7 @@ speechSynthesis.getVoices();
                         );
                         this.avatarName = avatarInfo.avatarName;
                         this.ownerId = avatarInfo.ownerId;
-                    } catch (err) {}
+                    } catch (err) { }
                 }
                 if (typeof this.userid === 'undefined' || !this.ownerId) {
                     this.color = '';
@@ -1158,7 +1170,7 @@ speechSynthesis.getVoices();
             async parse() {
                 this.username = this.userid;
                 if (this.userid) {
-                    var args = await API.getCachedUser({userId: this.userid});
+                    var args = await API.getCachedUser({ userId: this.userid });
                 }
                 if (
                     typeof args !== 'undefined' &&
@@ -1185,7 +1197,8 @@ speechSynthesis.getVoices();
         }
     });
 
-    // API: User
+    // #endregion
+    // #region | API: User
 
     // changeUserName: PUT users/${userId} {displayName: string, currentPassword: string}
     // changeUserEmail: PUT users/${userId} {email: string, currentPassword: string}
@@ -1214,7 +1227,7 @@ speechSynthesis.getVoices();
     API.currentTravelers = new Map();
 
     API.$on('USER:CURRENT', function (args) {
-        var {json} = args;
+        var { json } = args;
         args.ref = this.applyCurrentUser(json);
         var location = '';
         var travelingToLocation = '';
@@ -1269,7 +1282,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('USER', function (args) {
-        $app.queueUpdateFriend({id: args.json.id, state: args.json.state});
+        $app.queueUpdateFriend({ id: args.json.id, state: args.json.state });
         args.ref = this.applyUser(args.json);
     });
 
@@ -1301,7 +1314,7 @@ speechSynthesis.getVoices();
         }
     */
     API.login = function (params) {
-        var {username, password, saveCredentials, cipher} = params;
+        var { username, password, saveCredentials, cipher } = params;
         username = encodeURIComponent(username);
         password = encodeURIComponent(password);
         var auth = btoa(`${username}:${password}`);
@@ -1400,7 +1413,7 @@ speechSynthesis.getVoices();
         ref.$isTroll = false;
         ref.$isProbableTroll = false;
         var trustColor = '';
-        var {tags} = ref;
+        var { tags } = ref;
         if (tags.includes('admin_moderator')) {
             ref.$isModerator = true;
         }
@@ -1458,7 +1471,7 @@ speechSynthesis.getVoices();
     // FIXME: it may performance issue. review here
     API.applyUserLanguage = function (ref) {
         ref.$languages = [];
-        var {tags} = ref;
+        var { tags } = ref;
         for (var tag of tags) {
             if (tag.startsWith('language_') === false) {
                 continue;
@@ -1604,7 +1617,7 @@ speechSynthesis.getVoices();
         }
         userUpdateTimer = workerTimers.setTimeout(() => {
             userUpdateTimer = null;
-            var {length} = userUpdateQueue;
+            var { length } = userUpdateQueue;
             for (var i = 0; i < length; ++i) {
                 API.$emit('USER:UPDATE', userUpdateQueue[i]);
             }
@@ -1753,7 +1766,7 @@ speechSynthesis.getVoices();
                     props[prop] = true;
                 }
             }
-            var $ref = {...ref};
+            var $ref = { ...ref };
             Object.assign(ref, json);
             ref.$isVRCPlus = ref.tags.includes('system_supporter');
             this.applyUserTrustLevel(ref);
@@ -1961,7 +1974,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // API: World
+    // #endregion
+    // #region | API: World
 
     API.cachedWorlds = new Map();
 
@@ -1981,7 +1995,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('WORLD:DELETE', function (args) {
-        var {json} = args;
+        var { json } = args;
         this.cachedWorlds.delete(json.id);
         if ($app.worldDialog.ref.authorId === json.authorId) {
             var map = new Map();
@@ -1996,7 +2010,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('WORLD:SAVE', function (args) {
-        var {json} = args;
+        var { json } = args;
         this.$emit('WORLD', {
             json,
             params: {
@@ -2307,7 +2321,7 @@ speechSynthesis.getVoices();
     };
 
     API.$on('INSTANCE', function (args) {
-        var {json} = args;
+        var { json } = args;
         if (!json) {
             return;
         }
@@ -2322,7 +2336,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('INSTANCE', function (args) {
-        var {json} = args;
+        var { json } = args;
         if (!json) {
             return;
         }
@@ -2342,7 +2356,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('INSTANCE', function (args) {
-        var {json} = args;
+        var { json } = args;
         if (!json) {
             return;
         }
@@ -2361,7 +2375,8 @@ speechSynthesis.getVoices();
         }
     });
 
-    // API: Friend
+    // #endregion
+    // #region | API: Friend
 
     API.$on('FRIEND:LIST', function (args) {
         for (var json of args.json) {
@@ -2545,7 +2560,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // API: Avatar
+    // #endregion
+    // #region | API: Avatar
 
     API.cachedAvatars = new Map();
 
@@ -2565,7 +2581,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('AVATAR:SAVE', function (args) {
-        var {json} = args;
+        var { json } = args;
         this.$emit('AVATAR', {
             json,
             params: {
@@ -2579,7 +2595,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('AVATAR:DELETE', function (args) {
-        var {json} = args;
+        var { json } = args;
         this.cachedAvatars.delete(json._id);
         if ($app.userDialog.id === json.authorId) {
             var map = new Map();
@@ -2620,7 +2636,7 @@ speechSynthesis.getVoices();
             };
             this.cachedAvatars.set(ref.id, ref);
         } else {
-            var {unityPackages} = ref;
+            var { unityPackages } = ref;
             Object.assign(ref, json);
             if (
                 json.unityPackages?.length > 0 &&
@@ -2756,7 +2772,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // API: Notification
+    // #endregion
+    // #region | API: Notification
 
     API.isNotificationsLoading = false;
 
@@ -2887,7 +2904,7 @@ speechSynthesis.getVoices();
                     if (object === Object(object)) {
                         details = object;
                     }
-                } catch (err) {}
+                } catch (err) { }
             }
             ref.details = details;
         }
@@ -3047,7 +3064,7 @@ speechSynthesis.getVoices();
 
     API.$on('NOTIFICATION:V2:LIST', function (args) {
         for (var json of args.json) {
-            this.$emit('NOTIFICATION:V2', {json});
+            this.$emit('NOTIFICATION:V2', { json });
         }
     });
 
@@ -3273,7 +3290,8 @@ speechSynthesis.getVoices();
         return '';
     };
 
-    // API: PlayerModeration
+    // #endregion
+    // #region | API: PlayerModeration
 
     API.cachedPlayerModerations = new Map();
     API.isPlayerModerationsLoading = false;
@@ -3311,7 +3329,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('PLAYER-MODERATION:DELETE', function (args) {
-        var {type, moderated} = args.params;
+        var { type, moderated } = args.params;
         var userId = this.currentUser.id;
         for (var ref of this.cachedPlayerModerations.values()) {
             if (
@@ -3446,7 +3464,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // API: AvatarModeration
+    // #endregion
+    // #region | API: AvatarModeration
 
     API.cachedAvatarModerations = new Map();
 
@@ -3566,7 +3585,8 @@ speechSynthesis.getVoices();
         return ref;
     };
 
-    // API: Favorite
+    // #endregion
+    // #region | API: Favorite
 
     API.cachedFavorites = new Map();
     API.cachedFavoritesByObjectId = new Map();
@@ -3612,7 +3632,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('FAVORITE:@DELETE', function (args) {
-        var {ref} = args;
+        var { ref } = args;
         if (ref.$groupRef !== null) {
             --ref.$groupRef.count;
         }
@@ -4277,7 +4297,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // API: WebSocket
+    // #endregion
+    // #region | API: WebSocket
 
     API.webSocket = null;
 
@@ -4298,7 +4319,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('PIPELINE', function (args) {
-        var {type, content, err} = args.json;
+        var { type, content, err } = args.json;
         if (typeof err !== 'undefined') {
             console.error('PIPELINE: error', args);
             if (this.errorNoty) {
@@ -4605,7 +4626,7 @@ speechSynthesis.getVoices();
                 }
                 try {
                     socket.close();
-                } catch (err) {}
+                } catch (err) { }
                 if ($app.debugWebSocket) {
                     console.log('WebSocket closed');
                 }
@@ -4620,12 +4641,12 @@ speechSynthesis.getVoices();
                 }).show();
                 socket.onclose();
             };
-            socket.onmessage = ({data}) => {
+            socket.onmessage = ({ data }) => {
                 try {
                     var json = JSON.parse(data);
                     try {
                         json.content = JSON.parse(json.content);
-                    } catch (err) {}
+                    } catch (err) { }
                     this.$emit('PIPELINE', {
                         json
                     });
@@ -4658,10 +4679,11 @@ speechSynthesis.getVoices();
         this.webSocket = null;
         try {
             socket.close();
-        } catch (err) {}
+        } catch (err) { }
     };
 
-    // API: Visit
+    // #endregion
+    // #region | API: Visit
 
     API.getVisits = function () {
         return this.call('visits', {
@@ -4675,7 +4697,13 @@ speechSynthesis.getVoices();
         });
     };
 
+    // #endregion
     // API
+
+
+
+    // #endregion
+    // #region | Misc
 
     var extractFileId = (s) => {
         var match = String(s).match(/file_[0-9A-Za-z-]+/);
@@ -4748,8 +4776,6 @@ speechSynthesis.getVoices();
         });
         return node;
     };
-
-    // Misc
 
     var $timers = [];
 
@@ -4851,7 +4877,8 @@ speechSynthesis.getVoices();
         }
     }, 5000);
 
-    // initialise
+    // #endregion
+    // #region | initialise ... stuff. Don't look at me, I don't work here
 
     var $app = {
         data: {
@@ -5231,7 +5258,7 @@ speechSynthesis.getVoices();
         if (i > 0) {
             if (
                 data[i - 1].created_at ===
-                    this.sharedFeed.gameLog.lastEntryDate &&
+                this.sharedFeed.gameLog.lastEntryDate &&
                 forceUpdate === false
             ) {
                 return;
@@ -5262,9 +5289,9 @@ speechSynthesis.getVoices();
                     if (
                         feedItem.type === 'OnPlayerLeft' &&
                         Date.parse(feedItem.created_at) >=
-                            currentUserLeaveTime &&
+                        currentUserLeaveTime &&
                         Date.parse(feedItem.created_at) <=
-                            currentUserLeaveTime + 5 * 1000
+                        currentUserLeaveTime + 5 * 1000
                     ) {
                         wristArr.splice(k, 1);
                         w--;
@@ -5280,7 +5307,7 @@ speechSynthesis.getVoices();
                         feedItem.type === 'OnPlayerJoined' &&
                         Date.parse(feedItem.created_at) >= locationJoinTime &&
                         Date.parse(feedItem.created_at) <=
-                            locationJoinTime + 20 * 1000
+                        locationJoinTime + 20 * 1000
                     ) {
                         wristArr.splice(k, 1);
                         w--;
@@ -5433,7 +5460,7 @@ speechSynthesis.getVoices();
         if (i > 0) {
             if (
                 data[i - 1].created_at ===
-                    this.sharedFeed.feedTable.lastEntryDate &&
+                this.sharedFeed.feedTable.lastEntryDate &&
                 forceUpdate === false
             ) {
                 return;
@@ -5508,12 +5535,12 @@ speechSynthesis.getVoices();
 
     $app.methods.updateSharedFeedNotificationTable = function (forceUpdate) {
         // invite, requestInvite, requestInviteResponse, inviteResponse, friendRequest
-        var {data} = this.notificationTable;
+        var { data } = this.notificationTable;
         var i = data.length;
         if (i > 0) {
             if (
                 data[i - 1].created_at ===
-                    this.sharedFeed.notificationTable.lastEntryDate &&
+                this.sharedFeed.notificationTable.lastEntryDate &&
                 forceUpdate === false
             ) {
                 return;
@@ -5574,12 +5601,12 @@ speechSynthesis.getVoices();
 
     $app.methods.updateSharedFeedFriendLogTable = function (forceUpdate) {
         // TrustLevel, Friend, FriendRequest, Unfriend, DisplayName
-        var {data} = this.friendLogTable;
+        var { data } = this.friendLogTable;
         var i = data.length;
         if (i > 0) {
             if (
                 data[i - 1].created_at ===
-                    this.sharedFeed.friendLogTable.lastEntryDate &&
+                this.sharedFeed.friendLogTable.lastEntryDate &&
                 forceUpdate === false
             ) {
                 return;
@@ -5648,7 +5675,7 @@ speechSynthesis.getVoices();
         if (i > 0) {
             if (
                 data[i - 1].created_at ===
-                    this.sharedFeed.moderationAgainstTable.lastEntryDate &&
+                this.sharedFeed.moderationAgainstTable.lastEntryDate &&
                 forceUpdate === false
             ) {
                 return;
@@ -5899,7 +5926,7 @@ speechSynthesis.getVoices();
         }
         AppApi.ExecuteVrOverlayFunction(
             'playNoty',
-            JSON.stringify({noty, message, image})
+            JSON.stringify({ noty, message, image })
         );
     };
 
@@ -5942,8 +5969,7 @@ speechSynthesis.getVoices();
                 break;
             case 'invite':
                 this.speak(
-                    `${
-                        noty.senderUsername
+                    `${noty.senderUsername
                     } has invited you to ${this.displayLocation(
                         noty.details.worldId,
                         noty.details.worldName
@@ -6001,8 +6027,7 @@ speechSynthesis.getVoices();
             case 'PortalSpawn':
                 if (noty.displayName) {
                     this.speak(
-                        `${
-                            noty.displayName
+                        `${noty.displayName
                         } has spawned a portal to ${this.displayLocation(
                             noty.instanceId,
                             noty.worldName
@@ -6125,8 +6150,7 @@ speechSynthesis.getVoices();
             case 'invite':
                 AppApi.XSNotification(
                     'VRCX',
-                    `${
-                        noty.senderUsername
+                    `${noty.senderUsername
                     } has invited you to ${this.displayLocation(
                         noty.details.worldId,
                         noty.details.worldName
@@ -6215,8 +6239,7 @@ speechSynthesis.getVoices();
                 if (noty.displayName) {
                     AppApi.XSNotification(
                         'VRCX',
-                        `${
-                            noty.displayName
+                        `${noty.displayName
                         } has spawned a portal to ${this.displayLocation(
                             noty.instanceId,
                             noty.worldName
@@ -6589,7 +6612,7 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.notifyMenu = function (index) {
-        var {menu} = this.$refs;
+        var { menu } = this.$refs;
         if (menu.activeIndex !== index) {
             var item = menu.items[index];
             if (item) {
@@ -6738,7 +6761,7 @@ speechSynthesis.getVoices();
         if (this.loginForm.lastUserLoggedIn) {
             var user =
                 this.loginForm.savedCredentials[
-                    this.loginForm.lastUserLoggedIn
+                this.loginForm.lastUserLoggedIn
                 ];
             if (typeof user !== 'undefined') {
                 webApiService.clearCookies();
@@ -6759,7 +6782,7 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.showExportFriendsListDialog = function () {
-        var {friends} = API.currentUser;
+        var { friends } = API.currentUser;
         if (Array.isArray(friends) === false) {
             return;
         }
@@ -6885,7 +6908,7 @@ speechSynthesis.getVoices();
                     inputPattern: /[\s\S]{1,32}/
                 }
             )
-                .then(({value}) => {
+                .then(({ value }) => {
                     security
                         .decrypt(args.password, value)
                         .then(resolve)
@@ -6921,7 +6944,7 @@ speechSynthesis.getVoices();
                     inputPattern: /[\s\S]{1,32}/
                 }
             )
-                .then(({value}) => {
+                .then(({ value }) => {
                     for (let userId in this.loginForm.savedCredentials) {
                         security
                             .decrypt(
@@ -7036,7 +7059,7 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.relogin = function (user) {
-        var {loginParmas} = user;
+        var { loginParmas } = user;
         if (user.cookies) {
             webApiService.setCookies(user.cookies);
         }
@@ -7204,12 +7227,12 @@ speechSynthesis.getVoices();
                                     inputPattern: /[\s\S]{1,32}/
                                 }
                             )
-                                .then(({value}) => {
+                                .then(({ value }) => {
                                     let saveCredential =
                                         this.loginForm.savedCredentials[
-                                            Object.keys(
-                                                this.loginForm.savedCredentials
-                                            )[0]
+                                        Object.keys(
+                                            this.loginForm.savedCredentials
+                                        )[0]
                                         ];
                                     security
                                         .decrypt(
@@ -7328,7 +7351,7 @@ speechSynthesis.getVoices();
     $app.methods.getMemo = async function (userId) {
         try {
             return await database.getMemo(userId);
-        } catch (err) {}
+        } catch (err) { }
         return {
             userId: '',
             editedAt: '',
@@ -7373,7 +7396,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // App: Friends
+    // #endregion
+    // #region | App: Friends
 
     $app.data.friends = new Map();
     $app.data.pendingActiveFriends = new Set();
@@ -7514,11 +7538,11 @@ speechSynthesis.getVoices();
     });
 
     API.$on('FAVORITE', function (args) {
-        $app.queueUpdateFriend({id: args.ref.favoriteId});
+        $app.queueUpdateFriend({ id: args.ref.favoriteId });
     });
 
     API.$on('FAVORITE:@DELETE', function (args) {
-        $app.queueUpdateFriend({id: args.ref.favoriteId});
+        $app.queueUpdateFriend({ id: args.ref.favoriteId });
     });
 
     API.$on('LOGIN', function () {
@@ -7550,7 +7574,7 @@ speechSynthesis.getVoices();
         }
         for (var [id, state] of map) {
             if (this.friends.has(id)) {
-                this.queueUpdateFriend({id, state, origin});
+                this.queueUpdateFriend({ id, state, origin });
             } else {
                 this.addFriend(id, state);
             }
@@ -7669,7 +7693,7 @@ speechSynthesis.getVoices();
     $app.data.updateFriendInProgress = new Map();
 
     $app.methods.updateFriend = function (ctx) {
-        var {id, state, origin} = ctx;
+        var { id, state, origin } = ctx;
         var stateInput = state;
         var ctx = this.friends.get(id);
         if (typeof ctx === 'undefined') {
@@ -7702,7 +7726,7 @@ speechSynthesis.getVoices();
         var location = '';
         var $location_at = '';
         if (typeof ref !== 'undefined') {
-            var {location, $location_at} = ref;
+            var { location, $location_at } = ref;
         }
         if (typeof stateInput === 'undefined' || ctx.state === stateInput) {
             // this is should be: undefined -> user
@@ -7974,7 +7998,7 @@ speechSynthesis.getVoices();
                     });
                     worldName = args.ref.name;
                 }
-            } catch (err) {}
+            } catch (err) { }
         }
         return worldName;
     };
@@ -7997,7 +8021,7 @@ speechSynthesis.getVoices();
                 groupId
             });
             groupName = args.ref.name;
-        } catch (err) {}
+        } catch (err) { }
         return groupName;
     };
 
@@ -8356,7 +8380,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // App: Quick Search
+    // #endregion
+    // #region | App: Quick Search
 
     $app.data.quickSearch = '';
     $app.data.quickSearchItems = [];
@@ -8426,7 +8451,7 @@ speechSynthesis.getVoices();
                 } else {
                     this.$refs.menu.activeIndex = 'search';
                     this.searchText = searchText;
-                    this.lookupUser({displayName: searchText});
+                    this.lookupUser({ displayName: searchText });
                 }
             } else {
                 this.showUserDialog(value);
@@ -8444,7 +8469,8 @@ speechSynthesis.getVoices();
         }
     };
 
-    // App: Quick Search User History
+    // #endregion
+    // #region | App: Quick Search User History
 
     $app.data.showUserDialogHistory = new Set();
 
@@ -8466,7 +8492,8 @@ speechSynthesis.getVoices();
         this.quickSearchItems = results;
     };
 
-    // App: Feed
+    // #endregion
+    // #region | App: Feed
 
     $app.methods.feedSearch = function (row) {
         var value = this.feedTable.search.toUpperCase();
@@ -8693,7 +8720,7 @@ speechSynthesis.getVoices();
             }
             this.lastLocation.playerList.forEach((ref1) => {
                 if (ref1.userId && !API.cachedUsers.has(ref1.userId)) {
-                    API.getUser({userId: ref1.userId});
+                    API.getUser({ userId: ref1.userId });
                 }
             });
 
@@ -8710,7 +8737,7 @@ speechSynthesis.getVoices();
     $app.data.robotUrl = `${API.endpointDomain}/file/file_0e8c4e32-7444-44ea-ade4-313c010d4bae/1/file`;
 
     API.$on('USER:UPDATE', async function (args) {
-        var {ref, props} = args;
+        var { ref, props } = args;
         var friend = $app.friends.get(ref.id);
         if (typeof friend === 'undefined') {
             return;
@@ -8763,7 +8790,7 @@ speechSynthesis.getVoices();
                 ref.$travelingToTime = Date.now();
             }
             if (friend.state !== 'online') {
-                API.getUser({userId: ref.id});
+                API.getUser({ userId: ref.id });
             }
         }
         if (
@@ -8809,7 +8836,7 @@ speechSynthesis.getVoices();
             };
             try {
                 avatarInfo = await $app.getAvatarName(currentAvatarImageUrl);
-            } catch (err) {}
+            } catch (err) { }
             var feed = {
                 created_at: new Date().toJSON(),
                 type: 'Avatar',
@@ -8960,7 +8987,7 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.sweepFeed = function () {
-        var {data} = this.feedTable;
+        var { data } = this.feedTable;
         var j = data.length;
         if (j > this.maxTableSize) {
             data.splice(0, j - this.maxTableSize);
@@ -8981,7 +9008,8 @@ speechSynthesis.getVoices();
         }
     };
 
-    // App: gameLog
+    // #endregion
+    // #region | App: gameLog
 
     $app.data.lastLocation = {
         date: 0,
@@ -9205,7 +9233,7 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.sweepGameLog = function () {
-        var {data} = this.gameLogTable;
+        var { data } = this.gameLogTable;
         var j = data.length;
         if (j > this.maxTableSize) {
             data.splice(0, j - this.maxTableSize);
@@ -9388,7 +9416,7 @@ speechSynthesis.getVoices();
                         if (
                             ref.location !== this.lastLocation.location &&
                             ref.travelingToLocation !==
-                                this.lastLocation.location
+                            this.lastLocation.location
                         ) {
                             // fix $location_at with private
                             ref.$location_at = joinTime;
@@ -9403,7 +9431,7 @@ speechSynthesis.getVoices();
                         .getUserIdFromDisplayName(gameLog.displayName)
                         .then((oldUserId) => {
                             if (oldUserId && this.isGameRunning) {
-                                API.getUser({userId: oldUserId});
+                                API.getUser({ userId: oldUserId });
                             }
                         });
                 }
@@ -9557,7 +9585,7 @@ speechSynthesis.getVoices();
                     console.error(err);
                 }
                 if (userId && !API.cachedUsers.has(userId)) {
-                    API.getUser({userId});
+                    API.getUser({ userId });
                 }
                 break;
             case 'vrcx':
@@ -9819,7 +9847,7 @@ speechSynthesis.getVoices();
             var timeSinceLastEvent = dtNow - Date.parse(dt);
             if (timeSinceLastEvent > this.photonLobbyTimeoutThreshold) {
                 if (this.photonLobbyJointime.has(id)) {
-                    var {joinTime} = this.photonLobbyJointime.get(id);
+                    var { joinTime } = this.photonLobbyJointime.get(id);
                 }
                 if (!joinTime) {
                     console.log(`${id} missing join time`);
@@ -10344,7 +10372,7 @@ speechSynthesis.getVoices();
                                 });
                             }
                         });
-                        idList.forEach(({isMute, isBlock}, photonId3) => {
+                        idList.forEach(({ isMute, isBlock }, photonId3) => {
                             var ref1 = this.photonLobby.get(photonId3);
                             if (
                                 typeof ref1 !== 'undefined' &&
@@ -10524,9 +10552,8 @@ speechSynthesis.getVoices();
             }
             if (this.debugPhotonLogging) {
                 var displayName = this.getDisplayNameFromPhotonId(senderId);
-                var feed = `RPC ${displayName} ${
-                    this.photonEventType[eventData.EventType]
-                }${eventName}`;
+                var feed = `RPC ${displayName} ${this.photonEventType[eventData.EventType]
+                    }${eventName}`;
                 console.log('VrcRpc:', feed);
             }
         }
@@ -10570,7 +10597,7 @@ speechSynthesis.getVoices();
         shortName,
         worldName
     ) {
-        var instance = await API.getInstanceFromShortName({shortName});
+        var instance = await API.getInstanceFromShortName({ shortName });
         var location = instance.json.location;
         // var newShortName = instance.json.shortName;
         // var portalType = 'Secure';
@@ -10736,7 +10763,7 @@ speechSynthesis.getVoices();
                 !ref.isFriend &&
                 this.lastLocation.playerList.has(ref.displayName)
             ) {
-                var {joinTime} = this.lastLocation.playerList.get(
+                var { joinTime } = this.lastLocation.playerList.get(
                     ref.displayName
                 );
                 if (!joinTime) {
@@ -10762,7 +10789,7 @@ speechSynthesis.getVoices();
             this.photonLobbyCurrent.set(photonId, ref);
             // check moderation queue
             if (this.moderationEventQueue.has(photonId)) {
-                var {block, mute, gameLogDate} =
+                var { block, mute, gameLogDate } =
                     this.moderationEventQueue.get(photonId);
                 this.moderationEventQueue.delete(photonId);
                 this.photonModerationUpdate(
@@ -11004,7 +11031,7 @@ speechSynthesis.getVoices();
         ) {
             return;
         }
-        var {groupOnNameplate} = this.photonLobbyJointime.get(photonId);
+        var { groupOnNameplate } = this.photonLobbyJointime.get(photonId);
         if (
             typeof groupOnNameplate !== 'undefined' &&
             groupOnNameplate !== groupId &&
@@ -11555,8 +11582,8 @@ speechSynthesis.getVoices();
 
     $app.methods.formatSeconds = function (duration) {
         var pad = function (num, size) {
-                return `000${num}`.slice(size * -1);
-            },
+            return `000${num}`.slice(size * -1);
+        },
             time = parseFloat(duration).toFixed(3),
             hours = Math.floor(time / 60 / 60),
             minutes = Math.floor(time / 60) % 60,
@@ -11773,7 +11800,7 @@ speechSynthesis.getVoices();
                     (this.nowPlaying.startTime -
                         this.nowPlaying.offset +
                         this.nowPlaying.length) *
-                        1000
+                    1000
                 );
             }
         } else if (!this.discordHideImage && L.thumbnailImageUrl) {
@@ -11840,7 +11867,8 @@ speechSynthesis.getVoices();
         this.$refs.menu.activeIndex = 'search';
     };
 
-    // App: Search
+    // #endregion
+    // #region | App: Search
 
     $app.data.searchText = '';
     $app.data.searchUserResults = [];
@@ -12146,7 +12174,8 @@ speechSynthesis.getVoices();
         );
     };
 
-    // App: Favorite
+    // #endregion
+    // #region | App: Favorite
 
     $app.data.favoriteObjects = new Map();
     $app.data.favoriteFriends_ = [];
@@ -12432,7 +12461,8 @@ speechSynthesis.getVoices();
         return this.favoriteAvatarsSorted;
     };
 
-    // App: friendLog
+    // #endregion
+    // #region | App: friendLog
 
     $app.data.friendLog = new Map();
     $app.data.friendLogTable = {
@@ -12583,7 +12613,7 @@ speechSynthesis.getVoices();
                 API.getUser({
                     userId: id
                 });
-            } catch {}
+            } catch { }
             return;
         }
         API.getFriendStatus({
@@ -12764,7 +12794,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // App: Moderation
+    // #endregion
+    // #region | App: Moderation
 
     $app.data.playerModerationTable = {
         data: [],
@@ -12802,9 +12833,9 @@ speechSynthesis.getVoices();
     });
 
     API.$on('PLAYER-MODERATION', function (args) {
-        var {ref} = args;
+        var { ref } = args;
         var array = $app.playerModerationTable.data;
-        var {length} = array;
+        var { length } = array;
         for (var i = 0; i < length; ++i) {
             if (array[i].id === ref.id) {
                 if (ref.$isDeleted) {
@@ -12821,9 +12852,9 @@ speechSynthesis.getVoices();
     });
 
     API.$on('PLAYER-MODERATION:@DELETE', function (args) {
-        var {ref} = args;
+        var { ref } = args;
         var array = $app.playerModerationTable.data;
-        var {length} = array;
+        var { length } = array;
         for (var i = 0; i < length; ++i) {
             if (array[i].id === ref.id) {
                 array.splice(i, 1);
@@ -12849,7 +12880,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // App: Notification
+    // #endregion
+    // #region | App: Notification
 
     $app.data.notificationTable = {
         data: [],
@@ -12888,9 +12920,9 @@ speechSynthesis.getVoices();
     $app.data.unseenNotifications = [];
 
     API.$on('NOTIFICATION', function (args) {
-        var {ref} = args;
+        var { ref } = args;
         var array = $app.notificationTable.data;
-        var {length} = array;
+        var { length } = array;
         for (var i = 0; i < length; ++i) {
             if (array[i].id === ref.id) {
                 Vue.set(array, i, ref);
@@ -12916,7 +12948,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('NOTIFICATION:SEE', function (args) {
-        var {notificationId} = args.params;
+        var { notificationId } = args.params;
         removeFromArray($app.unseenNotifications, notificationId);
         if ($app.unseenNotifications.length === 0) {
             $app.selectMenu('notification');
@@ -13076,7 +13108,8 @@ speechSynthesis.getVoices();
         );
     }
 
-    // App: Profile + Settings
+    // #endregion
+    // #region | App: Profile + Settings
 
     $app.data.configTreeData = [];
     $app.data.currentUserTreeData = [];
@@ -14147,7 +14180,7 @@ speechSynthesis.getVoices();
                 ),
                 callback: (action, instance) => {
                     if (action === 'confirm' && instance.inputValue) {
-                        this.lookupUser({displayName: instance.inputValue});
+                        this.lookupUser({ displayName: instance.inputValue });
                     }
                 }
             }
@@ -14301,7 +14334,7 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.verifyShortName = function (location, shortName) {
-        return API.getInstanceFromShortName({shortName}).then((args) => {
+        return API.getInstanceFromShortName({ shortName }).then((args) => {
             var newLocation = args.json.location;
             var newShortName = args.json.shortName;
             if (newShortName) {
@@ -14340,7 +14373,7 @@ speechSynthesis.getVoices();
             }
         } else if (input.startsWith('https://vrc.group/')) {
             var shortCode = input.substring(18);
-            API.groupStrictsearch({query: shortCode}).then((args) => {
+            API.groupStrictsearch({ query: shortCode }).then((args) => {
                 for (var group of args.json) {
                     if (
                         `${group.shortCode}.${group.discriminator}` ===
@@ -14783,7 +14816,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // App: Dialog
+    // #endregion
+    // #region | App: Dialog
 
     var adjustDialogZ = (el) => {
         var z = 0;
@@ -14800,7 +14834,8 @@ speechSynthesis.getVoices();
         }
     };
 
-    // App: User Dialog
+    // #endregion
+    // #region | App: User Dialog
 
     $app.data.userDialog = {
         visible: false,
@@ -14891,7 +14926,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('USER', function (args) {
-        var {ref} = args;
+        var { ref } = args;
         var D = $app.userDialog;
         if (D.visible === false || D.id !== ref.id) {
             return;
@@ -14921,7 +14956,7 @@ speechSynthesis.getVoices();
         if (D.visible === false || D.id !== args.params.userId) {
             return;
         }
-        var {json} = args;
+        var { json } = args;
         D.isFriend = json.isFriend;
         D.incomingRequest = json.incomingRequest;
         D.outgoingRequest = json.outgoingRequest;
@@ -14948,7 +14983,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('NOTIFICATION', function (args) {
-        var {ref} = args;
+        var { ref } = args;
         var D = $app.userDialog;
         if (
             D.visible === false ||
@@ -14962,7 +14997,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('NOTIFICATION:ACCEPT', function (args) {
-        var {ref} = args;
+        var { ref } = args;
         var D = $app.userDialog;
         // 얘는 @DELETE가 오고나서 ACCEPT가 옴
         // 따라서 $isDeleted라면 ref가 undefined가 됨
@@ -14978,7 +15013,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('NOTIFICATION:EXPIRE', function (args) {
-        var {ref} = args;
+        var { ref } = args;
         var D = $app.userDialog;
         if (
             D.visible === false ||
@@ -14999,7 +15034,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('PLAYER-MODERATION:@SEND', function (args) {
-        var {ref} = args;
+        var { ref } = args;
         var D = $app.userDialog;
         if (
             D.visible === false ||
@@ -15025,7 +15060,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('PLAYER-MODERATION:@DELETE', function (args) {
-        var {ref} = args;
+        var { ref } = args;
         var D = $app.userDialog;
         if (
             D.visible === false ||
@@ -15046,7 +15081,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('FAVORITE', function (args) {
-        var {ref} = args;
+        var { ref } = args;
         var D = $app.userDialog;
         if (D.visible === false || ref.$isDeleted || ref.favoriteId !== D.id) {
             return;
@@ -15292,7 +15327,7 @@ speechSynthesis.getVoices();
                             }
                         });
                     }
-                    API.getRepresentedGroup({userId}).then((args1) => {
+                    API.getRepresentedGroup({ userId }).then((args1) => {
                         D.representedGroup = args1.json;
                         return args1;
                     });
@@ -15423,7 +15458,8 @@ speechSynthesis.getVoices();
         this.updateTimers();
     };
 
-    // App: player list
+    // #endregion
+    // #region | App: player list
 
     API.$on('LOGIN', function () {
         $app.currentInstanceUserList.data = [];
@@ -15583,7 +15619,7 @@ speechSynthesis.getVoices();
                     if (typeof ref !== 'undefined') {
                         pushUser(ref);
                     } else {
-                        var {joinTime} = this.lastLocation.playerList.get(
+                        var { joinTime } = this.lastLocation.playerList.get(
                             player.displayName
                         );
                         if (!joinTime) {
@@ -15647,7 +15683,7 @@ speechSynthesis.getVoices();
                 worldId: L.worldId
             }).then((args) => {
                 this.currentInstanceWorld.ref = args.ref;
-                var {isPC, isQuest} = this.getAvailablePlatforms(
+                var { isPC, isQuest } = this.getAvailablePlatforms(
                     args.ref.unityPackages
                 );
                 this.currentInstanceWorld.isPC = isPC;
@@ -15661,7 +15697,7 @@ speechSynthesis.getVoices();
                     }
                 });
                 this.getBundleDateSize(args.ref).then(
-                    ({createdAt, fileSize}) => {
+                    ({ createdAt, fileSize }) => {
                         this.currentInstanceWorld.fileCreatedAt = createdAt;
                         this.currentInstanceWorld.fileSize = fileSize;
                     }
@@ -15673,7 +15709,7 @@ speechSynthesis.getVoices();
                 worldId: this.currentInstanceLocation.worldId
             }).then((args) => {
                 this.currentInstanceWorld.ref = args.ref;
-                var {isPC, isQuest} = this.getAvailablePlatforms(
+                var { isPC, isQuest } = this.getAvailablePlatforms(
                     args.ref.unityPackages
                 );
                 this.currentInstanceWorld.isPC = isPC;
@@ -15702,7 +15738,7 @@ speechSynthesis.getVoices();
                 }
             }
         }
-        return {isPC, isQuest};
+        return { isPC, isQuest };
     };
 
     $app.methods.selectCurrentInstanceRow = function (val) {
@@ -15781,9 +15817,8 @@ speechSynthesis.getVoices();
         if (type === 'search') {
             try {
                 var response = await webApiService.execute({
-                    url: `${
-                        this.avatarRemoteDatabaseProvider
-                    }?${type}=${encodeURIComponent(search)}&n=5000`,
+                    url: `${this.avatarRemoteDatabaseProvider
+                        }?${type}=${encodeURIComponent(search)}&n=5000`,
                     method: 'GET',
                     headers: {
                         Referer: 'https://vrcx.pypy.moe'
@@ -16157,14 +16192,14 @@ speechSynthesis.getVoices();
                 });
             });
         } else if (command === 'Show Avatar Author') {
-            var {currentAvatarImageUrl} = D.ref;
+            var { currentAvatarImageUrl } = D.ref;
             this.showAvatarAuthorDialog(
                 D.id,
                 D.$avatarInfo.ownerId,
                 currentAvatarImageUrl
             );
         } else if (command === 'Show Fallback Avatar Details') {
-            var {fallbackAvatar} = D.ref;
+            var { fallbackAvatar } = D.ref;
             if (fallbackAvatar) {
                 this.showAvatarDialog(fallbackAvatar);
             } else {
@@ -16229,7 +16264,7 @@ speechSynthesis.getVoices();
     };
 
     $app.computed.userDialogAvatars = function () {
-        var {avatars, avatarReleaseStatus} = this.userDialog;
+        var { avatars, avatarReleaseStatus } = this.userDialog;
         if (
             avatarReleaseStatus === 'public' ||
             avatarReleaseStatus === 'private'
@@ -16241,7 +16276,8 @@ speechSynthesis.getVoices();
         return avatars;
     };
 
-    // App: World Dialog
+    // #endregion
+    // #region | App: World Dialog
 
     $app.data.worldDialog = {
         visible: false,
@@ -16269,7 +16305,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('WORLD', function (args) {
-        var {ref} = args;
+        var { ref } = args;
         var D = $app.worldDialog;
         if (D.visible === false || D.id !== ref.id) {
             return;
@@ -16293,7 +16329,7 @@ speechSynthesis.getVoices();
         });
         if (D.fileSize === 'Loading') {
             $app.getBundleDateSize(ref)
-                .then(({createdAt, fileSize}) => {
+                .then(({ createdAt, fileSize }) => {
                     D.fileCreatedAt = createdAt;
                     if (fileSize) {
                         D.fileSize = fileSize;
@@ -16329,7 +16365,7 @@ speechSynthesis.getVoices();
                 typeof args.json !== 'undefined' &&
                 typeof args.json.versions !== 'undefined'
             ) {
-                var {versions} = args.json;
+                var { versions } = args.json;
                 for (let i = versions.length - 1; i > -1; i--) {
                     var version = versions[i];
                     if (version.version === fileVersion) {
@@ -16342,11 +16378,11 @@ speechSynthesis.getVoices();
                 }
             }
         }
-        return {createdAt, fileSize};
+        return { createdAt, fileSize };
     };
 
     API.$on('FAVORITE', function (args) {
-        var {ref} = args;
+        var { ref } = args;
         var D = $app.worldDialog;
         if (D.visible === false || ref.$isDeleted || ref.favoriteId !== D.id) {
             return;
@@ -16428,7 +16464,7 @@ speechSynthesis.getVoices();
                             D.id
                         );
                     }
-                    var {isPC, isQuest} = this.getAvailablePlatforms(
+                    var { isPC, isQuest } = this.getAvailablePlatforms(
                         args.ref.unityPackages
                     );
                     D.isPC = isPC;
@@ -16470,7 +16506,7 @@ speechSynthesis.getVoices();
                 json: {}
             };
         }
-        var {instanceId, shortName} = D.$location;
+        var { instanceId, shortName } = D.$location;
         if (instanceId && typeof instances[instanceId] === 'undefined') {
             instances[instanceId] = {
                 id: instanceId,
@@ -16529,7 +16565,7 @@ speechSynthesis.getVoices();
                 }
             }
         }
-        for (var {ref} of this.friends.values()) {
+        for (var { ref } of this.friends.values()) {
             if (
                 typeof ref === 'undefined' ||
                 typeof ref.$location === 'undefined' ||
@@ -16539,7 +16575,7 @@ speechSynthesis.getVoices();
             ) {
                 continue;
             }
-            var {instanceId} = ref.$location;
+            var { instanceId } = ref.$location;
             var instance = instances[instanceId];
             if (typeof instance === 'undefined') {
                 instance = {
@@ -16688,7 +16724,7 @@ speechSynthesis.getVoices();
                 }
             }
         }
-        for (var {ref} of this.friends.values()) {
+        for (var { ref } of this.friends.values()) {
             if (
                 typeof ref === 'undefined' ||
                 typeof ref.$location === 'undefined' ||
@@ -16698,7 +16734,7 @@ speechSynthesis.getVoices();
             ) {
                 continue;
             }
-            var {instanceId, tag} = ref.$location;
+            var { instanceId, tag } = ref.$location;
             var instance = instances[tag];
             if (typeof instance === 'undefined') {
                 instance = {
@@ -16867,7 +16903,7 @@ speechSynthesis.getVoices();
     };
 
     $app.computed.worldDialogPlatform = function () {
-        var {ref} = this.worldDialog;
+        var { ref } = this.worldDialog;
         var platforms = [];
         if (ref.unityPackages) {
             for (var unityPackage of ref.unityPackages) {
@@ -16877,7 +16913,7 @@ speechSynthesis.getVoices();
                 } else if (unityPackage.platform === 'android') {
                     platform = 'Quest';
                 } else if (unityPackage.platform) {
-                    ({platform} = unityPackage);
+                    ({ platform } = unityPackage);
                 }
                 platforms.push(`${platform}/${unityPackage.unityVersion}`);
             }
@@ -16885,7 +16921,8 @@ speechSynthesis.getVoices();
         return platforms.join(', ');
     };
 
-    // App: Avatar Dialog
+    // #endregion
+    // #region | App: Avatar Dialog
 
     $app.data.avatarDialog = {
         visible: false,
@@ -16908,7 +16945,7 @@ speechSynthesis.getVoices();
     });
 
     API.$on('FAVORITE', function (args) {
-        var {ref} = args;
+        var { ref } = args;
         var D = $app.avatarDialog;
         if (D.visible === false || ref.$isDeleted || ref.favoriteId !== D.id) {
             return;
@@ -16954,9 +16991,9 @@ speechSynthesis.getVoices();
                 return;
             }
         }
-        API.getAvatar({avatarId})
+        API.getAvatar({ avatarId })
             .then((args) => {
-                var {ref} = args;
+                var { ref } = args;
                 D.ref = ref;
                 this.updateVRChatAvatarCache();
                 if (
@@ -16993,7 +17030,7 @@ speechSynthesis.getVoices();
                     D.fileSize = 'Loading';
                     API.getBundles(fileId)
                         .then((args2) => {
-                            var {versions} = args2.json;
+                            var { versions } = args2.json;
                             for (let i = versions.length - 1; i > -1; i--) {
                                 var version = versions[i];
                                 if (version.version === fileVersion) {
@@ -17220,7 +17257,7 @@ speechSynthesis.getVoices();
     };
 
     $app.computed.avatarDialogPlatform = function () {
-        var {ref} = this.avatarDialog;
+        var { ref } = this.avatarDialog;
         var platforms = [];
         if (ref.unityPackages) {
             for (var unityPackage of ref.unityPackages) {
@@ -17230,7 +17267,7 @@ speechSynthesis.getVoices();
                 } else if (unityPackage.platform === 'android') {
                     platform = 'Quest';
                 } else if (unityPackage.platform) {
-                    ({platform} = unityPackage);
+                    ({ platform } = unityPackage);
                 }
                 platforms.push(`${platform}/${unityPackage.unityVersion}`);
             }
@@ -17238,7 +17275,8 @@ speechSynthesis.getVoices();
         return platforms.join(', ');
     };
 
-    // App: Favorite Dialog
+    // #endregion
+    // #region | App: Favorite Dialog
 
     $app.data.favoriteDialog = {
         visible: false,
@@ -17347,7 +17385,8 @@ speechSynthesis.getVoices();
         $app.updateFavoriteDialog(args.params.objectId);
     });
 
-    // App: Invite Dialog
+    // #endregion
+    // #region | App: Invite Dialog
 
     $app.data.inviteDialog = {
         visible: false,
@@ -17434,7 +17473,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // App: Social Status Dialog
+    // #endregion
+    // #region | App: Social Status Dialog
 
     $app.data.socialStatusDialog = {
         visible: false,
@@ -17473,7 +17513,7 @@ speechSynthesis.getVoices();
     $app.methods.showSocialStatusDialog = function () {
         this.$nextTick(() => adjustDialogZ(this.$refs.socialStatusDialog.$el));
         var D = this.socialStatusDialog;
-        var {statusHistory} = API.currentUser;
+        var { statusHistory } = API.currentUser;
         var statusHistoryArray = [];
         for (var i = 0; i < statusHistory.length; ++i) {
             var addStatus = {
@@ -17496,7 +17536,8 @@ speechSynthesis.getVoices();
         D.statusDescription = val.status;
     };
 
-    // App: Language Dialog
+    // #endregion
+    // #region | App: Language Dialog
 
     $app.data.languageDialog = {
         visible: false,
@@ -17552,7 +17593,8 @@ speechSynthesis.getVoices();
         D.visible = true;
     };
 
-    // App: Bio Dialog
+    // #endregion
+    // #region | App: Bio Dialog
 
     $app.data.bioDialog = {
         visible: false,
@@ -17596,7 +17638,8 @@ speechSynthesis.getVoices();
         D.visible = true;
     };
 
-    // App: New Instance Dialog
+    // #endregion
+    // #region | App: New Instance Dialog
 
     $app.data.newInstanceDialog = {
         visible: false,
@@ -17814,7 +17857,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // App: Launch Options Dialog
+    // #endregion
+    // #region | App: Launch Options Dialog
 
     $app.data.launchOptionsDialog = {
         visible: false,
@@ -17865,7 +17909,8 @@ speechSynthesis.getVoices();
         D.visible = true;
     };
 
-    // App: Set World Tags Dialog
+    // #endregion
+    // #region | App: Set World Tags Dialog
 
     $app.data.setWorldTagsDialog = {
         visible: false,
@@ -17915,7 +17960,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // App: Notification position
+    // #endregion
+    // #region | App: Notification position
 
     $app.data.notificationPositionDialog = {
         visible: false
@@ -17928,7 +17974,8 @@ speechSynthesis.getVoices();
         this.notificationPositionDialog.visible = true;
     };
 
-    // App: Noty feed filters
+    // #endregion
+    // #region | App: Noty feed filters
 
     $app.data.notyFeedFiltersDialog = {
         visible: false
@@ -17941,7 +17988,8 @@ speechSynthesis.getVoices();
         this.notyFeedFiltersDialog.visible = true;
     };
 
-    // App: Wrist feed filters
+    // #endregion
+    // #region | App: Wrist feed filters
 
     $app.data.wristFeedFiltersDialog = {
         visible: false
@@ -17954,7 +18002,8 @@ speechSynthesis.getVoices();
         this.wristFeedFiltersDialog.visible = true;
     };
 
-    // App: Launch Dialog
+    // #endregion
+    // #region | App: Launch Dialog
 
     $app.data.launchDialog = {
         visible: false,
@@ -18095,7 +18144,7 @@ speechSynthesis.getVoices();
                 args.push(`vrchat://launch?id=${location}`);
             }
         }
-        var {launchArguments, vrcLaunchPathOverride} = this.launchOptionsDialog;
+        var { launchArguments, vrcLaunchPathOverride } = this.launchOptionsDialog;
         if (launchArguments) {
             args.push(launchArguments);
         }
@@ -18131,7 +18180,8 @@ speechSynthesis.getVoices();
         D.visible = false;
     };
 
-    // App: Copy To Clipboard
+    // #endregion
+    // #region | App: Copy To Clipboard
 
     $app.methods.copyToClipboard = function (text) {
         var textArea = document.createElement('textarea');
@@ -18241,7 +18291,8 @@ speechSynthesis.getVoices();
         this.copyToClipboard(text);
     };
 
-    // App: VRCPlus Icons
+    // #endregion
+    // #region | App: VRCPlus Icons
 
     API.$on('LOGIN', function () {
         $app.VRCPlusIconsTable = [];
@@ -18312,7 +18363,7 @@ speechSynthesis.getVoices();
 
     API.$on('VRCPLUSICON:DELETE', function (args) {
         var array = $app.VRCPlusIconsTable;
-        var {length} = array;
+        var { length } = array;
         for (var i = 0; i < length; ++i) {
             if (args.fileId === array[i].id) {
                 array.splice(i, 1);
@@ -18474,7 +18525,8 @@ speechSynthesis.getVoices();
         return 0;
     };
 
-    // App: Invite Messages
+    // #endregion
+    // #region | App: Invite Messages
 
     API.$on('LOGIN', function () {
         $app.inviteMessageTable.data = [];
@@ -18538,7 +18590,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // App: Edit Invite Message Dialog
+    // #endregion
+    // #region | App: Edit Invite Message Dialog
 
     $app.data.editInviteMessageDialog = {
         visible: false,
@@ -18597,7 +18650,8 @@ speechSynthesis.getVoices();
         this.editInviteMessageDialog.visible = false;
     };
 
-    // App: Edit and Send Invite Response Message Dialog
+    // #endregion
+    // #region | App: Edit and Send Invite Response Message Dialog
 
     $app.data.editAndSendInviteResponseDialog = {
         visible: false,
@@ -18790,7 +18844,8 @@ speechSynthesis.getVoices();
         this.sendInviteResponseConfirmDialog.visible = false;
     };
 
-    // App: Invite Request Response Message Dialog
+    // #endregion
+    // #region | App: Invite Request Response Message Dialog
 
     $app.data.sendInviteRequestResponseDialogVisible = false;
 
@@ -18815,7 +18870,8 @@ speechSynthesis.getVoices();
         this.sendInviteRequestResponseDialogVisible = true;
     };
 
-    // App: Invite Message Dialog
+    // #endregion
+    // #region | App: Invite Message Dialog
 
     $app.data.editAndSendInviteDialog = {
         visible: false,
@@ -19155,7 +19211,8 @@ speechSynthesis.getVoices();
         this.sendInviteConfirmDialog.visible = false;
     };
 
-    // App: Invite Request Message Dialog
+    // #endregion
+    // #region | App: Invite Request Message Dialog
 
     $app.data.sendInviteRequestDialogVisible = false;
 
@@ -19182,7 +19239,8 @@ speechSynthesis.getVoices();
         this.sendInviteRequestDialogVisible = true;
     };
 
-    // App: Friends List
+    // #endregion
+    // #region | App: Friends List
 
     API.$on('LOGIN', function () {
         $app.friendsListTable.data = [];
@@ -19455,7 +19513,7 @@ speechSynthesis.getVoices();
                 10
             );
             var avatarId = $app.avatarDialog.id;
-            var {imageUrl} = $app.avatarDialog.ref;
+            var { imageUrl } = $app.avatarDialog.ref;
             var fileId = extractFileId(imageUrl);
             if (!fileId) {
                 $app.$message({
@@ -19556,8 +19614,8 @@ speechSynthesis.getVoices();
     };
 
     API.$on('AVATARIMAGE:FILESTART', function (args) {
-        var {url} = args.json;
-        var {fileId, fileVersion} = args.params;
+        var { url } = args.json;
+        var { fileId, fileVersion } = args.params;
         var params = {
             url,
             fileId,
@@ -19593,7 +19651,7 @@ speechSynthesis.getVoices();
     };
 
     API.$on('AVATARIMAGE:FILEAWS', function (args) {
-        var {fileId, fileVersion} = args.params;
+        var { fileId, fileVersion } = args.params;
         var params = {
             fileId,
             fileVersion
@@ -19622,7 +19680,7 @@ speechSynthesis.getVoices();
     };
 
     API.$on('AVATARIMAGE:FILEFINISH', function (args) {
-        var {fileId, fileVersion} = args.params;
+        var { fileId, fileVersion } = args.params;
         var params = {
             fileId,
             fileVersion
@@ -19653,8 +19711,8 @@ speechSynthesis.getVoices();
     };
 
     API.$on('AVATARIMAGE:SIGSTART', function (args) {
-        var {url} = args.json;
-        var {fileId, fileVersion} = args.params;
+        var { url } = args.json;
+        var { fileId, fileVersion } = args.params;
         var params = {
             url,
             fileId,
@@ -19690,7 +19748,7 @@ speechSynthesis.getVoices();
     };
 
     API.$on('AVATARIMAGE:SIGAWS', function (args) {
-        var {fileId, fileVersion} = args.params;
+        var { fileId, fileVersion } = args.params;
         var params = {
             fileId,
             fileVersion
@@ -19719,7 +19777,7 @@ speechSynthesis.getVoices();
     };
 
     API.$on('AVATARIMAGE:SIGFINISH', function (args) {
-        var {fileId, fileVersion} = args.params;
+        var { fileId, fileVersion } = args.params;
         var parmas = {
             id: $app.avatarImage.avatarId,
             imageUrl: `${API.endpointDomain}/file/${fileId}/${fileVersion}/file`
@@ -19790,7 +19848,7 @@ speechSynthesis.getVoices();
                 10
             );
             var worldId = $app.worldDialog.id;
-            var {imageUrl} = $app.worldDialog.ref;
+            var { imageUrl } = $app.worldDialog.ref;
             var fileId = extractFileId(imageUrl);
             if (!fileId) {
                 $app.$message({
@@ -19891,8 +19949,8 @@ speechSynthesis.getVoices();
     };
 
     API.$on('WORLDIMAGE:FILESTART', function (args) {
-        var {url} = args.json;
-        var {fileId, fileVersion} = args.params;
+        var { url } = args.json;
+        var { fileId, fileVersion } = args.params;
         var params = {
             url,
             fileId,
@@ -19928,7 +19986,7 @@ speechSynthesis.getVoices();
     };
 
     API.$on('WORLDIMAGE:FILEAWS', function (args) {
-        var {fileId, fileVersion} = args.params;
+        var { fileId, fileVersion } = args.params;
         var params = {
             fileId,
             fileVersion
@@ -19957,7 +20015,7 @@ speechSynthesis.getVoices();
     };
 
     API.$on('WORLDIMAGE:FILEFINISH', function (args) {
-        var {fileId, fileVersion} = args.params;
+        var { fileId, fileVersion } = args.params;
         var params = {
             fileId,
             fileVersion
@@ -19988,8 +20046,8 @@ speechSynthesis.getVoices();
     };
 
     API.$on('WORLDIMAGE:SIGSTART', function (args) {
-        var {url} = args.json;
-        var {fileId, fileVersion} = args.params;
+        var { url } = args.json;
+        var { fileId, fileVersion } = args.params;
         var params = {
             url,
             fileId,
@@ -20025,7 +20083,7 @@ speechSynthesis.getVoices();
     };
 
     API.$on('WORLDIMAGE:SIGAWS', function (args) {
-        var {fileId, fileVersion} = args.params;
+        var { fileId, fileVersion } = args.params;
         var params = {
             fileId,
             fileVersion
@@ -20054,7 +20112,7 @@ speechSynthesis.getVoices();
     };
 
     API.$on('WORLDIMAGE:SIGFINISH', function (args) {
-        var {fileId, fileVersion} = args.params;
+        var { fileId, fileVersion } = args.params;
         var parmas = {
             id: $app.worldImage.worldId,
             imageUrl: `${API.endpointDomain}/file/${fileId}/${fileVersion}/file`
@@ -20127,9 +20185,9 @@ speechSynthesis.getVoices();
         this.previousImagesTable = [];
         var imageUrl = '';
         if (type === 'Avatar') {
-            var {imageUrl} = this.avatarDialog.ref;
+            var { imageUrl } = this.avatarDialog.ref;
         } else if (type === 'World') {
-            var {imageUrl} = this.worldDialog.ref;
+            var { imageUrl } = this.worldDialog.ref;
         } else if (type === 'User') {
             imageUrl = this.userDialog.ref.currentAvatarImageUrl;
         }
@@ -20377,7 +20435,7 @@ speechSynthesis.getVoices();
         if (API.cachedAvatarNames.has(fileId)) {
             return API.cachedAvatarNames.get(fileId);
         }
-        var args = await API.getAvatarImages({fileId});
+        var args = await API.getAvatarImages({ fileId });
         return this.storeAvatarImage(args);
     };
 
@@ -20385,7 +20443,7 @@ speechSynthesis.getVoices();
     $app.data.discordNamesContent = '';
 
     $app.methods.showDiscordNamesDialog = function () {
-        var {friends} = API.currentUser;
+        var { friends } = API.currentUser;
         if (Array.isArray(friends) === false) {
             return;
         }
@@ -20397,7 +20455,7 @@ speechSynthesis.getVoices();
             return str;
         };
         for (var userId of friends) {
-            var {ref} = this.friends.get(userId);
+            var { ref } = this.friends.get(userId);
             var discord = '';
             if (typeof ref === 'undefined') {
                 continue;
@@ -20956,18 +21014,18 @@ speechSynthesis.getVoices();
     };
 
     $app.data.VRChatScreenshotResolutions = [
-        {name: '1280x720 (720p)', width: 1280, height: 720},
-        {name: '1920x1080 (1080p Default)', width: '', height: ''},
-        {name: '2560x1440 (1440p)', width: 2560, height: 1440},
-        {name: '3840x2160 (4K)', width: 3840, height: 2160}
+        { name: '1280x720 (720p)', width: 1280, height: 720 },
+        { name: '1920x1080 (1080p Default)', width: '', height: '' },
+        { name: '2560x1440 (1440p)', width: 2560, height: 1440 },
+        { name: '3840x2160 (4K)', width: 3840, height: 2160 }
     ];
 
     $app.data.VRChatCameraResolutions = [
-        {name: '1280x720 (720p)', width: 1280, height: 720},
-        {name: '1920x1080 (1080p Default)', width: '', height: ''},
-        {name: '2560x1440 (1440p)', width: 2560, height: 1440},
-        {name: '3840x2160 (4K)', width: 3840, height: 2160},
-        {name: '7680x4320 (8K)', width: 7680, height: 4320}
+        { name: '1280x720 (720p)', width: 1280, height: 720 },
+        { name: '1920x1080 (1080p Default)', width: '', height: '' },
+        { name: '2560x1440 (1440p)', width: 2560, height: 1440 },
+        { name: '3840x2160 (4K)', width: 3840, height: 2160 },
+        { name: '7680x4320 (8K)', width: 7680, height: 4320 }
     ];
 
     $app.methods.getVRChatResolution = function (res) {
@@ -21335,7 +21393,7 @@ speechSynthesis.getVoices();
         this.downloadInProgress = true;
         this.downloadCurrent = this.downloadQueue.values().next().value;
         this.downloadCurrent.id = this.downloadQueue.keys().next().value;
-        var {ref} = this.downloadCurrent;
+        var { ref } = this.downloadCurrent;
         this.downloadQueue.delete(ref.id);
         this.downloadQueueTable.data = Array.from(this.downloadQueue.values());
 
@@ -21666,7 +21724,7 @@ speechSynthesis.getVoices();
             try {
                 var args = await API.getFavoriteWorlds(params);
                 worldLists.push([list.displayName, list.visibility, args.json]);
-            } catch (err) {}
+            } catch (err) { }
         }
         this.userFavoriteWorlds = worldLists;
         this.userDialog.isFavoriteWorldsLoading = false;
@@ -21852,7 +21910,7 @@ speechSynthesis.getVoices();
 
     API.$on('GALLERYIMAGE:DELETE', function (args) {
         var array = $app.galleryTable;
-        var {length} = array;
+        var { length } = array;
         for (var i = 0; i < length; ++i) {
             if (args.fileId === array[i].id) {
                 array.splice(i, 1);
@@ -22093,7 +22151,7 @@ speechSynthesis.getVoices();
                     if (
                         (asset.content_type === 'application/x-msdownload' ||
                             asset.content_type ===
-                                'application/x-msdos-program') &&
+                            'application/x-msdos-program') &&
                         asset.state === 'uploaded'
                     ) {
                         var downloadUrl = asset.browser_download_url;
@@ -22224,7 +22282,7 @@ speechSynthesis.getVoices();
                     if (
                         (asset.content_type === 'application/x-msdownload' ||
                             asset.content_type ===
-                                'application/x-msdos-program') &&
+                            'application/x-msdos-program') &&
                         asset.state === 'uploaded'
                     ) {
                         var downloadUrl = asset.browser_download_url;
@@ -22656,7 +22714,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // App: Previous Instances User Dialog
+    // #endregion
+    // #region | App: Previous Instances User Dialog
 
     $app.data.previousInstancesUserDialogTable = {
         data: [],
@@ -22755,7 +22814,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // App: Previous Instances World Dialog
+    // #endregion
+    // #region | App: Previous Instances World Dialog
 
     $app.data.previousInstancesWorldDialogTable = {
         data: [],
@@ -22838,7 +22898,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // App: Previous Instance Info Dialog
+    // #endregion
+    // #region | App: Previous Instance Info Dialog
 
     $app.data.previousInstanceInfoDialogTable = {
         data: [],
@@ -23202,8 +23263,8 @@ speechSynthesis.getVoices();
     });
 
     $app.methods.addAvatarToHistory = function (avatarId) {
-        API.getAvatar({avatarId}).then((args) => {
-            var {ref} = args;
+        API.getAvatar({ avatarId }).then((args) => {
+            var { ref } = args;
             if (ref.authorId === API.currentUser.id) {
                 return;
             }
@@ -23290,7 +23351,8 @@ speechSynthesis.getVoices();
         }
     };
 
-    // App: world favorite import
+    // #endregion
+    // #region | App: world favorite import
 
     $app.data.worldImportDialog = {
         visible: false,
@@ -23451,7 +23513,8 @@ speechSynthesis.getVoices();
         $app.worldExportLocalFavoriteGroup = null;
     });
 
-    // App: world favorite export
+    // #endregion
+    // #region | App: world favorite export
 
     $app.data.worldExportDialogRef = {};
     $app.data.worldExportDialogVisible = false;
@@ -23525,7 +23588,8 @@ speechSynthesis.getVoices();
         this.updateWorldExportDialog();
     };
 
-    // App: avatar favorite import
+    // #endregion
+    // #region | App: avatar favorite import
 
     $app.data.avatarImportDialog = {
         visible: false,
@@ -23666,7 +23730,8 @@ speechSynthesis.getVoices();
         $app.avatarExportFavoriteGroup = null;
     });
 
-    // App: avatar favorite export
+    // #endregion
+    // #region | App: avatar favorite export
 
     $app.data.avatarExportDialogRef = {};
     $app.data.avatarExportDialogVisible = false;
@@ -23710,7 +23775,8 @@ speechSynthesis.getVoices();
         this.updateAvatarExportDialog();
     };
 
-    // App: friend favorite import
+    // #endregion
+    // #region | App: friend favorite import
 
     $app.data.friendImportDialog = {
         visible: false,
@@ -23849,7 +23915,8 @@ speechSynthesis.getVoices();
         $app.friendExportFavoriteGroup = null;
     });
 
-    // App: friend favorite export
+    // #endregion
+    // #region | App: friend favorite export
 
     $app.data.friendExportDialogRef = {};
     $app.data.friendExportDialogVisible = false;
@@ -23893,7 +23960,8 @@ speechSynthesis.getVoices();
         this.updateFriendExportDialog();
     };
 
-    // App: user dialog notes
+    // #endregion
+    // #region | App: user dialog notes
 
     API.saveNote = function (params) {
         return this.call('userNotes', {
@@ -23924,7 +23992,7 @@ speechSynthesis.getVoices();
                 $app.userDialog.note = note;
             } else {
                 // response is cached sadge :<
-                this.getUser({userId: targetUserId});
+                this.getUser({ userId: targetUserId });
             }
         }
         var ref = API.cachedUsers.get(targetUserId);
@@ -23964,7 +24032,8 @@ speechSynthesis.getVoices();
         });
     };
 
-    // App: note export
+    // #endregion
+    // #region | App: note export
 
     $app.data.noteExportDialog = {
         visible: false,
@@ -24117,7 +24186,8 @@ speechSynthesis.getVoices();
         this.avatarRemoteDatabaseProvider = provider;
     };
 
-    // App: local world favorites
+    // #endregion
+    // #region | App: local world favorites
 
     $app.data.localWorldFavoriteGroups = [];
     $app.data.localWorldFavoritesList = [];
@@ -24335,7 +24405,7 @@ speechSynthesis.getVoices();
             $app.$message({
                 message: $t(
                     'prompt.local_favorite_group_rename.message.error',
-                    {name: newName}
+                    { name: newName }
                 ),
                 type: 'error'
             });
@@ -24456,7 +24526,8 @@ speechSynthesis.getVoices();
         );
     };
 
-    // App: ChatBox Blacklist
+    // #endregion
+    // #region | App: ChatBox Blacklist
     $app.data.chatboxBlacklist = [
         'NP: ',
         'Now Playing',
@@ -24505,7 +24576,8 @@ speechSynthesis.getVoices();
         return false;
     };
 
-    // App: ChatBox User Blacklist
+    // #endregion
+    // #region | App: ChatBox User Blacklist
     $app.data.chatboxUserBlacklist = new Map();
     if (configRepository.getString('VRCX_chatboxUserBlacklist')) {
         $app.data.chatboxUserBlacklist = new Map(
@@ -24539,7 +24611,8 @@ speechSynthesis.getVoices();
         );
     };
 
-    // App: Groups
+    // #endregion
+    // #region | App: Groups
 
     API.cachedGroups = new Map();
 
@@ -25126,7 +25199,7 @@ speechSynthesis.getVoices();
 
     API.applyGroupLanguage = function (ref) {
         ref.$languages = [];
-        var {languages} = ref;
+        var { languages } = ref;
         if (!languages) {
             return;
         }
@@ -25240,7 +25313,7 @@ speechSynthesis.getVoices();
 
     $app.methods.getGroupDialogGroup = function (groupId) {
         var D = this.groupDialog;
-        return API.getGroup({groupId, includeRoles: true})
+        return API.getGroup({ groupId, includeRoles: true })
             .catch((err) => {
                 throw err;
             })
@@ -25418,11 +25491,11 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.setGroupRepresentation = function (groupId) {
-        return API.setGroupRepresentation(groupId, {isRepresenting: true});
+        return API.setGroupRepresentation(groupId, { isRepresenting: true });
     };
 
     $app.methods.clearGroupRepresentation = function (groupId) {
-        return API.setGroupRepresentation(groupId, {isRepresenting: false});
+        return API.setGroupRepresentation(groupId, { isRepresenting: false });
     };
 
     $app.methods.setGroupVisibility = function (groupId, visibility) {
@@ -25715,13 +25788,13 @@ speechSynthesis.getVoices();
                 });
             this.isAllowedToInviteToGroup();
         }
-        API.getGroups({n: 100, userId: API.currentUser.id}).then((args) => {
+        API.getGroups({ n: 100, userId: API.currentUser.id }).then((args) => {
             this.inviteGroupDialog.groups = args.json;
             D.loading = false;
         });
 
         if (userId) {
-            API.getCachedUser({userId}).then((args) => {
+            API.getCachedUser({ userId }).then((args) => {
                 D.userObject = args.ref;
             });
             // D.userIds = [userId];
@@ -25774,7 +25847,7 @@ speechSynthesis.getVoices();
             return;
         }
         D.loading = true;
-        API.getGroup({groupId})
+        API.getGroup({ groupId })
             .then((args) => {
                 if (this.hasGroupPermission(args.ref, 'group-invites-manage')) {
                     return args;
@@ -25935,7 +26008,8 @@ speechSynthesis.getVoices();
         );
     };
 
-    // App: Language
+    // #endregion
+    // #region | App: Language
 
     $app.data.appLanguage = 'en';
     if (configRepository.getString('VRCX_appLanguage')) {
@@ -25966,6 +26040,8 @@ speechSynthesis.getVoices();
         this.updateVRConfigVars();
     };
 
+    // #endregion
+    // #region | App: Random unsorted app methods, data structs, API functions, and an API feedback/file analysis event
     API.$on('USER:FEEDBACK', function (args) {
         if (args.params.userId === this.currentUser.id) {
             $app.currentUserFeedbackData = buildTreeData(args.json);
@@ -25973,7 +26049,7 @@ speechSynthesis.getVoices();
     });
 
     $app.methods.getCurrentUserFeedback = function () {
-        return API.getUserFeedback({userId: API.currentUser.id});
+        return API.getUserFeedback({ userId: API.currentUser.id });
     };
 
     $app.methods.gameLogIsFriend = function (row) {
@@ -26117,9 +26193,11 @@ speechSynthesis.getVoices();
         if (!fileId || !version) {
             return;
         }
-        API.getFileAnalysis({fileId, version});
+        API.getFileAnalysis({ fileId, version });
     };
+    // #endregion
 
     $app = new Vue($app);
     window.$app = $app;
 })();
+// #endregion
