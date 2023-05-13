@@ -4913,6 +4913,10 @@ speechSynthesis.getVoices();
                 }
             });
             AppApi.CheckGameRunning();
+            AppApi.SetAppLauncherSettings(
+                this.enableAppLauncher,
+                this.enableAppLauncherAutoClose
+            );
             API.$on('SHOW_WORLD_DIALOG', (tag) => this.showWorldDialog(tag));
             API.$on('SHOW_WORLD_DIALOG_SHORTNAME', (tag) =>
                 this.verifyShortName('', tag)
@@ -5091,9 +5095,6 @@ speechSynthesis.getVoices();
         isGameRunning,
         isSteamVRRunning
     ) {
-        console.log(
-            `updateIsGameRunning isGameRunning:${isGameRunning} isSteamVRRunning:${isSteamVRRunning}`
-        );
         if (isGameRunning !== this.isGameRunning) {
             this.isGameRunning = isGameRunning;
             if (isGameRunning) {
@@ -5115,11 +5116,11 @@ speechSynthesis.getVoices();
                 60000
             );
             this.nextDiscordUpdate = 0;
-            console.log('isGameRunning changed', isGameRunning);
+            console.log('isGameRunning:', isGameRunning);
         }
         if (isSteamVRRunning !== this.isSteamVRRunning) {
             this.isSteamVRRunning = isSteamVRRunning;
-            console.log('isSteamVRRunning changed', isSteamVRRunning);
+            console.log('isSteamVRRunning:', isSteamVRRunning);
         }
         this.updateOpenVR();
     };
@@ -9034,6 +9035,7 @@ speechSynthesis.getVoices();
         this.photonLobbyUserData = new Map();
         this.photonLobbyWatcherLoopStop();
         this.photonLobbyAvatars = new Map();
+        this.photonLobbyLastModeration = new Map();
         this.photonLobbyJointime = new Map();
         this.photonEvent7List = new Map();
         this.photonLastEvent7List = '';
@@ -9676,7 +9678,9 @@ speechSynthesis.getVoices();
                 this.updateOpenVR();
                 break;
             case 'udon-exception':
-                console.log('UdonException', gameLog.data);
+                if (this.udonExceptionLogging) {
+                    console.log('UdonException', gameLog.data);
+                }
                 // var entry = {
                 //     created_at: gameLog.dt,
                 //     type: 'Event',
@@ -9709,6 +9713,7 @@ speechSynthesis.getVoices();
     $app.data.photonLobbyUserData = new Map();
     $app.data.photonLobbyCurrent = new Map();
     $app.data.photonLobbyAvatars = new Map();
+    $app.data.photonLobbyLastModeration = new Map();
     $app.data.photonLobbyWatcherLoop = false;
     $app.data.photonLobbyTimeout = [];
     $app.data.photonLobbyJointime = new Map();
@@ -10307,10 +10312,12 @@ speechSynthesis.getVoices();
                 break;
             case 254:
                 // Leave
-                this.photonUserLeave(data.Parameters[254], gameLogDate);
-                this.photonLobbyCurrent.delete(data.Parameters[254]);
-                this.photonLobbyJointime.delete(data.Parameters[254]);
-                this.photonEvent7List.delete(data.Parameters[254]);
+                var photonId = data.Parameters[254];
+                this.photonUserLeave(photonId, gameLogDate);
+                this.photonLobbyCurrent.delete(photonId);
+                this.photonLobbyLastModeration.delete(photonId);
+                this.photonLobbyJointime.delete(photonId);
+                this.photonEvent7List.delete(photonId);
                 this.parsePhotonLobbyIds(data.Parameters[252]);
                 if (typeof data.Parameters[203] !== 'undefined') {
                     this.setPhotonLobbyMaster(
@@ -10893,6 +10900,7 @@ speechSynthesis.getVoices();
         gameLogDate
     ) {
         database.getModeration(ref.id).then((row) => {
+            var lastType = this.photonLobbyLastModeration.get(photonId);
             var type = '';
             var text = '';
             if (block) {
@@ -10912,7 +10920,7 @@ speechSynthesis.getVoices();
                 }
                 if (block === row.block && mute === row.mute) {
                     // no change
-                    if (type) {
+                    if (type && type !== lastType) {
                         this.addEntryPhotonEvent({
                             photonId,
                             text: `Moderation ${text}`,
@@ -10921,9 +10929,11 @@ speechSynthesis.getVoices();
                             created_at: gameLogDate
                         });
                     }
+                    this.photonLobbyLastModeration.set(photonId, type);
                     return;
                 }
             }
+            this.photonLobbyLastModeration.set(photonId, type);
             this.moderationAgainstTable.forEach((item) => {
                 if (item.userId === ref.id && item.type === type) {
                     removeFromArray(this.moderationAgainstTable, item);
@@ -13418,6 +13428,10 @@ speechSynthesis.getVoices();
             'VRCX_randomUserColours',
             this.randomUserColours
         );
+        configRepository.setBool(
+            'VRCX_udonExceptionLogging',
+            this.udonExceptionLogging
+        );
         this.updateSharedFeed(true);
         this.updateVRConfigVars();
         this.updateVRLastLocation();
@@ -13492,11 +13506,15 @@ speechSynthesis.getVoices();
     );
     $app.data.isStartAsMinimizedState = false;
     $app.data.isCloseToTray = false;
+    $app.data.gpuFix = false;
     VRCXStorage.Get('VRCX_StartAsMinimizedState').then((result) => {
         $app.isStartAsMinimizedState = result === 'true';
     });
     VRCXStorage.Get('VRCX_CloseToTray').then((result) => {
         $app.isCloseToTray = result === 'true';
+    });
+    VRCXStorage.Get('VRCX_GPUFix').then((result) => {
+        $app.gpuFix = result === 'true';
     });
     if (configRepository.getBool('VRCX_CloseToTray')) {
         // move back to JSON
@@ -13504,7 +13522,7 @@ speechSynthesis.getVoices();
         VRCXStorage.Set('VRCX_CloseToTray', $app.data.isCloseToTray.toString());
         configRepository.remove('VRCX_CloseToTray');
     }
-    var saveVRCXWindowOption = function () {
+    $app.methods.saveVRCXWindowOption = function () {
         configRepository.setBool(
             'VRCX_StartAtWindowsStartup',
             this.isStartAtWindowsStartup
@@ -13514,11 +13532,9 @@ speechSynthesis.getVoices();
             this.isStartAsMinimizedState.toString()
         );
         VRCXStorage.Set('VRCX_CloseToTray', this.isCloseToTray.toString());
+        VRCXStorage.Set('VRCX_GPUFix', this.gpuFix.toString());
         AppApi.SetStartup(this.isStartAtWindowsStartup);
     };
-    $app.watch.isStartAtWindowsStartup = saveVRCXWindowOption;
-    $app.watch.isStartAsMinimizedState = saveVRCXWindowOption;
-    $app.watch.isCloseToTray = saveVRCXWindowOption;
     $app.data.photonEventOverlay = configRepository.getBool(
         'VRCX_PhotonEventOverlay'
     );
@@ -13537,6 +13553,9 @@ speechSynthesis.getVoices();
     $app.data.photonLoggingEnabled = false;
     $app.data.gameLogDisabled = configRepository.getBool(
         'VRCX_gameLogDisabled'
+    );
+    $app.data.udonExceptionLogging = configRepository.getBool(
+        'VRCX_udonExceptionLogging'
     );
     $app.data.instanceUsersSortAlphabetical = configRepository.getBool(
         'VRCX_instanceUsersSortAlphabetical'
@@ -13876,10 +13895,22 @@ speechSynthesis.getVoices();
     );
 
     $app.data.screenshotHelper = configRepository.getBool(
-        'VRCX_screenshotHelper'
+        'VRCX_screenshotHelper',
+        true
     );
+
     $app.data.screenshotHelperModifyFilename = configRepository.getBool(
         'VRCX_screenshotHelperModifyFilename'
+    );
+
+    $app.data.enableAppLauncher = configRepository.getBool(
+        'VRCX_enableAppLauncher',
+        true
+    );
+
+    $app.data.enableAppLauncherAutoClose = configRepository.getBool(
+        'VRCX_enableAppLauncherAutoClose',
+        true
     );
 
     $app.methods.updateVRConfigVars = function () {
@@ -21085,6 +21116,22 @@ speechSynthesis.getVoices();
 
     $app.methods.openShortcutFolder = function () {
         AppApi.OpenShortcutFolder();
+    };
+
+    $app.methods.updateAppLauncherSettings = function () {
+        configRepository.setBool(
+            'VRCX_enableAppLauncher',
+            this.enableAppLauncher
+        );
+        configRepository.setBool(
+            'VRCX_enableAppLauncherAutoClose',
+            this.enableAppLauncherAutoClose
+        );
+
+        AppApi.SetAppLauncherSettings(
+            this.enableAppLauncher,
+            this.enableAppLauncherAutoClose
+        );
     };
 
     // Screenshot Helper
