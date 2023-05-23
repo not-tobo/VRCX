@@ -9037,11 +9037,11 @@ speechSynthesis.getVoices();
         this.photonLobbyAvatars = new Map();
         this.photonLobbyLastModeration = new Map();
         this.photonLobbyJointime = new Map();
+        this.photonLobbyActivePortals = new Map();
         this.photonEvent7List = new Map();
         this.photonLastEvent7List = '';
         this.photonLastChatBoxMsg = new Map();
         this.moderationEventQueue = new Map();
-        this.lastPortalList = new Map();
         if (this.photonEventTable.data.length > 0) {
             this.photonEventTablePrevious.data = this.photonEventTable.data;
             this.photonEventTable.data = [];
@@ -9704,7 +9704,6 @@ speechSynthesis.getVoices();
         database.addGamelogLocationToDatabase(entry);
     };
 
-    $app.data.lastPortalList = new Map();
     $app.data.moderationEventQueue = new Map();
     $app.data.moderationAgainstTable = [];
     $app.data.photonLobby = new Map();
@@ -9717,6 +9716,7 @@ speechSynthesis.getVoices();
     $app.data.photonLobbyWatcherLoop = false;
     $app.data.photonLobbyTimeout = [];
     $app.data.photonLobbyJointime = new Map();
+    $app.data.photonLobbyActivePortals = new Map();
     $app.data.photonEvent7List = new Map();
     $app.data.photonLastEvent7List = '';
     $app.data.photonLastChatBoxMsg = new Map();
@@ -10470,23 +10470,52 @@ speechSynthesis.getVoices();
                     var userId = data.Parameters[245][2];
                     var shortName = data.Parameters[245][5];
                     var worldName = data.Parameters[245][8].name;
-                    this.lastPortalList.set(portalId, Date.parse(gameLogDate));
                     this.addPhotonPortalSpawn(
                         gameLogDate,
                         userId,
                         shortName,
                         worldName
                     );
+                    this.photonLobbyActivePortals.set(portalId, {
+                        userId,
+                        shortName,
+                        worldName,
+                        created_at: Date.parse(gameLogDate),
+                        playerCount: 0,
+                        pendingLeave: 0
+                    });
                 } else if (data.Parameters[245][0] === 22) {
                     var portalId = data.Parameters[245][1];
-                    var date = this.lastPortalList.get(portalId);
-                    var time = timeToText(Date.parse(gameLogDate) - date);
+                    var text = 'DeletedPortal';
+                    var ref = this.photonLobbyActivePortals.get(portalId);
+                    if (typeof ref !== 'undefined') {
+                        var worldName = ref.worldName;
+                        var playerCount = ref.playerCount;
+                        var time = timeToText(
+                            Date.parse(gameLogDate) - ref.created_at
+                        );
+                        text = `DeletedPortal after ${time} with ${playerCount} players to ${worldName}`;
+                    }
                     this.addEntryPhotonEvent({
-                        text: `DeletedPortal ${time}`,
+                        text,
                         type: 'DeletedPortal',
                         created_at: gameLogDate
                     });
-                    this.lastPortalList.delete(portalId);
+                    this.photonLobbyActivePortals.delete(portalId);
+                } else if (data.Parameters[245][0] === 23) {
+                    var portalId = data.Parameters[245][1];
+                    var playerCount = data.Parameters[245][3];
+                    var ref = this.photonLobbyActivePortals.get(portalId);
+                    if (typeof ref !== 'undefined') {
+                        ref.pendingLeave++;
+                        ref.playerCount = playerCount;
+                    }
+                } else if (data.Parameters[245][0] === 24) {
+                    this.addEntryPhotonEvent({
+                        text: 'PortalError failed to create portal',
+                        type: 'DeletedPortal',
+                        created_at: gameLogDate
+                    });
                 }
                 break;
         }
@@ -10875,6 +10904,9 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.photonUserLeave = function (photonId, gameLogDate) {
+        if (!this.photonLobbyCurrent.has(photonId)) {
+            return;
+        }
         var text = 'has left';
         var lastEvent = this.photonEvent7List.get(parseInt(photonId, 10));
         if (typeof lastEvent !== 'undefined') {
@@ -10884,6 +10916,12 @@ speechSynthesis.getVoices();
                 text = `has timed out after ${timeToText(timeSinceLastEvent)}`;
             }
         }
+        this.photonLobbyActivePortals.forEach((portal) => {
+            if (portal.pendingLeave > 0) {
+                text = `has left through portal to ${portal.worldName}`;
+                portal.pendingLeave--;
+            }
+        });
         this.addEntryPhotonEvent({
             photonId,
             text,
@@ -22590,6 +22628,19 @@ speechSynthesis.getVoices();
                 );
                 this.photonEventPulse();
                 break;
+            case 'OnOperationRequest':
+                if (!this.isGameRunning) {
+                    console.log('Game closed, skipped event', data);
+                    return;
+                }
+                if (this.debugPhotonLogging) {
+                    console.log(
+                        'OnOperationRequest',
+                        data.OnOperationRequestData.OperationCode,
+                        data.OnOperationRequestData
+                    );
+                }
+                break;
             case 'VRCEvent':
                 if (!this.isGameRunning) {
                     console.log('Game closed, skipped event', data);
@@ -26296,6 +26347,9 @@ speechSynthesis.getVoices();
                 assetUrl = unityPackage.assetUrl;
                 break;
             }
+        }
+        if (!assetUrl) {
+            assetUrl = D.ref.assetUrl;
         }
         var fileId = extractFileId(assetUrl);
         var version = parseInt(extractFileVersion(assetUrl), 10);
