@@ -732,6 +732,7 @@ speechSynthesis.getVoices();
             privateId: null,
             friendsId: null,
             groupId: null,
+            groupAccessType: null,
             canRequestInvite: false,
             strict: false
         };
@@ -773,6 +774,8 @@ speechSynthesis.getVoices();
                             ctx.region = value;
                         } else if (key === 'group') {
                             ctx.groupId = value;
+                        } else if (key === 'groupAccessType') {
+                            ctx.groupAccessType = value;
                         } else if (key === 'strict') {
                             ctx.strict = true;
                         }
@@ -909,6 +912,11 @@ speechSynthesis.getVoices();
                 }
                 this.text = instanceId;
                 var L = API.parseLocation(instanceId);
+                var groupAccessType = '';
+                if (L.groupAccessType) {
+                    if (L.groupAccessType === 'public')
+                        groupAccessType = 'Public';
+                }
                 if (L.isOffline) {
                     this.text = 'Offline';
                 } else if (L.isPrivate) {
@@ -917,7 +925,7 @@ speechSynthesis.getVoices();
                     this.text = 'Traveling';
                 } else if (typeof this.hint === 'string' && this.hint !== '') {
                     if (L.instanceId) {
-                        this.text = `${this.hint} #${L.instanceName} ${L.accessType}`;
+                        this.text = `${this.hint} #${L.instanceName} ${L.accessType}${groupAccessType}`;
                     } else {
                         this.text = this.hint;
                     }
@@ -927,14 +935,14 @@ speechSynthesis.getVoices();
                         $app.getWorldName(L.worldId).then((worldName) => {
                             if (L.tag === instanceId) {
                                 if (L.instanceId) {
-                                    this.text = `${worldName} #${L.instanceName} ${L.accessType}`;
+                                    this.text = `${worldName} #${L.instanceName} ${L.accessType}${groupAccessType}`;
                                 } else {
                                     this.text = worldName;
                                 }
                             }
                         });
                     } else if (L.instanceId) {
-                        this.text = `${ref.name} #${L.instanceName} ${L.accessType}`;
+                        this.text = `${ref.name} #${L.instanceName} ${L.accessType}${groupAccessType}`;
                     } else {
                         this.text = ref.name;
                     }
@@ -995,7 +1003,7 @@ speechSynthesis.getVoices();
         template:
             '<span><span @click="showLaunchDialog" class="x-link">' +
             '<i v-if="isUnlocked" class="el-icon el-icon-unlock" style="display:inline-block;margin-right:5px"></i>' +
-            '<span>#{{ instanceName }} {{ accessType }}</span></span>' +
+            '<span>#{{ instanceName }} {{ accessType }}{{ groupAccessType }}</span></span>' +
             '<span v-if="groupName" @click="showGroupDialog" class="x-link">({{ groupName }})</span>' +
             '<span class="flags" :class="region" style="display:inline-block;margin-left:5px"></span>' +
             '<i v-if="strict" class="el-icon el-icon-lock" style="display:inline-block;margin-left:5px"></i></span>',
@@ -1013,6 +1021,7 @@ speechSynthesis.getVoices();
                 location: this.location,
                 instanceName: this.instanceName,
                 accessType: this.accessType,
+                groupAccessType: this.groupAccessType,
                 region: this.region,
                 shortName: this.shortName,
                 isUnlocked: this.isUnlocked,
@@ -1037,6 +1046,13 @@ speechSynthesis.getVoices();
                     this.currentuserid === this.locationobject.userId
                 ) {
                     this.isUnlocked = true;
+                }
+
+                this.groupAccessType = '';
+                if (this.locationobject.groupAccessType) {
+                    if (this.locationobject.groupAccessType === 'public') {
+                        this.groupAccessType = 'Public';
+                    }
                 }
 
                 this.region = this.locationobject.region;
@@ -3615,12 +3631,14 @@ speechSynthesis.getVoices();
         this.cachedFavoritesByObjectId.clear();
         this.cachedFavoriteGroups.clear();
         this.cachedFavoriteGroupsByTypeName.clear();
+        this.currentUserGroups.clear();
         this.favoriteFriendGroups = [];
         this.favoriteWorldGroups = [];
         this.favoriteAvatarGroups = [];
         this.isFavoriteLoading = false;
         this.isFavoriteGroupLoading = false;
         this.refreshFavorites();
+        $app.getCurrentUserGroups();
     });
 
     API.$on('FAVORITE', function (args) {
@@ -4572,6 +4590,19 @@ speechSynthesis.getVoices();
                 break;
 
             case 'group-joined':
+                var groupId = content.groupId;
+                if (
+                    $app.groupDialog.visible &&
+                    $app.groupDialog.id === groupId
+                ) {
+                    $app.showGroupDialog(groupId);
+                }
+                if (!this.currentUserGroups.has(groupId)) {
+                    this.currentUserGroups.set(groupId);
+                    this.getGroup({ groupId });
+                }
+                break;
+
             case 'group-left':
                 var groupId = content.groupId;
                 if (
@@ -4580,7 +4611,9 @@ speechSynthesis.getVoices();
                 ) {
                     $app.showGroupDialog(groupId);
                 }
+                this.currentUserGroups.delete(groupId);
                 break;
+
             case 'group-member-updated':
                 // content {
                 //   groupId: string,
@@ -5056,6 +5089,7 @@ speechSynthesis.getVoices();
                     API.getCurrentUser().catch((err1) => {
                         throw err1;
                     });
+                    AppApi.CheckGameRunning();
                 }
                 if (--this.nextAppUpdateCheck <= 0) {
                     if (this.branch === 'Stable') {
@@ -11727,6 +11761,12 @@ speechSynthesis.getVoices();
                 } else {
                     var platform = 'VR';
                 }
+                var groupAccessType = '';
+                if (L.groupAccessType) {
+                    if (L.groupAccessType === 'public') {
+                        groupAccessType = 'Public';
+                    }
+                }
                 switch (L.accessType) {
                     case 'public':
                         L.joinUrl = this.getLaunchURL(L);
@@ -11748,7 +11788,7 @@ speechSynthesis.getVoices();
                         L.accessName = `Group #${L.instanceName} (${platform})`;
                         this.getGroupName(L.groupId).then((groupName) => {
                             if (groupName) {
-                                L.accessName = `Group(${groupName}) #${L.instanceName} (${platform})`;
+                                L.accessName = `Group${groupAccessType}(${groupName}) #${L.instanceName} (${platform})`;
                             }
                         });
                         break;
@@ -15514,7 +15554,7 @@ speechSynthesis.getVoices();
                 json: {}
             };
         }
-        if (L.isOffline || L.isPrivate || L.isTraveling || L.worldId === '') {
+        if (!this.isRealInstance(L.tag)) {
             D.instance = {
                 id: L.instanceId,
                 tag: L.tag,
@@ -17530,11 +17570,11 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.showInviteDialog = function (tag) {
-        this.$nextTick(() => adjustDialogZ(this.$refs.inviteDialog.$el));
-        var L = API.parseLocation(tag);
-        if (L.isOffline || L.isPrivate || L.isTraveling || L.worldId === '') {
+        if (!this.isRealInstance(tag)) {
             return;
         }
+        this.$nextTick(() => adjustDialogZ(this.$refs.inviteDialog.$el));
+        var L = API.parseLocation(tag);
         API.getCachedWorld({
             worldId: L.worldId
         }).then((args) => {
@@ -17724,6 +17764,7 @@ speechSynthesis.getVoices();
         accessType: '',
         region: '',
         groupId: '',
+        groupAccessType: '',
         strict: false,
         location: '',
         shortName: '',
@@ -17756,6 +17797,7 @@ speechSynthesis.getVoices();
                 tags.push(`~friends(${userId})`);
             } else if (D.accessType === 'group') {
                 tags.push(`~group(${D.groupId})`);
+                tags.push(`~groupAccessType(${D.groupAccessType})`);
             } else {
                 tags.push(`~private(${userId})`);
             }
@@ -17852,6 +17894,10 @@ speechSynthesis.getVoices();
             'instanceDialogGroupId',
             this.newInstanceDialog.groupId
         );
+        configRepository.setString(
+            'instanceDialogGroupAccessType',
+            this.newInstanceDialog.groupAccessType
+        );
         configRepository.setBool(
             'instanceDialogStrict',
             this.newInstanceDialog.strict
@@ -17868,40 +17914,29 @@ speechSynthesis.getVoices();
     $app.watch['newInstanceDialog.strict'] = saveNewInstanceDialog;
 
     $app.methods.showNewInstanceDialog = function (tag) {
-        this.$nextTick(() => adjustDialogZ(this.$refs.newInstanceDialog.$el));
-        var L = API.parseLocation(tag);
-        if (L.isOffline || L.isPrivate || L.isTraveling || L.worldId === '') {
+        if (!this.isRealInstance(tag)) {
             return;
         }
+        this.$nextTick(() => adjustDialogZ(this.$refs.newInstanceDialog.$el));
         var D = this.newInstanceDialog;
+        var L = API.parseLocation(tag);
         D.worldId = L.worldId;
-        D.accessType = 'public';
-        if (configRepository.getString('instanceDialogAccessType') !== null) {
-            D.accessType = configRepository.getString(
-                'instanceDialogAccessType'
-            );
-        }
-        D.region = 'US West';
-        if (configRepository.getString('instanceRegion') !== null) {
-            D.region = configRepository.getString('instanceRegion');
-        }
-        D.instanceName = '';
-        if (configRepository.getString('instanceDialogInstanceName') !== null) {
-            D.instanceName = configRepository.getString(
-                'instanceDialogInstanceName'
-            );
-        }
-        D.userId = '';
-        if (configRepository.getString('instanceDialogUserId') !== null) {
-            D.userId = configRepository.getString('instanceDialogUserId');
-        }
-        if (configRepository.getString('instanceDialogGroupId') !== null) {
-            D.groupId = configRepository.getString('instanceDialogGroupId');
-        }
+        D.accessType = configRepository.getString(
+            'instanceDialogAccessType',
+            'public'
+        );
+        D.region = configRepository.getString('instanceRegion', 'US West');
+        D.instanceName = configRepository.getString(
+            'instanceDialogInstanceName',
+            ''
+        );
+        D.userId = configRepository.getString('instanceDialogUserId', '');
+        D.groupId = configRepository.getString('instanceDialogGroupId', '');
+        D.groupAccessType = configRepository.getString(
+            'instanceDialogGroupAccessType',
+            'members'
+        );
         D.strict = false;
-        // if (configRepository.getBool('instanceDialogStrict') !== null) {
-        //     D.strict = configRepository.getBool('instanceDialogStrict');
-        // }
         D.shortName = '';
         this.buildInstance();
         this.updateNewInstanceDialog();
@@ -18137,6 +18172,9 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.showLaunchDialog = function (tag, shortName) {
+        if (!this.isRealInstance(tag)) {
+            return;
+        }
         this.$nextTick(() => adjustDialogZ(this.$refs.launchDialog.$el));
         var D = this.launchDialog;
         D.tag = tag;
@@ -18145,9 +18183,6 @@ speechSynthesis.getVoices();
         D.shortName = shortName;
         var L = API.parseLocation(tag);
         L.shortName = shortName;
-        if (L.isOffline || L.isPrivate || L.isTraveling || L.worldId === '') {
-            return;
-        }
         if (shortName) {
             D.shortUrl = `https://vrch.at/${shortName}`;
         }
@@ -21939,6 +21974,13 @@ speechSynthesis.getVoices();
             userId
         };
         var args = await API.getGroups(params);
+        if (userId === API.currentUser.id) {
+            // update current user groups
+            API.currentUserGroups.clear();
+            args.json.forEach((group) => {
+                API.currentUserGroups.set(group.id, group);
+            });
+        }
         this.userGroups.groups = args.json;
         for (var i = 0; i < args.json.length; ++i) {
             var group = args.json[i];
@@ -21963,6 +22005,15 @@ speechSynthesis.getVoices();
         if (userId === API.currentUser.id) {
             this.sortCurrentUserGroups();
         }
+    };
+
+    $app.methods.getCurrentUserGroups = async function () {
+        var args = await API.getGroups({ n: 100, userId: API.currentUser.id });
+        this.inviteGroupDialog.groups = args.json;
+        API.currentUserGroups.clear();
+        args.json.forEach((group) => {
+            API.currentUserGroups.set(group.id, group);
+        });
     };
 
     $app.methods.sortCurrentUserGroups = function () {
@@ -24775,6 +24826,7 @@ speechSynthesis.getVoices();
     // #region | App: Groups
 
     API.cachedGroups = new Map();
+    API.currentUserGroups = new Map();
 
     /*
         params: {
@@ -24800,6 +24852,9 @@ speechSynthesis.getVoices();
     API.$on('GROUP', function (args) {
         args.ref = this.applyGroup(args.json);
         this.cachedGroups.set(args.ref.id, args.ref);
+        if (this.currentUserGroups.has(args.ref.id)) {
+            this.currentUserGroups.set(args.ref.id, args.ref);
+        }
     });
 
     API.$on('GROUP', function (args) {
@@ -24922,6 +24977,7 @@ speechSynthesis.getVoices();
             $app.groupDialog.inGroup = json.membershipStatus === 'member';
             $app.getGroupDialogGroup(groupId);
         }
+        this.currentUserGroups.set(groupId, json);
     });
 
     /*
@@ -24955,6 +25011,7 @@ speechSynthesis.getVoices();
         ) {
             $app.getCurrentUserRepresentedGroup();
         }
+        this.currentUserGroups.delete(groupId);
     });
 
     /*
@@ -25948,10 +26005,6 @@ speechSynthesis.getVoices();
                 });
             this.isAllowedToInviteToGroup();
         }
-        API.getGroups({ n: 100, userId: API.currentUser.id }).then((args) => {
-            this.inviteGroupDialog.groups = args.json;
-            D.loading = false;
-        });
 
         if (userId) {
             API.getCachedUser({ userId }).then((args) => {
