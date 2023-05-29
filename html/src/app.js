@@ -8595,6 +8595,12 @@ speechSynthesis.getVoices();
         if (!value) {
             return true;
         }
+        if (
+            value.startsWith('wrld_') &&
+            String(row.location).toUpperCase().includes(value)
+        ) {
+            return true;
+        }
         switch (row.type) {
             case 'GPS':
                 if (String(row.displayName).toUpperCase().includes(value)) {
@@ -9216,6 +9222,12 @@ speechSynthesis.getVoices();
     $app.methods.gameLogSearch = function (row) {
         var value = this.gameLogTable.search.toUpperCase();
         if (!value) {
+            return true;
+        }
+        if (
+            value.startsWith('wrld_') &&
+            String(row.location).toUpperCase().includes(value)
+        ) {
             return true;
         }
         switch (row.type) {
