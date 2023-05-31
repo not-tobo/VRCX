@@ -692,7 +692,6 @@ speechSynthesis.getVoices();
 
     API.applyConfig = function (json) {
         var ref = {
-            clientApiKey: '',
             ...json
         };
         this.cachedConfig = ref;
@@ -1366,7 +1365,7 @@ speechSynthesis.getVoices();
             }
             $app.saveCredentials = params;
         }
-        return this.call(`auth/user?apiKey=${this.cachedConfig.clientApiKey}`, {
+        return this.call('auth/user', {
             method: 'GET',
             headers: {
                 Authorization: `Basic ${auth}`
@@ -1679,7 +1678,7 @@ speechSynthesis.getVoices();
     };
 
     API.getCurrentUser = function () {
-        return this.call(`auth/user?apiKey=${this.cachedConfig.clientApiKey}`, {
+        return this.call('auth/user', {
             method: 'GET'
         }).then((json) => {
             var args = {
