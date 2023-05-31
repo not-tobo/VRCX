@@ -882,8 +882,11 @@ speechSynthesis.getVoices();
                 var L = API.parseLocation(instanceId);
                 var groupAccessType = '';
                 if (L.groupAccessType) {
-                    if (L.groupAccessType === 'public')
+                    if (L.groupAccessType === 'public') {
                         groupAccessType = 'Public';
+                    } else if (L.groupAccessType === 'plus') {
+                        groupAccessType = 'Plus';
+                    }
                 }
                 if (L.isOffline) {
                     this.text = 'Offline';
@@ -1020,6 +1023,8 @@ speechSynthesis.getVoices();
                 if (this.locationobject.groupAccessType) {
                     if (this.locationobject.groupAccessType === 'public') {
                         this.groupAccessType = 'Public';
+                    } else if (this.locationobject.groupAccessType === 'plus') {
+                        this.groupAccessType = 'Plus';
                     }
                 }
 
@@ -4632,7 +4637,27 @@ speechSynthesis.getVoices();
                 $app.onGroupLeft(groupId);
                 break;
 
+            case 'group-role-updated':
+                var groupId = content.role.groupId;
+                console.log('group-role-updated', content);
+                // content {
+                //   role: {
+                //     createdAt: string,
+                //     description: string,
+                //     groupId: string,
+                //     id: string,
+                //     isManagementRole: boolean,
+                //     isSelfAssignable: boolean,
+                //     name: string,
+                //     order: number,
+                //     permissions: string[],
+                //     requiresPurchase: boolean,
+                //     requiresTwoFactor: boolean
+                break;
+
             case 'group-member-updated':
+                var groupId = content.groupId;
+                console.log('group-member-updated', content);
                 // content {
                 //   groupId: string,
                 //   id: string,
@@ -11760,6 +11785,8 @@ speechSynthesis.getVoices();
                 if (L.groupAccessType) {
                     if (L.groupAccessType === 'public') {
                         groupAccessType = 'Public';
+                    } else if (L.groupAccessType === 'plus') {
+                        groupAccessType = 'Plus';
                     }
                 }
                 switch (L.accessType) {
@@ -15760,6 +15787,7 @@ speechSynthesis.getVoices();
         ref: {},
         isPC: false,
         isQuest: false,
+        isIos: false,
         inCache: false,
         cacheSize: '',
         fileCreatedAt: '',
@@ -15777,6 +15805,7 @@ speechSynthesis.getVoices();
                 ref: {},
                 isPC: false,
                 isQuest: false,
+                isIos: false,
                 inCache: false,
                 cacheSize: '',
                 fileCreatedAt: '',
@@ -15788,6 +15817,7 @@ speechSynthesis.getVoices();
                 ref: {},
                 isPC: false,
                 isQuest: false,
+                isIos: false,
                 inCache: false,
                 cacheSize: '',
                 fileCreatedAt: '',
@@ -15799,11 +15829,12 @@ speechSynthesis.getVoices();
                 worldId: L.worldId
             }).then((args) => {
                 this.currentInstanceWorld.ref = args.ref;
-                var { isPC, isQuest } = this.getAvailablePlatforms(
+                var { isPC, isQuest, isIos } = this.getAvailablePlatforms(
                     args.ref.unityPackages
                 );
                 this.currentInstanceWorld.isPC = isPC;
                 this.currentInstanceWorld.isQuest = isQuest;
+                this.currentInstanceWorld.isIos = isIos;
                 this.checkVRChatCache(args.ref).then((cacheInfo) => {
                     if (cacheInfo[0] > 0) {
                         this.currentInstanceWorld.inCache = true;
@@ -15825,11 +15856,12 @@ speechSynthesis.getVoices();
                 worldId: this.currentInstanceLocation.worldId
             }).then((args) => {
                 this.currentInstanceWorld.ref = args.ref;
-                var { isPC, isQuest } = this.getAvailablePlatforms(
+                var { isPC, isQuest, isIos } = this.getAvailablePlatforms(
                     args.ref.unityPackages
                 );
                 this.currentInstanceWorld.isPC = isPC;
                 this.currentInstanceWorld.isQuest = isQuest;
+                this.currentInstanceWorld.isIos = isIos;
                 this.checkVRChatCache(args.ref).then((cacheInfo) => {
                     if (cacheInfo[0] > 0) {
                         this.currentInstanceWorld.inCache = true;
@@ -15845,16 +15877,19 @@ speechSynthesis.getVoices();
     $app.methods.getAvailablePlatforms = function (unityPackages) {
         var isPC = false;
         var isQuest = false;
+        var isIos = false;
         if (typeof unityPackages === 'object') {
             for (var unityPackage of unityPackages) {
                 if (unityPackage.platform === 'standalonewindows') {
                     isPC = true;
                 } else if (unityPackage.platform === 'android') {
                     isQuest = true;
+                } else if (unityPackage.platform === 'ios') {
+                    isIos = true;
                 }
             }
         }
-        return { isPC, isQuest };
+        return { isPC, isQuest, isIos };
     };
 
     $app.methods.selectCurrentInstanceRow = function (val) {
@@ -16418,7 +16453,8 @@ speechSynthesis.getVoices();
         visitCount: 0,
         timeSpent: 0,
         isPC: false,
-        isQuest: false
+        isQuest: false,
+        isIos: false
     };
 
     API.$on('LOGOUT', function () {
@@ -16543,6 +16579,7 @@ speechSynthesis.getVoices();
         D.timeSpent = 0;
         D.isPC = false;
         D.isQuest = false;
+        D.isIos = false;
         var LL = API.parseLocation(this.lastLocation.location);
         var currentWorldMatch = false;
         if (LL.worldId === D.id) {
@@ -16585,11 +16622,12 @@ speechSynthesis.getVoices();
                             D.id
                         );
                     }
-                    var { isPC, isQuest } = this.getAvailablePlatforms(
+                    var { isPC, isQuest, isIos } = this.getAvailablePlatforms(
                         args.ref.unityPackages
                     );
                     D.isPC = isPC;
                     D.isQuest = isQuest;
+                    D.isIos = isIos;
                     this.updateVRChatWorldCache();
                     if (args.cache) {
                         API.getWorld(args.params)
@@ -25582,6 +25620,7 @@ speechSynthesis.getVoices();
                         D.ownerDisplayName = args1.ref.displayName;
                         return args1;
                     });
+                    this.applyGroupDialogInstances();
                     this.getGroupDialogGroup(groupId);
                 }
             });
