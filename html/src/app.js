@@ -2287,6 +2287,31 @@ speechSynthesis.getVoices();
     /*
         params: {
             worldId: string,
+            type: string,
+            region: string,
+            ownerId: string,
+            roleIds: string[],
+            groupAccessType: string,
+            queueEnabled: boolean
+        }
+    */
+    API.createInstance = function (params) {
+        return this.call('instances', {
+            method: 'POST',
+            params
+        }).then((json) => {
+            var args = {
+                json,
+                params
+            };
+            this.$emit('INSTANCE', args);
+            return args;
+        });
+    };
+
+    /*
+        params: {
+            worldId: string,
             instanceId: string,
             shortName: string
         }
@@ -11995,9 +12020,12 @@ speechSynthesis.getVoices();
     $app.data.searchAvatarFilter = '';
     $app.data.searchAvatarSort = '';
     $app.data.searchAvatarFilterRemote = '';
+    $app.data.searchGroupResults = [];
+    $app.data.searchGroupParams = {};
     $app.data.isSearchUserLoading = false;
     $app.data.isSearchWorldLoading = false;
     $app.data.isSearchAvatarLoading = false;
+    $app.data.isSearchGroupLoading = false;
 
     API.$on('LOGIN', function () {
         $app.searchText = '';
@@ -12012,6 +12040,8 @@ speechSynthesis.getVoices();
         $app.searchAvatarFilter = '';
         $app.searchAvatarSort = '';
         $app.searchAvatarFilterRemote = '';
+        $app.searchGroupResults = [];
+        $app.searchGroupParams = {};
         $app.isSearchUserLoading = false;
         $app.isSearchWorldLoading = false;
         $app.isSearchAvatarLoading = false;
@@ -12026,6 +12056,7 @@ speechSynthesis.getVoices();
         this.searchAvatarResults = [];
         this.searchAvatarPage = [];
         this.searchAvatarPageNum = 0;
+        this.searchGroupResults = [];
     };
 
     $app.methods.search = function () {
@@ -12038,6 +12069,9 @@ speechSynthesis.getVoices();
                 break;
             case '2':
                 this.searchAvatar();
+                break;
+            case '3':
+                this.searchGroup();
                 break;
         }
     };
@@ -12285,6 +12319,41 @@ speechSynthesis.getVoices();
             offset,
             offset + 10
         );
+    };
+
+    $app.methods.searchGroup = async function () {
+        this.searchGroupParams = {
+            n: 10,
+            offset: 0,
+            query: this.replaceBioSymbols(this.searchText)
+        };
+        await this.moreSearchGroup();
+    };
+
+    $app.methods.moreSearchGroup = async function (go) {
+        var params = this.searchGroupParams;
+        if (go) {
+            params.offset += params.n * go;
+            if (params.offset < 0) {
+                params.offset = 0;
+            }
+        }
+        this.isSearchGroupLoading = true;
+        await API.groupSearch(params)
+            .finally(() => {
+                this.isSearchGroupLoading = false;
+            })
+            .then((args) => {
+                var map = new Map();
+                for (var json of args.json) {
+                    var ref = API.cachedGroups.get(json.id);
+                    if (typeof ref !== 'undefined') {
+                        map.set(ref.id, ref);
+                    }
+                }
+                this.searchGroupResults = Array.from(map.values());
+                return args;
+            });
     };
 
     // #endregion
@@ -25405,6 +25474,52 @@ speechSynthesis.getVoices();
             return args;
         });
     };
+
+    API.getUsersGroupInstances = function () {
+        return this.call(`users/${this.currentUser.id}/instances/groups`, {
+            method: 'GET'
+        }).then((json) => {
+            var args = {
+                json
+            };
+            this.$emit('GROUP:USER:INSTANCES', args);
+            return args;
+        });
+    };
+
+    /*
+        params: {
+            query: string,
+            n: number,
+            offset: number,
+            order: string,
+            sortBy: string
+        }
+    */
+    API.groupSearch = function (params) {
+        return this.call(`groups`, {
+            method: 'GET',
+            params
+        }).then((json) => {
+            var args = {
+                json,
+                params
+            };
+            this.$emit('GROUP:SEARCH', args);
+            return args;
+        });
+    };
+
+    API.$on('GROUP:SEARCH', function (args) {
+        for (var json of args.json) {
+            this.$emit('GROUP', {
+                json,
+                params: {
+                    groupId: json.id
+                }
+            });
+        }
+    });
 
     /*
         params: {
