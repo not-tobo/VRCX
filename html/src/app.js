@@ -15680,14 +15680,9 @@ speechSynthesis.getVoices();
             var friendsInInstance = this.lastLocation.friendList;
             for (var friend of friendsInInstance.values()) {
                 // if friend isn't in instance add them
-                var addUser = true;
-                for (var k = 0; k < users.length; k++) {
-                    var user = users[k];
-                    if (friend.displayName === user.displayName) {
-                        addUser = false;
-                        break;
-                    }
-                }
+                var addUser = !users.some(function (user) {
+                    return friend.displayName === user.displayName;
+                });
                 if (addUser) {
                     var ref = API.cachedUsers.get(friend.userId);
                     if (typeof ref !== 'undefined') {
@@ -15696,7 +15691,8 @@ speechSynthesis.getVoices();
                 }
             }
             friendCount = users.length - 1;
-        } else if (!L.isOffline) {
+        }
+        if (!L.isOffline) {
             for (var friend of this.friends.values()) {
                 if (typeof friend.ref === 'undefined') {
                     continue;
@@ -15709,7 +15705,13 @@ speechSynthesis.getVoices();
                         // don't add offline friends to private instances
                         continue;
                     }
-                    users.push(friend.ref);
+                    // if friend isn't in instance add them
+                    var addUser = !users.some(function (user) {
+                        return friend.name === user.displayName;
+                    });
+                    if (addUser) {
+                        users.push(friend.ref);
+                    }
                 }
             }
             friendCount = users.length;
@@ -15901,14 +15903,9 @@ speechSynthesis.getVoices();
                 if (player.displayName === API.currentUser.displayName) {
                     continue;
                 }
-                var addUser = true;
-                for (var k = 0; k < users.length; k++) {
-                    var user = users[k];
-                    if (player.displayName === user.displayName) {
-                        addUser = false;
-                        break;
-                    }
-                }
+                var addUser = !users.some(function (user) {
+                    return player.displayName === user.displayName;
+                });
                 if (addUser) {
                     var ref = API.cachedUsers.get(player.userId);
                     if (typeof ref !== 'undefined') {
@@ -16850,14 +16847,9 @@ speechSynthesis.getVoices();
             instances[instance.id] = instance;
             for (var friend of friendsInInstance.values()) {
                 // if friend isn't in instance add them
-                var addUser = true;
-                for (var k = 0; k < instance.users.length; k++) {
-                    var user = instance.users[k];
-                    if (friend.displayName === user.displayName) {
-                        addUser = false;
-                        break;
-                    }
-                }
+                var addUser = !instance.users.some(function (user) {
+                    return friend.displayName === user.displayName;
+                });
                 if (addUser) {
                     var ref = API.cachedUsers.get(friend.userId);
                     if (typeof ref !== 'undefined') {
@@ -16872,7 +16864,8 @@ speechSynthesis.getVoices();
                 typeof ref.$location === 'undefined' ||
                 ref.$location.worldId !== D.id ||
                 (ref.$location.instanceId === lastLocation$.instanceId &&
-                    playersInInstance.size > 0)
+                    playersInInstance.size > 0 &&
+                    ref.location !== 'traveling')
             ) {
                 continue;
             }
@@ -17020,14 +17013,9 @@ speechSynthesis.getVoices();
             instances[currentLocation] = instance;
             for (var friend of friendsInInstance.values()) {
                 // if friend isn't in instance add them
-                var addUser = true;
-                for (var k = 0; k < instance.users.length; k++) {
-                    var user = instance.users[k];
-                    if (friend.displayName === user.displayName) {
-                        addUser = false;
-                        break;
-                    }
-                }
+                var addUser = !instance.users.some(function (user) {
+                    return friend.displayName === user.displayName;
+                });
                 if (addUser) {
                     var ref = API.cachedUsers.get(friend.userId);
                     if (typeof ref !== 'undefined') {
@@ -17042,7 +17030,8 @@ speechSynthesis.getVoices();
                 typeof ref.$location === 'undefined' ||
                 ref.$location.groupId !== D.id ||
                 (ref.$location.instanceId === lastLocation$.instanceId &&
-                    playersInInstance.size > 0)
+                    playersInInstance.size > 0 &&
+                    ref.location !== 'traveling')
             ) {
                 continue;
             }

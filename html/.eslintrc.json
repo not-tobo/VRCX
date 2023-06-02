@@ -66,6 +66,7 @@
         ],
         "no-inline-comments": 0,
         "no-invalid-this": 0,
+        "no-loop-func": 0,
         "no-magic-numbers": 0,
         "no-negated-condition": 0,
         "no-plusplus": 0,
