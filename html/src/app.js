@@ -409,7 +409,12 @@ speechSynthesis.getVoices();
                 if (response.status === 200) {
                     this.$throw(0, 'Invalid JSON response');
                 }
-                if (response.status === 504 || response.status === 502) {
+                if (
+                    response.status === 504 ||
+                    response.status === 502 ||
+                    (response.status === 429 &&
+                        init.url.endswith('/instances/groups '))
+                ) {
                     // ignore expected API errors
                     throw new Error(
                         `${response.status}: ${response.data} ${endpoint}`
@@ -484,9 +489,6 @@ speechSynthesis.getVoices();
                     endpoint.startsWith('invite/myself/to/')
                 ) {
                     throw new Error(`403: ${data.error.message} ${endpoint}`);
-                }
-                if (status === 429) {
-                    throw new Error(`429: ${data.error.message} ${endpoint}`);
                 }
                 if (data && data.error === Object(data.error)) {
                     this.$throw(
@@ -5043,6 +5045,7 @@ speechSynthesis.getVoices();
             API,
             nextCurrentUserRefresh: 0,
             nextFriendsRefresh: 0,
+            nextGroupInstanceRefresh: 0,
             nextAppUpdateCheck: 7200,
             ipcTimeout: 0,
             nextClearVRCXCacheCheck: 0,
@@ -5220,6 +5223,12 @@ speechSynthesis.getVoices();
                         throw err1;
                     });
                     AppApi.CheckGameRunning();
+                }
+                if (--this.nextGroupInstanceRefresh <= 0) {
+                    if (this.friendLogInitStatus) {
+                        this.nextGroupInstanceRefresh = 600; // 5min
+                        API.getUsersGroupInstances();
+                    }
                 }
                 if (--this.nextAppUpdateCheck <= 0) {
                     if (this.branch === 'Stable') {
@@ -7587,6 +7596,8 @@ speechSynthesis.getVoices();
     $app.data.isFriendsGroup1 = true;
     $app.data.isFriendsGroup2 = true;
     $app.data.isFriendsGroup3 = false;
+    $app.data.isGroupInstances = false;
+    $app.data.groupInstances = [];
     $app.data.friendsGroup0_ = [];
     $app.data.friendsGroup1_ = [];
     $app.data.friendsGroup2_ = [];
@@ -10545,6 +10556,15 @@ speechSynthesis.getVoices();
                             }
                         });
                     }
+                } else if (data.Parameters[245]['0'] === 13) {
+                    var msg = data.Parameters[245]['2'];
+                    this.addEntryPhotonEvent({
+                        photonId,
+                        text: msg,
+                        type: 'Moderation',
+                        color: 'yellow',
+                        created_at: gameLogDate
+                    });
                 }
                 break;
             case 202:
@@ -25549,6 +25569,46 @@ speechSynthesis.getVoices();
             return args;
         });
     };
+
+    API.$on('GROUP:USER:INSTANCES', function (args) {
+        $app.groupInstances = [];
+        for (var json of args.json.instances) {
+            this.$emit('INSTANCE', {
+                json,
+                params: {
+                    fetchedAt: args.json.fetchedAt
+                }
+            });
+
+            var ref = this.cachedGroups.get(json.ownerId);
+            if (typeof ref === 'undefined') {
+                if ($app.friendLogInitStatus) {
+                    this.getGroup({ groupId: json.ownerId });
+                }
+                return;
+            }
+            $app.groupInstances.push({
+                $group: ref,
+                ...json
+            });
+        }
+    });
+
+    API.$on('INSTANCE', function (args) {
+        var { json } = args;
+        if (!json) {
+            return;
+        }
+        for (var instance of $app.groupInstances) {
+            if (instance.id === json.id) {
+                instance = {
+                    ...instance,
+                    ...json
+                };
+                break;
+            }
+        }
+    });
 
     /*
         params: {
