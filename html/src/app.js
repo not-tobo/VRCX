@@ -381,7 +381,11 @@ speechSynthesis.getVoices();
             // merge requests
             var req = this.pendingGetRequests.get(init.url);
             if (typeof req !== 'undefined') {
-                return req;
+                if (req.time >= Date.now() - 10000) {
+                    // 10s
+                    return req.req;
+                }
+                this.pendingGetRequests.delete(init.url);
             }
         } else if (init.uploadImage || init.uploadFilePUT) {
             // nothing
@@ -514,7 +518,7 @@ speechSynthesis.getVoices();
             req.finally(() => {
                 this.pendingGetRequests.delete(init.url);
             });
-            this.pendingGetRequests.set(init.url, req);
+            this.pendingGetRequests.set(init.url, { req, time: Date.now() });
         }
         return req;
     };
@@ -25294,7 +25298,7 @@ speechSynthesis.getVoices();
         this.updateSharedFeed(true);
     };
 
-    $app.methods.instanceQueueUpdate = function (
+    $app.methods.instanceQueueUpdate = async function (
         instanceId,
         position,
         queueSize
@@ -25322,18 +25326,17 @@ speechSynthesis.getVoices();
             });
         }
         if (!ref.$groupName) {
-            this.getGroupName(instanceId).then((name) => {
-                ref.$groupName = name;
-                ref.$msgBox.message = `You are in position ${ref.position} of ${ref.queueSize} in the queue for ${name} `;
-            });
+            ref.$groupName = await this.getGroupName(instanceId);
         }
         if (!ref.$worldName) {
-            this.getWorldName(instanceId).then((name) => {
-                ref.$worldName = name;
-            });
+            ref.$worldName = await this.getWorldName(instanceId);
         }
-
-        ref.$msgBox.message = `You are in position ${ref.position} of ${ref.queueSize} in the queue for ${ref.$groupName} `;
+        var displayLocation = this.displayLocation(
+            instanceId,
+            ref.$worldName,
+            ref.$groupName
+        );
+        ref.$msgBox.message = `You are in position ${ref.position} of ${ref.queueSize} in the queue for ${displayLocation} `;
         API.queuedInstances.set(instanceId, ref);
     };
 
