@@ -18106,6 +18106,7 @@ speechSynthesis.getVoices();
     $app.data.newInstanceDialog = {
         visible: false,
         loading: false,
+        selectedTab: '0',
         instanceCreated: false,
         queueEnabled: false,
         worldId: '',
