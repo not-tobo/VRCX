@@ -227,26 +227,23 @@ namespace VRCX
         /// </summary>
         internal void UpdateChildProcesses()
         {
-            lock (startedProcesses)
+            foreach (var pair in startedProcesses.ToArray())
             {
-                foreach (var pair in startedProcesses.ToArray())
+                var processes = pair.Value;
+                foreach (var pid in processes.ToArray())
                 {
-                    var processes = pair.Value;
-                    foreach (var pid in processes.ToArray())
-                    {
-                        bool recursiveChildSearch = processes.Count == 1; // Disable recursion when this list may already contain the entire process tree
-                        var childProcesses = FindChildProcesses(pid, recursiveChildSearch);
+                    bool recursiveChildSearch = processes.Count == 1; // Disable recursion when this list may already contain the entire process tree
+                    var childProcesses = FindChildProcesses(pid, recursiveChildSearch);
 
-                        foreach (int childPid in childProcesses) // Monitor child processes
-                            processes.Add(childPid); // HashSet will prevent duplication
+                    foreach (int childPid in childProcesses) // Monitor child processes
+                        processes.Add(childPid); // HashSet will prevent duplication
 
-                        if (WinApi.HasProcessExited(pid))
-                            processes.Remove(pid);
-                    }
-
-                    if (processes.Count == 0) // All processes associated with the shortcut have exited.
-                        startedProcesses.Remove(pair.Key);
+                    if (WinApi.HasProcessExited(pid))
+                        processes.Remove(pid);
                 }
+
+                if (processes.Count == 0) // All processes associated with the shortcut have exited.
+                    startedProcesses.Remove(pair.Key);
             }
         }
 
