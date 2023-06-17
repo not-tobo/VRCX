@@ -112,6 +112,9 @@ jobs:
           7z a -tzip ${file_name} * -mx=7 -xr0!*.log
           mv ${file_name} ../../../${file_name}
           echo "Zip FileName: ${file_name}"
+      - name: Generate setup hash
+        run: |
+          sha256sum "VRCX_${{ needs.set_version.outputs.version }}_Setup.exe" > "SHA256SUMS.txt"
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -128,5 +131,6 @@ jobs:
           files: |
             VRCX_${{ needs.set_version.outputs.version }}_Setup.exe
             VRCX_${{ needs.set_version.outputs.version }}.zip
+            SHA256SUMS.txt
           github-token: ${{ secrets.GITHUB_TOKEN }}
           release-url: ${{ steps.create_release.outputs.upload_url }}
