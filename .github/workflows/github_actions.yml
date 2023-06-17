@@ -16,7 +16,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - id: version
         run: |
           git_hash=$(git rev-parse --short "$GITHUB_SHA")
@@ -28,14 +28,14 @@ jobs:
     needs: set_version
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Setup Nuget.exe
         uses: nuget/setup-nuget@v1
       - name: Restore packages
         run: nuget restore VRCX.sln
       - name: Setup MSBuild.exe
-        uses: microsoft/setup-msbuild@v1.0.2
+        uses: microsoft/setup-msbuild@v1.1
       - name: Set version
         run: |
           echo "${{ needs.set_version.outputs.version }}" > Version
@@ -56,10 +56,10 @@ jobs:
         working-directory: html
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
       - name: Restore dependencies
@@ -79,7 +79,7 @@ jobs:
     needs: [set_version, build_node, build_dotnet]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Install 7-zip and makensis
         run: sudo apt update && sudo apt install -y p7zip-full nsis nsis-pluginapi
@@ -96,7 +96,7 @@ jobs:
           name: html
           path: bin/x64/Release/html
       - name: Create nsis installer
-        uses: joncloud/makensis-action@v3.3
+        uses: joncloud/makensis-action@v4
         with:
           script-file: Installer/installer.nsi
           additional-plugin-paths: Installer/Plugins
