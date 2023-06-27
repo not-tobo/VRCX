@@ -1645,6 +1645,7 @@ speechSynthesis.getVoices();
             }
         } else {
             ref = {
+                acceptedPrivacyVersion: 0,
                 acceptedTOSVersion: 0,
                 accountDeletionDate: null,
                 accountDeletionLog: null,
@@ -17063,6 +17064,7 @@ speechSynthesis.getVoices();
             return;
         }
         D.ref = ref;
+        D.avatarScaling = ref.tags?.includes('feature_avatar_scaling');
         $app.applyWorldDialogInstances();
         for (var room of D.rooms) {
             if ($app.isRealInstance(room.tag)) {
@@ -18875,10 +18877,7 @@ speechSynthesis.getVoices();
             return;
         }
         var shortName = args.json.shortName;
-        var secureOrShortName = shortName;
-        if (!shortName) {
-            secureOrShortName = args.json.secureName;
-        }
+        var secureOrShortName = args.json.shortName || args.json.secureName;
         var location = `${args.instance.worldId}:${args.instance.instanceId}`;
         if (location === $app.launchDialog.tag) {
             var L = this.parseLocation(location);
@@ -18963,13 +18962,17 @@ speechSynthesis.getVoices();
         desktopMode
     ) {
         var D = this.launchDialog;
+        var L = API.parseLocation(location);
         var args = [];
-        if (shortName) {
+        if (
+            shortName &&
+            L.instanceType !== 'public' &&
+            L.groupAccessType !== 'public'
+        ) {
             args.push(`vrchat://launch?id=${location}&shortName=${shortName}`);
         } else {
             // fetch shortName
             var newShortName = '';
-            var L = API.parseLocation(location);
             var response = await API.getInstanceShortName({
                 worldId: L.worldId,
                 instanceId: L.instanceId
@@ -22793,6 +22796,7 @@ speechSynthesis.getVoices();
         this.galleryDialogVisible = true;
         this.refreshGalleryTable();
         this.refreshVRCPlusIconsTable();
+        this.refreshEmojiTable();
     };
 
     $app.methods.refreshGalleryTable = function () {
