@@ -17139,9 +17139,6 @@ speechSynthesis.getVoices();
                 });
             }
         }
-        D.rooms.sort(function (a, b) {
-            return b.users.length - a.users.length || b.occupants - a.occupants;
-        });
         if (D.fileSize === 'Loading') {
             $app.getBundleDateSize(ref)
                 .then(({ createdAt, fileSize }) => {
@@ -17335,7 +17332,7 @@ speechSynthesis.getVoices();
                     friendCount: 0,
                     users: [],
                     shortName: '',
-                    json: {}
+                    ref: {}
                 };
             }
         }
@@ -17348,7 +17345,7 @@ speechSynthesis.getVoices();
                 friendCount: 0,
                 users: [],
                 shortName,
-                json: {}
+                ref: {}
             };
         }
         var cachedCurrentUser = API.cachedUsers.get(API.currentUser.id);
@@ -17469,9 +17466,40 @@ speechSynthesis.getVoices();
                 room.ref = ref;
             }
         }
-        // sort by more friends, occupants
         rooms.sort(function (a, b) {
-            return b.users.length - a.users.length || b.occupants - a.occupants;
+            // sort selected and current instance to top
+            if (
+                b.location === D.$location.tag ||
+                b.location === lastLocation$.tag
+            ) {
+                // sort selected instance above current instance
+                if (a.location === D.$location.tag) {
+                    return -1;
+                }
+                return 1;
+            }
+            if (
+                a.location === D.$location.tag ||
+                a.location === lastLocation$.tag
+            ) {
+                // sort selected instance above current instance
+                if (b.location === D.$location.tag) {
+                    return 1;
+                }
+                return -1;
+            }
+            // sort by number of users when no friends in instance
+            if (a.users.length === 0 && b.users.length === 0) {
+                if (a.ref?.n_users < b.ref?.n_users) {
+                    return 1;
+                }
+                return -1;
+            }
+            // sort by number of friends in instance
+            if (a.users.length < b.users.length) {
+                return 1;
+            }
+            return -1;
         });
         D.rooms = rooms;
         this.updateTimers();
@@ -17610,9 +17638,26 @@ speechSynthesis.getVoices();
                 });
             }
         }
-        // sort by more friends, occupants
         rooms.sort(function (a, b) {
-            return b.users.length - a.users.length || b.occupants - a.occupants;
+            // sort current instance to top
+            if (b.location === currentLocation) {
+                return 1;
+            }
+            if (a.location === currentLocation) {
+                return -1;
+            }
+            // sort by number of users when no friends in instance
+            if (a.users.length === 0 && b.users.length === 0) {
+                if (a.ref?.n_users < b.ref?.n_users) {
+                    return 1;
+                }
+                return -1;
+            }
+            // sort by number of friends in instance
+            if (a.users.length < b.users.length) {
+                return 1;
+            }
+            return -1;
         });
         D.instances = rooms;
         this.updateTimers();
