@@ -11401,7 +11401,7 @@ speechSynthesis.getVoices();
         }
         this.checkVRChatCache(avatar).then((cacheInfo) => {
             var inCache = false;
-            if (cacheInfo[0] > 0) {
+            if (cacheInfo.Item1 > 0) {
                 inCache = true;
             }
             this.addEntryPhotonEvent({
@@ -11550,7 +11550,7 @@ speechSynthesis.getVoices();
             avatar.description = this.replaceBioSymbols(avatar.description);
             this.checkVRChatCache(avatar).then((cacheInfo) => {
                 var inCache = false;
-                if (cacheInfo[0] > 0) {
+                if (cacheInfo.Item1 > 0) {
                     inCache = true;
                 }
                 var entry = {
@@ -16469,10 +16469,10 @@ speechSynthesis.getVoices();
                 this.currentInstanceWorld.avatarScalingDisabled =
                     args.ref?.tags.includes('feature_avatar_scaling_disabled');
                 this.checkVRChatCache(args.ref).then((cacheInfo) => {
-                    if (cacheInfo[0] > 0) {
+                    if (cacheInfo.Item1 > 0) {
                         this.currentInstanceWorld.inCache = true;
                         this.currentInstanceWorld.cacheSize = `${(
-                            cacheInfo[0] / 1048576
+                            cacheInfo.Item1 / 1048576
                         ).toFixed(2)} MiB`;
                     }
                 });
@@ -16496,10 +16496,10 @@ speechSynthesis.getVoices();
                 this.currentInstanceWorld.isQuest = isQuest;
                 this.currentInstanceWorld.isIos = isIos;
                 this.checkVRChatCache(args.ref).then((cacheInfo) => {
-                    if (cacheInfo[0] > 0) {
+                    if (cacheInfo.Item1 > 0) {
                         this.currentInstanceWorld.inCache = true;
                         this.currentInstanceWorld.cacheSize = `${(
-                            cacheInfo[0] / 1048576
+                            cacheInfo.Item1 / 1048576
                         ).toFixed(2)} MiB`;
                     }
                 });
@@ -17098,6 +17098,7 @@ speechSynthesis.getVoices();
         inCache: false,
         cacheSize: 0,
         cacheLocked: false,
+        cachePath: '',
         lastVisit: '',
         visitCount: 0,
         timeSpent: 0,
@@ -17824,6 +17825,7 @@ speechSynthesis.getVoices();
         inCache: false,
         cacheSize: 0,
         cacheLocked: false,
+        cachePath: '',
         fileAnalysis: {}
     };
 
@@ -17860,6 +17862,7 @@ speechSynthesis.getVoices();
         D.inCache = false;
         D.cacheSize = 0;
         D.cacheLocked = false;
+        D.cachePath = '';
         D.isQuestFallback = false;
         D.isFavorite = API.cachedFavoritesByObjectId.has(avatarId);
         D.isBlocked = API.cachedAvatarModerations.has(avatarId);
@@ -22374,15 +22377,16 @@ speechSynthesis.getVoices();
             D.inCache = false;
             D.cacheSize = 0;
             D.cacheLocked = false;
+            D.cachePath = '';
             this.checkVRChatCache(D.ref).then((cacheInfo) => {
-                if (cacheInfo[0] > 0) {
+                if (cacheInfo.Item1 > 0) {
                     D.inCache = true;
-                    D.cacheSize = `${(cacheInfo[0] / 1048576).toFixed(2)} MiB`;
-                    D.cachePath = cacheInfo[2];
+                    D.cacheSize = `${(cacheInfo.Item1 / 1048576).toFixed(
+                        2
+                    )} MiB`;
+                    D.cachePath = cacheInfo.Item3;
                 }
-                if (cacheInfo[1] === 1) {
-                    D.cacheLocked = true;
-                }
+                D.cacheLocked = cacheInfo.Item2;
             });
         }
     };
@@ -22393,14 +22397,16 @@ speechSynthesis.getVoices();
             D.inCache = false;
             D.cacheSize = 0;
             D.cacheLocked = false;
+            D.cachePath = '';
             this.checkVRChatCache(D.ref).then((cacheInfo) => {
-                if (cacheInfo[0] > 0) {
+                if (cacheInfo.Item1 > 0) {
                     D.inCache = true;
-                    D.cacheSize = `${(cacheInfo[0] / 1048576).toFixed(2)} MiB`;
+                    D.cacheSize = `${(cacheInfo.Item1 / 1048576).toFixed(
+                        2
+                    )} MiB`;
+                    D.cachePath = cacheInfo.Item3;
                 }
-                if (cacheInfo[1] === 1) {
-                    D.cacheLocked = true;
-                }
+                D.cacheLocked = cacheInfo.Item2;
             });
         }
     };
@@ -22408,7 +22414,7 @@ speechSynthesis.getVoices();
     // eslint-disable-next-line require-await
     $app.methods.checkVRChatCache = async function (ref) {
         if (!ref.unityPackages) {
-            return [-1, 0];
+            return { Item1: -1, Item2: false, Item3: '' };
         }
         var assetUrl = '';
         for (var i = ref.unityPackages.length - 1; i > -1; i--) {
@@ -22424,14 +22430,10 @@ speechSynthesis.getVoices();
         var id = extractFileId(assetUrl);
         var version = parseInt(extractFileVersion(assetUrl), 10);
         if (!id || !version) {
-            return [-1, 0];
+            return { Item1: -1, Item2: false, Item3: '' };
         }
-        
-        let cacheData = await AssetBundleCacher.CheckVRChatCache(id, version);
-        let fullPath = await AssetBundleCacher.GetVRChatCacheFullLocation(id, version);
-        cacheData.push(fullPath);
-        
-        return cacheData;
+
+        return AssetBundleCacher.CheckVRChatCache(id, version);
     };
 
     API.getBundles = function (fileId) {
@@ -22735,7 +22737,7 @@ speechSynthesis.getVoices();
             fileVersion
         );
         var inCache = false;
-        if (cacheInfo[0] > 0) {
+        if (cacheInfo.Item1 > 0) {
             inCache = true;
         }
         console.log(`InCache: ${inCache}`);
