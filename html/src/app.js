@@ -22378,6 +22378,7 @@ speechSynthesis.getVoices();
                 if (cacheInfo[0] > 0) {
                     D.inCache = true;
                     D.cacheSize = `${(cacheInfo[0] / 1048576).toFixed(2)} MiB`;
+                    D.cachePath = cacheInfo[2];
                 }
                 if (cacheInfo[1] === 1) {
                     D.cacheLocked = true;
@@ -22425,7 +22426,12 @@ speechSynthesis.getVoices();
         if (!id || !version) {
             return [-1, 0];
         }
-        return AssetBundleCacher.CheckVRChatCache(id, version);
+        
+        let cacheData = await AssetBundleCacher.CheckVRChatCache(id, version);
+        let fullPath = await AssetBundleCacher.GetVRChatCacheFullLocation(id, version);
+        cacheData.push(fullPath);
+        
+        return cacheData;
     };
 
     API.getBundles = function (fileId) {
@@ -27777,6 +27783,10 @@ speechSynthesis.getVoices();
             return;
         }
         API.getFileAnalysis({ fileId, version });
+    };
+
+    $app.methods.openFolderGeneric = function (path) {
+        AppApi.OpenFolderAndSelectItem(path, true);
     };
 
     // #endregion
