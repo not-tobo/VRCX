@@ -6409,6 +6409,9 @@ speechSynthesis.getVoices();
             case 'Event':
                 this.speak(noty.data);
                 break;
+            case 'External':
+                this.speak(noty.message);
+                break;
             case 'VideoPlay':
                 this.speak(`Now playing: ${noty.notyName}`);
                 break;
@@ -6643,6 +6646,9 @@ speechSynthesis.getVoices();
                 break;
             case 'Event':
                 AppApi.XSNotification('VRCX', noty.data, timeout, image);
+                break;
+            case 'External':
+                AppApi.XSNotification('VRCX', noty.message, timeout, image);
                 break;
             case 'VideoPlay':
                 AppApi.XSNotification(
@@ -6910,6 +6916,9 @@ speechSynthesis.getVoices();
                 break;
             case 'Event':
                 AppApi.DesktopNotification('Event', noty.data, image);
+                break;
+            case 'External':
+                AppApi.DesktopNotification('External', noty.message, image);
                 break;
             case 'VideoPlay':
                 AppApi.DesktopNotification('Now playing', noty.notyName, image);
@@ -9531,6 +9540,14 @@ speechSynthesis.getVoices();
                 return false;
             case 'Event':
                 if (String(row.data).toUpperCase().includes(value)) {
+                    return true;
+                }
+                return false;
+            case 'External':
+                if (String(row.message).toUpperCase().includes(value)) {
+                    return true;
+                }
+                if (String(row.displayName).toUpperCase().includes(value)) {
                     return true;
                 }
                 return false;
@@ -14444,6 +14461,7 @@ speechSynthesis.getVoices();
             'group.queueReady': 'On',
             PortalSpawn: 'Everyone',
             Event: 'On',
+            External: 'On',
             VideoPlay: 'Off',
             BlockedOnPlayerJoined: 'Off',
             BlockedOnPlayerLeft: 'Off',
@@ -14481,6 +14499,7 @@ speechSynthesis.getVoices();
             'group.queueReady': 'On',
             PortalSpawn: 'Everyone',
             Event: 'On',
+            External: 'On',
             VideoPlay: 'On',
             BlockedOnPlayerJoined: 'Off',
             BlockedOnPlayerLeft: 'Off',
@@ -14523,6 +14542,10 @@ speechSynthesis.getVoices();
     if (!$app.data.sharedFeedFilters.noty['group.queueReady']) {
         $app.data.sharedFeedFilters.noty['group.queueReady'] = 'On';
         $app.data.sharedFeedFilters.wrist['group.queueReady'] = 'On';
+    }
+    if (!$app.data.sharedFeedFilters.noty.External) {
+        $app.data.sharedFeedFilters.noty.External = 'On';
+        $app.data.sharedFeedFilters.wrist.External = 'On';
     }
 
     $app.data.trustColor = JSON.parse(
@@ -23753,7 +23776,8 @@ speechSynthesis.getVoices();
             joinLeave: await database.getJoinLeaveTableSize(),
             portalSpawn: await database.getPortalSpawnTableSize(),
             videoPlay: await database.getVideoPlayTableSize(),
-            event: await database.getEventTableSize()
+            event: await database.getEventTableSize(),
+            external: await database.getExternalTableSize()
         };
     };
 
@@ -23841,14 +23865,11 @@ speechSynthesis.getVoices();
                     this.photonLoggingEnabled = true;
                     configRepository.setBool('VRCX_photonLoggingEnabled', true);
                 }
-                if (!this.companionUpdateReminder && data.version < '1.1.3') {
-                    // check version
-                    this.promptCompanionUpdateReminder();
-                }
                 this.ipcEnabled = true;
                 this.ipcTimeout = 60; // 30secs
                 break;
             case 'MsgPing':
+                this.externalNotifierVersion = data.version;
                 break;
             case 'LaunchCommand':
                 AppApi.FocusWindow();
@@ -23862,16 +23883,7 @@ speechSynthesis.getVoices();
         }
     };
 
-    $app.data.companionUpdateReminder = false;
-
-    $app.methods.promptCompanionUpdateReminder = function () {
-        this.$alert(
-            'An update is required for it to function properly.',
-            'VRCX Companion mod is out of date'
-        );
-        this.companionUpdateReminder = true;
-    };
-
+    $app.data.externalNotifierVersion = 0;
     $app.data.photonEventCount = 0;
     $app.data.photonEventIcon = false;
     $app.data.customUserTags = new Map();
@@ -23916,12 +23928,33 @@ speechSynthesis.getVoices();
                 });
                 break;
             case 'Noty':
+                if (
+                    this.photonLoggingEnabled ||
+                    (this.externalNotifierVersion &&
+                        this.externalNotifierVersion > 21)
+                ) {
+                    return;
+                }
                 var entry = {
                     created_at: new Date().toJSON(),
                     type: 'Event',
                     data: data.Data
                 };
                 database.addGamelogEventToDatabase(entry);
+                this.queueGameLogNoty(entry);
+                this.addGameLog(entry);
+                break;
+            case 'External':
+                var displayName = data.DisplayName ?? '';
+                var entry = {
+                    created_at: new Date().toJSON(),
+                    type: 'External',
+                    message: data.Data,
+                    displayName,
+                    userId: data.UserId,
+                    location: this.lastLocation.location
+                };
+                database.addGamelogExternalToDatabase(entry);
                 this.queueGameLogNoty(entry);
                 this.addGameLog(entry);
                 break;
