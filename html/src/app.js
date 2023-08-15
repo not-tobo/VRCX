@@ -2176,6 +2176,10 @@ speechSynthesis.getVoices();
 
     API.actuallyGetCurrentLocation = async function () {
         let gameLogLocation = $app.lastLocation.location;
+        if (gameLogLocation.startsWith('local')) {
+            console.warn('PWI: local test mode', 'test_world');
+            return 'test_world';
+        }
         if (gameLogLocation === 'traveling') {
             gameLogLocation = $app.lastLocationDestination;
         }
@@ -2915,7 +2919,7 @@ speechSynthesis.getVoices();
             if (
                 json.unityPackages?.length > 0 &&
                 unityPackages.length > 0 &&
-                !json.unityPackages.assetUrl
+                !json.unityPackages[0].assetUrl
             ) {
                 ref.unityPackages = unityPackages;
             }
@@ -5306,12 +5310,15 @@ speechSynthesis.getVoices();
 
     $app.methods.openExternalLink = function (link) {
         this.$confirm(`${link}`, 'Open External Link', {
-            confirmButtonText: 'Confirm',
-            cancelButtonText: 'Cancel',
+            distinguishCancelAndClose: true,
+            confirmButtonText: 'Open',
+            cancelButtonText: 'Copy',
             type: 'info',
             callback: (action) => {
                 if (action === 'confirm') {
                     AppApi.OpenLink(link);
+                } else if (action === 'cancel') {
+                    this.copyLink(link);
                 }
             }
         });
@@ -5665,6 +5672,8 @@ speechSynthesis.getVoices();
             // on Location change remove OnPlayerLeft
             if (ctx.type === 'LocationDestination') {
                 currentUserLeaveTime = Date.parse(ctx.created_at);
+                var currentUserLeaveTimeOffset =
+                    currentUserLeaveTime + 5 * 1000;
                 for (var k = w - 1; k > -1; k--) {
                     var feedItem = wristArr[k];
                     if (
@@ -5672,7 +5681,7 @@ speechSynthesis.getVoices();
                         Date.parse(feedItem.created_at) >=
                             currentUserLeaveTime &&
                         Date.parse(feedItem.created_at) <=
-                            currentUserLeaveTime + 5 * 1000
+                            currentUserLeaveTimeOffset
                     ) {
                         wristArr.splice(k, 1);
                         w--;
@@ -5682,13 +5691,14 @@ speechSynthesis.getVoices();
             // on Location change remove OnPlayerJoined
             if (ctx.type === 'Location') {
                 locationJoinTime = Date.parse(ctx.created_at);
+                var locationJoinTimeOffset = locationJoinTime + 20 * 1000;
                 for (var k = w - 1; k > -1; k--) {
                     var feedItem = wristArr[k];
                     if (
                         feedItem.type === 'OnPlayerJoined' &&
                         Date.parse(feedItem.created_at) >= locationJoinTime &&
                         Date.parse(feedItem.created_at) <=
-                            locationJoinTime + 20 * 1000
+                            locationJoinTimeOffset
                     ) {
                         wristArr.splice(k, 1);
                         w--;
@@ -5757,8 +5767,12 @@ speechSynthesis.getVoices();
                     }
                 }
             }
+            // when too many user joins happen at once when switching instances
+            // the "w" counter maxes out and wont add any more entries
+            // until the onJoins are cleared by "Location"
+            // e.g. if a "VideoPlay" occurs between "OnPlayerJoined" and "Location" it wont be added
             if (
-                w < 20 &&
+                w < 50 &&
                 wristFilter[ctx.type] &&
                 (wristFilter[ctx.type] === 'On' ||
                     wristFilter[ctx.type] === 'Everyone' ||
@@ -11061,6 +11075,26 @@ speechSynthesis.getVoices();
                         playerCount: 0,
                         pendingLeave: 0
                     });
+                } else if (data.Parameters[245][0] === 21) {
+                    var portalId = data.Parameters[245][1];
+                    var userId = data.Parameters[245][2];
+                    var playerCount = data.Parameters[245][3];
+                    var shortName = data.Parameters[245][5];
+                    var worldName = '';
+                    this.addPhotonPortalSpawn(
+                        gameLogDate,
+                        userId,
+                        shortName,
+                        worldName
+                    );
+                    this.photonLobbyActivePortals.set(portalId, {
+                        userId,
+                        shortName,
+                        worldName,
+                        created_at: Date.parse(gameLogDate),
+                        playerCount: 0,
+                        pendingLeave: 0
+                    });
                 } else if (data.Parameters[245][0] === 22) {
                     var portalId = data.Parameters[245][1];
                     var text = 'DeletedPortal';
@@ -11246,6 +11280,10 @@ speechSynthesis.getVoices();
         if (L.groupId) {
             groupName = await this.getGroupName(L.groupId);
         }
+        if (!worldName) {
+            // eslint-disable-next-line no-param-reassign
+            worldName = await this.getWorldName(location);
+        }
         // var newShortName = instance.json.shortName;
         // var portalType = 'Secure';
         // if (shortName === newShortName) {
@@ -11330,8 +11368,6 @@ speechSynthesis.getVoices();
         }
         if (data.avatarEyeHeight < 0) {
             text = 'Photon bot has joined, invalid avatarEyeHeight';
-        } else if (data.user.last_platform === 'android' && !data.inVRMode) {
-            var text = 'User joined as Quest in desktop mode';
         } else if (
             data.user.last_platform === 'android' &&
             platforms.length > 0 &&
@@ -11784,6 +11820,9 @@ speechSynthesis.getVoices();
                 ) {
                     url = new URL(url.searchParams.get('url'));
                 }
+                if (videoUrl.startsWith('https://u2b.cx/')) {
+                    url = new URL(videoUrl.substring(15));
+                }
                 var id1 = url.pathname;
                 var id2 = url.searchParams.get('v');
                 if (id1 && id1.length === 12) {
@@ -11796,6 +11835,7 @@ speechSynthesis.getVoices();
                 }
                 if (id2 && id2.length === 11) {
                     // https://www.youtube.com/watch?v=
+                    // https://music.youtube.com/watch?v=
                     youtubeVideoId = id2;
                 }
                 if (this.youTubeApi && youtubeVideoId) {
@@ -12996,7 +13036,7 @@ speechSynthesis.getVoices();
         $app.applyFavorite('avatar', args.ref.id);
     });
 
-    $app.methods.applyFavorite = function (type, objectId, sortTop) {
+    $app.methods.applyFavorite = async function (type, objectId, sortTop) {
         var favorite = API.cachedFavoritesByObjectId.get(objectId);
         var ctx = this.favoriteObjects.get(objectId);
         if (typeof favorite !== 'undefined') {
@@ -13062,6 +13102,7 @@ speechSynthesis.getVoices();
                             this.sortFavoriteFriends = true;
                         }
                     }
+                    // else too bad
                 } else if (type === 'world') {
                     var ref = API.cachedWorlds.get(objectId);
                     if (typeof ref !== 'undefined') {
@@ -13072,6 +13113,27 @@ speechSynthesis.getVoices();
                             ctx.name = ref.name;
                             this.sortFavoriteWorlds = true;
                         }
+                    } else {
+                        // try fetch from local world favorites
+                        var world = await database.getCachedWorldById(objectId);
+                        if (world) {
+                            ctx.ref = world;
+                            ctx.name = world.name;
+                            ctx.deleted = true;
+                            this.sortFavoriteWorlds = true;
+                        }
+                        if (!world) {
+                            // try fetch from local world history
+                            var worldName =
+                                await database.getGameLogWorldNameByWorldId(
+                                    objectId
+                                );
+                            if (worldName) {
+                                ctx.name = worldName;
+                                ctx.deleted = true;
+                                this.sortFavoriteWorlds = true;
+                            }
+                        }
                     }
                 } else if (type === 'avatar') {
                     var ref = API.cachedAvatars.get(objectId);
@@ -13081,6 +13143,17 @@ speechSynthesis.getVoices();
                         }
                         if (ctx.name !== ref.name) {
                             ctx.name = ref.name;
+                            this.sortFavoriteAvatars = true;
+                        }
+                    } else {
+                        // try fetch from local avatar history
+                        var avatar = await database.getCachedAvatarById(
+                            objectId
+                        );
+                        if (avatar) {
+                            ctx.ref = avatar;
+                            ctx.name = avatar.name;
+                            ctx.deleted = true;
                             this.sortFavoriteAvatars = true;
                         }
                     }
@@ -15233,6 +15306,17 @@ speechSynthesis.getVoices();
         });
     };
 
+    $app.methods.showGroupDialogShortCode = function (shortCode) {
+        API.groupStrictsearch({ query: shortCode }).then((args) => {
+            for (var group of args.json) {
+                if (`${group.shortCode}.${group.discriminator}` === shortCode) {
+                    this.showGroupDialog(group.id);
+                }
+            }
+            return args;
+        });
+    };
+
     $app.methods.directAccessParse = function (input) {
         if (!input) {
             return false;
@@ -15256,19 +15340,12 @@ speechSynthesis.getVoices();
                 this.showGroupDialog(groupId);
                 return true;
             }
-        } else if (input.startsWith('https://vrc.group/')) {
+        } else if (
+            input.startsWith('https://vrc.group/') ||
+            /^[A-Za-z0-9]{3,6}\.[0-9]{4}$/g.test(input)
+        ) {
             var shortCode = input.substring(18);
-            API.groupStrictsearch({ query: shortCode }).then((args) => {
-                for (var group of args.json) {
-                    if (
-                        `${group.shortCode}.${group.discriminator}` ===
-                        shortCode
-                    ) {
-                        this.showGroupDialog(group.id);
-                    }
-                }
-                return args;
-            });
+            this.showGroupDialogShortCode(shortCode);
             return true;
         } else if (
             input.substring(0, 4) === 'usr_' ||
@@ -19089,7 +19166,8 @@ speechSynthesis.getVoices();
 
     $app.data.setWorldTagsDialog = {
         visible: false,
-        tags: [],
+        authorTags: [],
+        contentTags: [],
         debugAllowed: false,
         avatarScalingDisabled: false
     };
@@ -19099,10 +19177,14 @@ speechSynthesis.getVoices();
         var D = this.setWorldTagsDialog;
         D.visible = true;
         var oldTags = this.worldDialog.ref.tags;
-        var tags = [];
+        var authorTags = [];
+        var contentTags = [];
         oldTags.forEach((tag) => {
-            if (tag.includes('author_tag_')) {
-                tags.unshift(tag.substring(11));
+            if (tag.startsWith('author_tag_')) {
+                authorTags.unshift(tag.substring(11));
+            }
+            if (tag.startsWith('content_')) {
+                contentTags.unshift(tag.substring(8));
             }
             if (tag === 'debug_allowed') {
                 D.debugAllowed = true;
@@ -19111,16 +19193,23 @@ speechSynthesis.getVoices();
                 D.avatarScalingDisabled = true;
             }
         });
-        D.tags = tags.toString();
+        D.authorTags = authorTags.toString();
+        D.contentTags = contentTags.toString();
     };
 
     $app.methods.saveSetWorldTagsDialog = function () {
         var D = this.setWorldTagsDialog;
-        var oldTags = D.tags.split(',');
+        var authorTags = D.authorTags.trim().split(',');
+        var contentTags = D.contentTags.trim().split(',');
         var tags = [];
-        oldTags.forEach((tag) => {
+        authorTags.forEach((tag) => {
             if (tag) {
                 tags.unshift(`author_tag_${tag}`);
+            }
+        });
+        contentTags.forEach((tag) => {
+            if (tag) {
+                tags.unshift(`content_${tag}`);
             }
         });
         if (D.debugAllowed) {
@@ -19484,6 +19573,14 @@ speechSynthesis.getVoices();
     $app.methods.copyText = function (text) {
         this.$message({
             message: 'Text copied to clipboard',
+            type: 'success'
+        });
+        this.copyToClipboard(text);
+    };
+
+    $app.methods.copyLink = function (text) {
+        this.$message({
+            message: 'Link copied to clipboard',
             type: 'success'
         });
         this.copyToClipboard(text);
@@ -22648,6 +22745,9 @@ speechSynthesis.getVoices();
                 break;
             }
         }
+        if (!assetUrl) {
+            assetUrl = ref.assetUrl;
+        }
         var id = extractFileId(assetUrl);
         var version = parseInt(extractFileVersion(assetUrl), 10);
         if (!id || !version) {
@@ -24751,7 +24851,7 @@ speechSynthesis.getVoices();
             case 'offline':
             case 'private':
             case 'traveling':
-            case 'local':
+            case instanceId.startsWith('local'):
             case '':
                 return false;
         }
