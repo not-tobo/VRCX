@@ -252,6 +252,7 @@ speechSynthesis.getVoices();
         bfi: 'British Sign Language',
         dse: 'Dutch Sign Language',
         fsl: 'French Sign Language',
+        jsl: 'Japanese Sign Language',
         kvk: 'Korean Sign Language'
     };
 
@@ -285,6 +286,7 @@ speechSynthesis.getVoices();
         bfi: 'gb',
         dse: 'nl',
         fsl: 'fr',
+        jsl: 'jp',
         kvk: 'kr'
     };
     // #endregion
@@ -18234,6 +18236,7 @@ speechSynthesis.getVoices();
         isFavorite: false,
         isBlocked: false,
         isQuestFallback: false,
+        hasImposter: false,
         treeData: [],
         fileSize: '',
         inCache: false,
@@ -18292,6 +18295,7 @@ speechSynthesis.getVoices();
         D.cacheLocked = false;
         D.cachePath = '';
         D.isQuestFallback = false;
+        D.hasImposter = false;
         D.isFavorite = API.cachedFavoritesByObjectId.has(avatarId);
         D.isBlocked = API.cachedAvatarModerations.has(avatarId);
         this.ignoreAvatarMemoSave = true;
@@ -18329,11 +18333,14 @@ speechSynthesis.getVoices();
                 for (let i = ref.unityPackages.length - 1; i > -1; i--) {
                     var unityPackage = ref.unityPackages[i];
                     if (
+                        !assetUrl &&
                         unityPackage.platform === 'standalonewindows' &&
                         this.compareUnityVersion(unityPackage.unityVersion)
                     ) {
                         assetUrl = unityPackage.assetUrl;
-                        break;
+                    }
+                    if (unityPackage.variant === 'impostor') {
+                        D.hasImposter = true;
                     }
                 }
                 var fileId = extractFileId(assetUrl);
@@ -18813,13 +18820,13 @@ speechSynthesis.getVoices();
             D.worldId = L.tag;
             D.worldName = args.ref.name;
             D.friendsInInstance = [];
-            for (var ctx of this.friends.values()) {
+            var friendsInCurrentInstance = this.lastLocation.friendList;
+            for (var friend of friendsInCurrentInstance.values()) {
+                var ctx = this.friends.get(friend.userId);
                 if (typeof ctx.ref === 'undefined') {
                     continue;
                 }
-                if (ctx.ref.location === this.lastLocation.location) {
-                    D.friendsInInstance.push(ctx);
-                }
+                D.friendsInInstance.push(ctx);
             }
             D.visible = true;
         });
@@ -24511,6 +24518,10 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.compareUnityVersion = function (version) {
+        if (!API.cachedConfig.sdkUnityVersion) {
+            console.error('No cachedConfig.sdkUnityVersion');
+            return false;
+        }
         var currentUnityVersion = API.cachedConfig.sdkUnityVersion.replace(
             /\D/g,
             ''
