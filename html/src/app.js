@@ -2594,7 +2594,6 @@ speechSynthesis.getVoices();
                 secureName: '',
                 shortName: '',
                 world: {},
-                nonce: '',
                 users: [], // only present when you're the owner
                 clientNumber: '',
                 photonRegion: '',
@@ -9251,7 +9250,8 @@ speechSynthesis.getVoices();
                     var userMap = {
                         displayName: ctx.displayName,
                         userId: ctx.userId,
-                        joinTime: Date.parse(ctx.created_at)
+                        joinTime: Date.parse(ctx.created_at),
+                        lastAvatar: ''
                     };
                     this.lastLocation.playerList.set(ctx.displayName, userMap);
                     if (this.friends.has(ctx.userId)) {
@@ -9969,7 +9969,8 @@ speechSynthesis.getVoices();
                 var userMap = {
                     displayName: gameLog.displayName,
                     userId,
-                    joinTime
+                    joinTime,
+                    lastAvatar: ''
                 };
                 this.lastLocation.playerList.set(gameLog.displayName, userMap);
                 if (userId) {
@@ -10026,16 +10027,13 @@ speechSynthesis.getVoices();
                 database.addGamelogJoinLeaveToDatabase(entry);
                 break;
             case 'player-left':
-                if (!this.lastLocation.playerList.has(gameLog.displayName)) {
+                var ref = this.lastLocation.playerList.get(gameLog.displayName);
+                if (typeof ref === 'undefined') {
                     break;
                 }
-                var time = 0;
-                var ref = this.lastLocation.playerList.get(gameLog.displayName);
-                if (typeof ref !== 'undefined') {
-                    time = Date.now() - ref.joinTime;
-                    this.lastLocation.playerList.delete(gameLog.displayName);
-                    this.lastLocation.friendList.delete(gameLog.displayName);
-                }
+                var time = Date.now() - ref.joinTime;
+                this.lastLocation.playerList.delete(gameLog.displayName);
+                this.lastLocation.friendList.delete(gameLog.displayName);
                 this.photonLobbyAvatars.delete(userId);
                 this.updateVRLastLocation();
                 this.getCurrentInstanceUserList();
@@ -10169,6 +10167,30 @@ speechSynthesis.getVoices();
                     }
                 }
                 break;
+            case 'avatar-change':
+                var ref = this.lastLocation.playerList.get(gameLog.displayName);
+                if (
+                    this.photonLoggingEnabled ||
+                    typeof ref === 'undefined' ||
+                    ref.lastAvatar === gameLog.avatarName
+                ) {
+                    break;
+                }
+                if (!ref.lastAvatar) {
+                    ref.lastAvatar = gameLog.avatarName;
+                    this.lastLocation.playerList.set(gameLog.displayName, ref);
+                    break;
+                }
+                ref.lastAvatar = gameLog.avatarName;
+                this.lastLocation.playerList.set(gameLog.displayName, ref);
+                var entry = {
+                    created_at: gameLog.dt,
+                    type: 'AvatarChange',
+                    userId,
+                    name: gameLog.avatarName,
+                    displayName: gameLog.displayName
+                };
+                break;
             case 'vrcx':
                 // VideoPlay(PyPyDance) "https://jd.pypy.moe/api/v1/videos/jr1NX4Jo8GE.mp4",0.1001,239.606,"0905 : [J-POP] 【まなこ】金曜日のおはよう 踊ってみた (vernities)"
                 var type = gameLog.data.substr(0, gameLog.data.indexOf(' '));
@@ -10281,7 +10303,11 @@ speechSynthesis.getVoices();
 
     $app.methods.silentSeachUser = function (displayName) {
         var playerListRef = this.lastLocation.playerList.get(displayName);
-        if (!this.gameLogApiLoggingEnabled || playerListRef.userId) {
+        if (
+            !this.gameLogApiLoggingEnabled ||
+            !playerListRef ||
+            playerListRef.userId
+        ) {
             return;
         }
         if (this.debugGameLog) {
@@ -11872,6 +11898,12 @@ speechSynthesis.getVoices();
         }
         if (!avatar.assetUrl && unityPackages.length > 0) {
             for (var unityPackage of unityPackages) {
+                if (
+                    unityPackage.variant &&
+                    unityPackage.variant !== 'standard'
+                ) {
+                    continue;
+                }
                 if (unityPackage.platform === 'standalonewindows') {
                     avatar.assetUrl = unityPackage.assetUrl;
                 }
@@ -14525,15 +14557,11 @@ speechSynthesis.getVoices();
     );
     $app.data.isStartAsMinimizedState = false;
     $app.data.isCloseToTray = false;
-    $app.data.gpuFix = false;
     VRCXStorage.Get('VRCX_StartAsMinimizedState').then((result) => {
         $app.isStartAsMinimizedState = result === 'true';
     });
     VRCXStorage.Get('VRCX_CloseToTray').then((result) => {
         $app.isCloseToTray = result === 'true';
-    });
-    VRCXStorage.Get('VRCX_GPUFix').then((result) => {
-        $app.gpuFix = result === 'true';
     });
     if (configRepository.getBool('VRCX_CloseToTray')) {
         // move back to JSON
@@ -14551,7 +14579,6 @@ speechSynthesis.getVoices();
             this.isStartAsMinimizedState.toString()
         );
         VRCXStorage.Set('VRCX_CloseToTray', this.isCloseToTray.toString());
-        VRCXStorage.Set('VRCX_GPUFix', this.gpuFix.toString());
         AppApi.SetStartup(this.isStartAtWindowsStartup);
     };
     $app.data.photonEventOverlay = configRepository.getBool(
@@ -16970,6 +16997,12 @@ speechSynthesis.getVoices();
         var isIos = false;
         if (typeof unityPackages === 'object') {
             for (var unityPackage of unityPackages) {
+                if (
+                    unityPackage.variant &&
+                    unityPackage.variant !== 'standard'
+                ) {
+                    continue;
+                }
                 if (unityPackage.platform === 'standalonewindows') {
                     isPC = true;
                 } else if (unityPackage.platform === 'android') {
@@ -17593,6 +17626,9 @@ speechSynthesis.getVoices();
         var fileSize = '';
         for (let i = ref.unityPackages.length - 1; i > -1; i--) {
             var unityPackage = ref.unityPackages[i];
+            if (unityPackage.variant && unityPackage.variant !== 'standard') {
+                continue;
+            }
             if (
                 unityPackage.platform === 'standalonewindows' &&
                 this.compareUnityVersion(unityPackage.unityVersion)
@@ -18353,6 +18389,7 @@ speechSynthesis.getVoices();
                     if (
                         !assetUrl &&
                         unityPackage.platform === 'standalonewindows' &&
+                        unityPackage.variant === 'standard' &&
                         this.compareUnityVersion(unityPackage.unityVersion)
                     ) {
                         assetUrl = unityPackage.assetUrl;
@@ -18615,6 +18652,12 @@ speechSynthesis.getVoices();
         var platforms = [];
         if (ref.unityPackages) {
             for (var unityPackage of ref.unityPackages) {
+                if (
+                    unityPackage.variant &&
+                    unityPackage.variant !== 'standard'
+                ) {
+                    continue;
+                }
                 var platform = 'PC';
                 if (unityPackage.platform === 'standalonewindows') {
                     platform = 'PC';
@@ -19086,9 +19129,6 @@ speechSynthesis.getVoices();
             tags.push(`~region(eu)`);
         } else if (D.region === 'Japan') {
             tags.push(`~region(jp)`);
-        }
-        if (D.accessType !== 'public' && D.accessType !== 'group') {
-            tags.push(`~nonce(${window.crypto.randomUUID()})`);
         }
         if (D.accessType !== 'invite' && D.accessType !== 'friends') {
             D.strict = false;
@@ -23340,6 +23380,9 @@ speechSynthesis.getVoices();
         var assetUrl = '';
         for (var i = ref.unityPackages.length - 1; i > -1; i--) {
             var unityPackage = ref.unityPackages[i];
+            if (unityPackage.variant && unityPackage.variant !== 'standard') {
+                continue;
+            }
             if (
                 unityPackage.platform === 'standalonewindows' &&
                 this.compareUnityVersion(unityPackage.unityVersion)
@@ -23503,6 +23546,9 @@ speechSynthesis.getVoices();
         var assetUrl = '';
         for (var i = ref.unityPackages.length - 1; i > -1; i--) {
             var unityPackage = ref.unityPackages[i];
+            if (unityPackage.variant && unityPackage.variant !== 'standard') {
+                continue;
+            }
             if (
                 unityPackage.platform === 'standalonewindows' &&
                 this.compareUnityVersion(unityPackage.unityVersion)
@@ -23621,6 +23667,12 @@ speechSynthesis.getVoices();
             var unityPackages = this.avatarDialog.ref.unityPackages;
             for (let i = unityPackages.length - 1; i > -1; i--) {
                 var unityPackage = unityPackages[i];
+                if (
+                    unityPackage.variant &&
+                    unityPackage.variant !== 'standard'
+                ) {
+                    continue;
+                }
                 if (
                     unityPackage.platform === 'standalonewindows' &&
                     this.compareUnityVersion(unityPackage.unityVersion)
@@ -29110,6 +29162,9 @@ speechSynthesis.getVoices();
         var assetUrl = '';
         for (let i = D.ref.unityPackages.length - 1; i > -1; i--) {
             var unityPackage = D.ref.unityPackages[i];
+            if (unityPackage.variant && unityPackage.variant !== 'standard') {
+                continue;
+            }
             if (
                 unityPackage.platform === 'standalonewindows' &&
                 this.compareUnityVersion(unityPackage.unityVersion)
