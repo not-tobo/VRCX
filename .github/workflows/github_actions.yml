@@ -30,12 +30,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Nuget.exe
-        uses: nuget/setup-nuget@v1
-      - name: Restore packages
-        run: nuget restore VRCX.sln
-      - name: Setup MSBuild.exe
-        uses: microsoft/setup-msbuild@v1.1
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: "8.0.x"
+      - name: Build .NET Application
+        run: dotnet build -p:Configuration=Release -p:Platform=x64 -p:EnableWindowsTargeting=true
       - name: Set version
         run: |
           echo "${{ needs.set_version.outputs.version }}" > Version
