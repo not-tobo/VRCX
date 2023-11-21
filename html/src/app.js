@@ -22435,8 +22435,9 @@ speechSynthesis.getVoices();
                     this.userDialog.avatars.length === 0
                 ) {
                     this.refreshUserDialogAvatars();
+                } else {
+                    this.setUserDialogAvatarsRemote(userId);
                 }
-                this.setUserDialogAvatarsRemote(userId);
             }
         } else if (obj.label === $t('dialog.user.worlds.header')) {
             this.setUserDialogWorlds(userId);
