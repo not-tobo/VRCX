@@ -39,7 +39,7 @@ jobs:
           echo "${{ needs.set_version.outputs.version }}" > Version
           cat Version
       - name: Build .NET Application
-        run: dotnet build -p:Configuration=Release -p:Platform=x64 -p:EnableWindowsTargeting=true
+        run: dotnet build -p:Configuration=Release -p:Platform=x64 -p:EnableWindowsTargeting=true --self-contained
       - name: Upload dotnet artifacts
         uses: actions/upload-artifact@v3
         with:
