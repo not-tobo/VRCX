@@ -17348,8 +17348,7 @@ speechSynthesis.getVoices();
             },
             done: () => {
                 if (D.id === params.userId) {
-                    var array = Array.from(map.values());
-                    $app.userDialog.worlds = array;
+                    this.setUserDialogWorlds(D.id);
                 }
                 D.isWorldsLoading = false;
             }
@@ -24406,9 +24405,10 @@ speechSynthesis.getVoices();
             ''
         );
         // limit to 8 characters because 2019.4.31f1c1 is a thing
-        currentUnityVersion = currentUnityVersion.slice(0, 8);
+        // limit to 7 characters because 2022361 is a thing
+        currentUnityVersion = currentUnityVersion.slice(0, 7);
         var assetVersion = version.replace(/\D/g, '');
-        assetVersion = assetVersion.slice(0, 8);
+        assetVersion = assetVersion.slice(0, 7);
         if (parseInt(assetVersion, 10) <= parseInt(currentUnityVersion, 10)) {
             return true;
         }
