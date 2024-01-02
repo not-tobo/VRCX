@@ -1416,7 +1416,6 @@ speechSynthesis.getVoices();
 
     API.logout = function () {
         this.$emit('LOGOUT');
-        webApiService.clearCookies();
         // return this.call('logout', {
         //     method: 'PUT'
         // }).finally(() => {
@@ -2681,6 +2680,12 @@ speechSynthesis.getVoices();
                     userId: json.id
                 }
             });
+            if (json.location === 'traveling') {
+                this.getUser({
+                    userId: json.id
+                });
+                // console.log('Fetching traveling user', json.id);
+            } // ?? hmm
         }
     });
 
@@ -7542,7 +7547,7 @@ speechSynthesis.getVoices();
                                             .loginParmas.username,
                                     password: pt
                                 };
-                                this.updateStoredUser(
+                                await this.updateStoredUser(
                                     this.loginForm.savedCredentials[userId].user
                                 );
                                 await configRepository.setBool(
@@ -14897,7 +14902,7 @@ speechSynthesis.getVoices();
     };
 
     // setting defaults
-    var sharedFeedFilters = {
+    $app.data.sharedFeedFiltersDefaults = {
         noty: {
             Location: 'Off',
             OnPlayerJoined: 'VIP',
@@ -14975,12 +14980,15 @@ speechSynthesis.getVoices();
             Unmuted: 'On'
         }
     };
-    $app.data.sharedFeedFilters = JSON.parse(
-        await configRepository.getString(
-            'sharedFeedFilters',
-            JSON.stringify(sharedFeedFilters)
-        )
-    );
+    $app.data.sharedFeedFilters = $app.data.sharedFeedFiltersDefaults;
+    if (await configRepository.getString('sharedFeedFilters')) {
+        $app.data.sharedFeedFilters = JSON.parse(
+            await configRepository.getString(
+                'sharedFeedFilters',
+                JSON.stringify($app.data.sharedFeedFiltersDefaults)
+            )
+        );
+    }
     if (!$app.data.sharedFeedFilters.noty.Blocked) {
         $app.data.sharedFeedFilters.noty.Blocked = 'Off';
         $app.data.sharedFeedFilters.noty.Unblocked = 'Off';
@@ -15094,9 +15102,16 @@ speechSynthesis.getVoices();
     $app.methods.cancelSharedFeedFilters = async function () {
         this.notyFeedFiltersDialog.visible = false;
         this.wristFeedFiltersDialog.visible = false;
-        this.sharedFeedFilters = JSON.parse(
-            await configRepository.getString('sharedFeedFilters')
-        );
+        if (await configRepository.getString('sharedFeedFilters')) {
+            this.sharedFeedFilters = JSON.parse(
+                await configRepository.getString(
+                    'sharedFeedFilters',
+                    JSON.stringify(this.sharedFeedFiltersDefaults)
+                )
+            );
+        } else {
+            this.sharedFeedFilters = this.sharedFeedFiltersDefaults;
+        }
     };
 
     $app.data.notificationPosition = await configRepository.getString(
@@ -24865,7 +24880,7 @@ speechSynthesis.getVoices();
         data: [],
         filters: [
             {
-                prop: 'name',
+                prop: 'worldName',
                 value: ''
             }
         ],
@@ -24965,7 +24980,7 @@ speechSynthesis.getVoices();
         data: [],
         filters: [
             {
-                prop: 'name',
+                prop: 'groupName',
                 value: ''
             }
         ],
