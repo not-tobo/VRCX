@@ -19250,6 +19250,7 @@ speechSynthesis.getVoices();
         userId: '',
         accessType: '',
         region: '',
+        groupRegion: '',
         groupId: '',
         groupAccessType: '',
         strict: false,
@@ -19430,6 +19431,10 @@ speechSynthesis.getVoices();
             this.newInstanceDialog.region
         );
         await configRepository.setString(
+            'groupInstanceRegion',
+            this.newInstanceDialog.groupRegion
+        );
+        await configRepository.setString(
             'instanceDialogInstanceName',
             this.newInstanceDialog.instanceName
         );
@@ -19473,6 +19478,10 @@ speechSynthesis.getVoices();
         );
         D.region = await configRepository.getString(
             'instanceRegion',
+            'US West'
+        );
+        D.groupRegion = await configRepository.getString(
+            'groupInstanceRegion',
             'US West'
         );
         D.instanceName = await configRepository.getString(
