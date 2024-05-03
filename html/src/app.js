@@ -5096,6 +5096,10 @@ speechSynthesis.getVoices();
                     if ($app.galleryDialogVisible) {
                         $app.refreshEmojiTable();
                     }
+                } else if (contentType === 'avatar') {
+                    // hmm, utilizing this might be too spamy and cause UI to move around
+                } else if (contentType === 'world') {
+                    // hmm
                 } else {
                     console.log('Unknown content-refresh', content);
                 }
@@ -20003,14 +20007,15 @@ speechSynthesis.getVoices();
         secureOrShortName: '',
         lastSelectedGroupId: '',
         selectedGroupRoles: [],
-        roleIds: []
+        roleIds: [],
+        groupRef: {}
     };
 
     API.$on('LOGOUT', function () {
         $app.newInstanceDialog.visible = false;
     });
 
-    $app.methods.buildInstance = function () {
+    $app.methods.buildLegacyInstance = function () {
         var D = this.newInstanceDialog;
         D.instanceCreated = false;
         D.shortName = '';
@@ -20061,6 +20066,7 @@ speechSynthesis.getVoices();
             D.roleIds = [];
             var ref = API.cachedGroups.get(D.groupId);
             if (typeof ref !== 'undefined') {
+                D.groupRef = ref;
                 D.selectedGroupRoles = ref.roles;
                 API.getGroupRoles({
                     groupId: D.groupId
@@ -20074,6 +20080,7 @@ speechSynthesis.getVoices();
         if (!D.groupId) {
             D.roleIds = [];
             D.selectedGroupRoles = [];
+            D.groupRef = {};
             D.lastSelectedGroupId = '';
         }
         D.instanceId = tags.join('');
@@ -20081,12 +20088,65 @@ speechSynthesis.getVoices();
         this.saveNewInstanceDialog();
     };
 
-    $app.methods.createGroupInstance = function () {
+    $app.methods.buildInstance = function () {
+        var D = this.newInstanceDialog;
+        D.instanceCreated = false;
+        D.instanceId = '';
+        D.shortName = '';
+        D.secureOrShortName = '';
+        if (!D.userId) {
+            D.userId = API.currentUser.id;
+        }
+        if (D.groupId && D.groupId !== D.lastSelectedGroupId) {
+            D.roleIds = [];
+            var ref = API.cachedGroups.get(D.groupId);
+            if (typeof ref !== 'undefined') {
+                D.groupRef = ref;
+                D.selectedGroupRoles = ref.roles;
+                API.getGroupRoles({
+                    groupId: D.groupId
+                }).then((args) => {
+                    D.lastSelectedGroupId = D.groupId;
+                    D.selectedGroupRoles = args.json;
+                    ref.roles = args.json;
+                });
+            }
+        }
+        if (!D.groupId) {
+            D.roleIds = [];
+            D.groupRef = {};
+            D.selectedGroupRoles = [];
+            D.lastSelectedGroupId = '';
+        }
+        this.saveNewInstanceDialog();
+    };
+
+    $app.methods.createNewInstance = function () {
         var D = this.newInstanceDialog;
         if (D.loading) {
             return;
         }
         D.loading = true;
+        var type = 'public';
+        var canRequestInvite = false;
+        switch (D.accessType) {
+            case 'friends':
+                type = 'friends';
+                break;
+            case 'friends+':
+                type = 'hidden';
+                break;
+            case 'invite':
+                type = 'private';
+                break;
+            case 'invite+':
+                type = 'private';
+                canRequestInvite = true;
+                break;
+            case 'group':
+                type = 'group';
+                break;
+        }
         var region = 'us';
         if (D.region === 'US East') {
             region = 'use';
@@ -20095,19 +20155,22 @@ speechSynthesis.getVoices();
         } else if (D.region === 'Japan') {
             region = 'jp';
         }
-        var roleIds = [];
-        if (D.groupAccessType === 'member') {
-            roleIds = D.roleIds;
-        }
-        API.createInstance({
-            type: 'group',
-            groupAccessType: D.groupAccessType,
+        var params = {
+            type,
+            canRequestInvite,
             worldId: D.worldId,
-            ownerId: D.groupId,
-            region,
-            queueEnabled: D.queueEnabled,
-            roleIds
-        })
+            ownerId: D.userId,
+            region
+        };
+        if (type === 'group') {
+            params.groupAccessType = D.groupAccessType;
+            params.ownerId = D.groupId;
+            params.queueEnabled = D.queueEnabled;
+            if (D.groupAccessType === 'member') {
+                params.roleIds = D.roleIds;
+            }
+        }
+        API.createInstance(params)
             .then((args) => {
                 D.location = args.json.location;
                 D.instanceId = args.json.instanceId;
@@ -20174,10 +20237,6 @@ speechSynthesis.getVoices();
             this.newInstanceDialog.region
         );
         await configRepository.setString(
-            'groupInstanceRegion',
-            this.newInstanceDialog.groupRegion
-        );
-        await configRepository.setString(
             'instanceDialogInstanceName',
             this.newInstanceDialog.instanceName
         );
@@ -20214,6 +20273,11 @@ speechSynthesis.getVoices();
         this.$nextTick(() => adjustDialogZ(this.$refs.newInstanceDialog.$el));
         var D = this.newInstanceDialog;
         var L = API.parseLocation(tag);
+        if (D.worldId === L.worldId) {
+            // reopening dialog, keep last open instance
+            D.visible = true;
+            return;
+        }
         D.worldId = L.worldId;
         D.accessType = await configRepository.getString(
             'instanceDialogAccessType',
@@ -20221,10 +20285,6 @@ speechSynthesis.getVoices();
         );
         D.region = await configRepository.getString(
             'instanceRegion',
-            'US West'
-        );
-        D.groupRegion = await configRepository.getString(
-            'groupInstanceRegion',
             'US West'
         );
         D.instanceName = await configRepository.getString(
@@ -20247,11 +20307,17 @@ speechSynthesis.getVoices();
         D.instanceCreated = false;
         D.lastSelectedGroupId = '';
         D.selectedGroupRoles = [];
+        D.groupRef = {};
         D.roleIds = [];
         D.strict = false;
         D.shortName = '';
         D.secureOrShortName = '';
-        this.buildInstance();
+        API.getGroupPermissions({ userId: API.currentUser.id });
+        if (D.selectedTab === '0') {
+            this.buildInstance();
+        } else {
+            this.buildLegacyInstance();
+        }
         this.updateNewInstanceDialog();
         D.visible = true;
     };
@@ -24525,6 +24591,7 @@ speechSynthesis.getVoices();
             var ref = API.applyGroup(group);
             API.currentUserGroups.set(group.id, ref);
         });
+        await API.getGroupPermissions({ userId: API.currentUser.id });
         this.saveCurrentUserGroups();
     };
 
@@ -28371,7 +28438,34 @@ speechSynthesis.getVoices();
         }
     });
 
-    //**
+    API.getGroupPermissions = function (params) {
+        return this.call(`users/${params.userId}/groups/permissions`, {
+            method: 'GET'
+        }).then((json) => {
+            var args = {
+                json,
+                params
+            };
+            this.$emit('GROUP:PERMISSIONS', args);
+            return args;
+        });
+    };
+
+    API.$on('GROUP:PERMISSIONS', function (args) {
+        if (args.params.userId !== this.currentUser.id) {
+            return;
+        }
+        var json = args.json;
+        for (var groupId in json) {
+            var permissions = json[groupId];
+            var group = this.cachedGroups.get(groupId);
+            if (group) {
+                group.myMember.permissions = permissions;
+            }
+        }
+    });
+
+    // /**
     // * @param {{ groupId: string }} params
     // * @return { Promise<{json: any, params}> }
     // */
@@ -28866,8 +28960,6 @@ speechSynthesis.getVoices();
             var ref = this.applyGroupMember(json);
             $app.groupBansModerationTable.data.push(ref);
         }
-        // $app.groupBansModerationTable.data =
-        //     $app.groupBansModerationTable.data.concat(args.json);
     });
 
     $app.methods.getAllGroupLogs = async function (groupId) {
@@ -30108,6 +30200,17 @@ speechSynthesis.getVoices();
         await this.getGroupDialogGroupMembers();
     };
 
+    $app.methods.getCurrentUserRepresentedGroup = function () {
+        return API.getRepresentedGroup({
+            userId: API.currentUser.id
+        }).then((args) => {
+            this.userDialog.representedGroup = args.json;
+            return args;
+        });
+    };
+
+    // group permissions
+
     $app.methods.hasGroupPermission = function (ref, permission) {
         if (
             ref &&
@@ -30119,15 +30222,6 @@ speechSynthesis.getVoices();
             return true;
         }
         return false;
-    };
-
-    $app.methods.getCurrentUserRepresentedGroup = function () {
-        return API.getRepresentedGroup({
-            userId: API.currentUser.id
-        }).then((args) => {
-            this.userDialog.representedGroup = args.json;
-            return args;
-        });
     };
 
     // group gallery
