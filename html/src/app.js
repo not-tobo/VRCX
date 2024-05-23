@@ -1690,6 +1690,10 @@ speechSynthesis.getVoices();
     };
 
     API.applyPresenceGroups = function (ref) {
+        if (!this.currentUserGroupsInit) {
+            // wait for init before diffing
+            return;
+        }
         var groups = ref.presence?.groups;
         if (!groups) {
             console.error('API.applyPresenceGroups: invalid groups', ref);
@@ -1698,14 +1702,6 @@ speechSynthesis.getVoices();
         if (groups.length === 0) {
             // as it turns out, this is not the most trust worthly source of info
             return;
-        }
-
-        if (groups.length !== this.currentUserGroups.size) {
-            console.log(
-                `applyPresenceGroups: size old: ${this.currentUserGroups.size} new: ${groups.length}`,
-                this.currentUserGroups,
-                groups
-            );
         }
 
         // update group list
@@ -4427,6 +4423,7 @@ speechSynthesis.getVoices();
                 }
                 this.refreshFavoriteItems();
                 this.refreshFavoriteGroups();
+                $app.updateLocalFavoriteFriends();
                 this.isFavoriteLoading = false;
             }
         });
@@ -24767,10 +24764,10 @@ speechSynthesis.getVoices();
     $app.methods.getCurrentUserGroups = async function () {
         var args = await API.getGroups({ userId: API.currentUser.id });
         API.currentUserGroups.clear();
-        args.json.forEach((group) => {
+        for (var group of args.json) {
             var ref = API.applyGroup(group);
             API.currentUserGroups.set(group.id, ref);
-        });
+        }
         await API.getGroupPermissions({ userId: API.currentUser.id });
         this.saveCurrentUserGroups();
     };
@@ -26450,12 +26447,14 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.isRealInstance = function (instanceId) {
+        if (!instanceId) {
+            return false;
+        }
         switch (instanceId) {
             case 'offline':
             case 'private':
             case 'traveling':
             case instanceId.startsWith('local'):
-            case '':
                 return false;
         }
         return true;
@@ -27897,7 +27896,7 @@ speechSynthesis.getVoices();
         this.localFavoriteFriends.clear();
         for (var ref of API.cachedFavorites.values()) {
             if (
-                ref.$isDeleted === false &&
+                !ref.$isDeleted &&
                 ref.type === 'friend' &&
                 (this.localFavoriteFriendsGroups.length === 0 ||
                     this.localFavoriteFriendsGroups.includes(ref.$groupKey))
@@ -29789,7 +29788,6 @@ speechSynthesis.getVoices();
             API.currentUserGroups.set(group.id, ref);
         }
 
-        var fetchedRoles = false;
         if (groups) {
             for (var i = 0; i < groups.length; i++) {
                 var groupId = groups[i];
@@ -29808,7 +29806,6 @@ speechSynthesis.getVoices();
                     });
                     var ref = API.applyGroup(args.json);
                     API.currentUserGroups.set(groupId, ref);
-                    fetchedRoles = true;
                     console.log(`Fetched group ${ref.name}`);
                 } catch (err) {
                     console.error(err);
@@ -29817,9 +29814,6 @@ speechSynthesis.getVoices();
         }
 
         this.currentUserGroupsInit = true;
-        if (fetchedRoles) {
-            this.saveCurrentUserGroups();
-        }
     };
 
     API.applyGroupMember = function (json) {
@@ -30188,23 +30182,18 @@ speechSynthesis.getVoices();
             // ignore this event if we were the one to trigger it
             return;
         }
-        // if (this.groupDialog.visible && this.groupDialog.id === groupId) {
-        //     this.showGroupDialog(groupId);
-        // }
         if (!API.currentUserGroups.has(groupId)) {
             API.currentUserGroups.set(groupId, {
                 id: groupId,
                 name: '',
                 iconUrl: ''
             });
-            if (this.friendLogInitStatus) {
-                API.getGroup({ groupId, includeRoles: true }).then((args) => {
-                    var ref = API.applyGroup(args.json);
-                    API.currentUserGroups.set(groupId, ref);
-                    this.saveCurrentUserGroups();
-                    return args;
-                });
-            }
+            API.getGroup({ groupId, includeRoles: true }).then((args) => {
+                var ref = API.applyGroup(args.json);
+                API.currentUserGroups.set(groupId, ref);
+                this.saveCurrentUserGroups();
+                return args;
+            });
         }
     };
 
