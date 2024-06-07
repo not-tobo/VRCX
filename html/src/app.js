@@ -429,7 +429,7 @@ speechSynthesis.getVoices();
         var req = webApiService
             .execute(init)
             .catch((err) => {
-                this.$throw(0, err);
+                this.$throw(0, err, endpoint);
             })
             .then((response) => {
                 try {
@@ -440,7 +440,7 @@ speechSynthesis.getVoices();
                     return response;
                 } catch (e) {}
                 if (response.status === 200) {
-                    this.$throw(0, 'Invalid JSON response');
+                    this.$throw(0, 'Invalid JSON response', endpoint);
                 }
                 if (
                     response.status === 429 &&
@@ -540,7 +540,7 @@ speechSynthesis.getVoices();
                         endpoint
                     );
                 }
-                this.$throw(status, data);
+                this.$throw(status, data, endpoint);
                 return data;
             });
         if (init.method === 'GET') {
@@ -628,7 +628,7 @@ speechSynthesis.getVoices();
     };
 
     // FIXME : extra를 없애줘
-    API.$throw = function (code, error, extra) {
+    API.$throw = function (code, error, endpoint) {
         var text = [];
         if (code > 0) {
             var status = this.statusCodes[code];
@@ -641,8 +641,8 @@ speechSynthesis.getVoices();
         if (typeof error !== 'undefined') {
             text.push(JSON.stringify(error));
         }
-        if (typeof extra !== 'undefined') {
-            text.push(JSON.stringify(extra));
+        if (typeof endpoint !== 'undefined') {
+            text.push(JSON.stringify(endpoint));
         }
         text = text.map((s) => escapeTag(s)).join('<br>');
         if (text.length) {
@@ -1782,6 +1782,7 @@ speechSynthesis.getVoices();
                 hideContentFilterSettings: false,
                 homeLocation: '',
                 id: '',
+                isBoopingEnabled: false,
                 isFriend: false,
                 last_activity: '',
                 last_login: '',
@@ -3567,7 +3568,10 @@ speechSynthesis.getVoices();
                 // JANK: create image url from fileId
                 json.imageUrl = `https://api.vrchat.cloud/api/1/file/${json.details.emojiId}/${json.details.emojiVersion}`;
             }
-            if (!json.details?.emojiId?.startsWith('file_')) {
+
+            if (!json.details?.emojiId) {
+                json.message = `${json.senderUsername} Booped you! with nothing`;
+            } else if (!json.details.emojiId.startsWith('file_')) {
                 // JANK: get emoji name from emojiId
                 json.message = `${json.senderUsername} Booped you! with ${$app.getEmojiName(json.details.emojiId)}`;
             } else {
@@ -22806,7 +22810,7 @@ speechSynthesis.getVoices();
                 if (json.status !== 200) {
                     $app.avatarDialog.loading = false;
                     $app.changeAvatarImageDialogLoading = false;
-                    this.$throw('Avatar image upload failed', json);
+                    this.$throw('Avatar image upload failed', json, params.url);
                 }
                 var args = {
                     json,
@@ -22903,7 +22907,7 @@ speechSynthesis.getVoices();
                 if (json.status !== 200) {
                     $app.avatarDialog.loading = false;
                     $app.changeAvatarImageDialogLoading = false;
-                    this.$throw('Avatar image upload failed', json);
+                    this.$throw('Avatar image upload failed', json, params.url);
                 }
                 var args = {
                     json,
@@ -23141,7 +23145,7 @@ speechSynthesis.getVoices();
                 if (json.status !== 200) {
                     $app.worldDialog.loading = false;
                     $app.changeWorldImageDialogLoading = false;
-                    this.$throw('World image upload failed', json);
+                    this.$throw('World image upload failed', json, params.url);
                 }
                 var args = {
                     json,
@@ -23238,7 +23242,7 @@ speechSynthesis.getVoices();
                 if (json.status !== 200) {
                     $app.worldDialog.loading = false;
                     $app.changeWorldImageDialogLoading = false;
-                    this.$throw('World image upload failed', json);
+                    this.$throw('World image upload failed', json, params.url);
                 }
                 var args = {
                     json,
@@ -23312,7 +23316,7 @@ speechSynthesis.getVoices();
             });
             $app.displayPreviousImages('Avatar', 'Change');
         } else {
-            this.$throw(0, 'Avatar image change failed');
+            this.$throw(0, 'Avatar image change failed', args.params.imageUrl);
         }
     });
 
@@ -23341,7 +23345,7 @@ speechSynthesis.getVoices();
             });
             $app.displayPreviousImages('World', 'Change');
         } else {
-            this.$throw(0, 'World image change failed');
+            this.$throw(0, 'World image change failed', args.params.imageUrl);
         }
     });
 
@@ -26100,6 +26104,14 @@ speechSynthesis.getVoices();
     $app.methods.toggleAvatarCopying = function () {
         API.saveCurrentUser({
             allowAvatarCopying: !API.currentUser.allowAvatarCopying
+        }).then((args) => {
+            return args;
+        });
+    };
+
+    $app.methods.toggleAllowBooping = function () {
+        API.saveCurrentUser({
+            isBoopingEnabled: !API.currentUser.isBoopingEnabled
         }).then((args) => {
             return args;
         });
@@ -32715,11 +32727,17 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.getEmojiValue = function (emojiName) {
+        if (!emojiName) {
+            return '';
+        }
         return `vrchat_${emojiName.replace(/ /g, '_').toLowerCase()}`;
     };
 
     $app.methods.getEmojiName = function (emojiValue) {
         // uppercase first letter of each word
+        if (!emojiValue) {
+            return '';
+        }
         return emojiValue
             .replace('vrchat_', '')
             .replace(/_/g, ' ')
