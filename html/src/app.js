@@ -15224,8 +15224,8 @@ speechSynthesis.getVoices();
         'VRCX_hideDevicesFromFeed',
         false
     );
-    $app.data.hideCpuUsageFromFeed = await configRepository.getBool(
-        'VRCX_hideCpuUsageFromFeed',
+    $app.data.vrOverlayCpuUsage = await configRepository.getBool(
+        'VRCX_vrOverlayCpuUsage',
         false
     );
     $app.data.hideUptimeFromFeed = await configRepository.getBool(
@@ -15428,8 +15428,8 @@ speechSynthesis.getVoices();
             this.hideDevicesFromFeed
         );
         await configRepository.setBool(
-            'VRCX_hideCpuUsageFromFeed',
-            this.hideCpuUsageFromFeed
+            'VRCX_vrOverlayCpuUsage',
+            this.vrOverlayCpuUsage
         );
         await configRepository.setBool(
             'VRCX_hideUptimeFromFeed',
@@ -16154,7 +16154,7 @@ speechSynthesis.getVoices();
         var VRConfigVars = {
             overlayNotifications: this.overlayNotifications,
             hideDevicesFromFeed: this.hideDevicesFromFeed,
-            hideCpuUsageFromFeed: this.hideCpuUsageFromFeed,
+            vrOverlayCpuUsage: this.vrOverlayCpuUsage,
             minimalFeed: this.minimalFeed,
             notificationPosition: this.notificationPosition,
             notificationTimeout: this.notificationTimeout,
