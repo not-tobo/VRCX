@@ -5726,7 +5726,7 @@ speechSynthesis.getVoices();
                     if (this.branch === 'Stable') {
                         this.nextAppUpdateCheck = 14400; // 2hours
                     } else {
-                        this.nextAppUpdateCheck = 1800; // 15mins
+                        this.nextAppUpdateCheck = 7200; // 1hour
                     }
                     if (this.autoUpdateVRCX !== 'Off') {
                         this.checkForVRCXUpdate();
@@ -6685,6 +6685,9 @@ speechSynthesis.getVoices();
                     return '';
                 })
                 .then((args) => {
+                    if (!args.json) {
+                        return '';
+                    }
                     if (
                         this.displayVRCPlusIconsAsAvatar &&
                         args.json.userIcon
@@ -29432,6 +29435,10 @@ speechSynthesis.getVoices();
             n: 100,
             offset: 0
         };
+        if (this.groupMemberModeration.selectedAuditLogTypes.length) {
+            params.eventTypes =
+                this.groupMemberModeration.selectedAuditLogTypes;
+        }
         var count = 50; // 5000 max
         this.isGroupMembersLoading = true;
         try {
@@ -29459,9 +29466,44 @@ speechSynthesis.getVoices();
      * @param {{ groupId: string }} params
      * @return { Promise<{json: any, params}> }
      */
+    API.getGroupAuditLogTypes = function (params) {
+        return this.call(`groups/${params.groupId}/auditLogTypes`, {
+            method: 'GET'
+        }).then((json) => {
+            var args = {
+                json,
+                params
+            };
+            this.$emit('GROUP:AUDITLOGTYPES', args);
+            return args;
+        });
+    };
+    API.$on('GROUP:AUDITLOGTYPES', function (args) {
+        if ($app.groupMemberModeration.id !== args.params.groupId) {
+            return;
+        }
+
+        $app.groupMemberModeration.auditLogTypes = args.json;
+    });
+
+    $app.methods.getAuditLogTypeName = function (auditLogType) {
+        if (!auditLogType) {
+            return '';
+        }
+        return auditLogType
+            .replace('group.', '')
+            .replace(/\./g, ' ')
+            .replace(/\b\w/g, (l) => l.toUpperCase());
+    };
+
+    /**
+     * @param {{ groupId: string, eventTypes: array }} params
+     * @return { Promise<{json: any, params}> }
+     */
     API.getGroupLogs = function (params) {
         return this.call(`groups/${params.groupId}/auditLogs`, {
-            method: 'GET'
+            method: 'GET',
+            params
         }).then((json) => {
             var args = {
                 json,
@@ -29478,7 +29520,12 @@ speechSynthesis.getVoices();
         }
 
         for (var json of args.json.results) {
-            $app.groupLogsModerationTable.data.push(json);
+            const existsInData = $app.groupLogsModerationTable.data.some(
+                (dataItem) => dataItem.id === json.id
+            );
+            if (!existsInData) {
+                $app.groupLogsModerationTable.data.push(json);
+            }
         }
     });
 
@@ -31697,6 +31744,8 @@ speechSynthesis.getVoices();
         loading: false,
         id: '',
         groupRef: {},
+        auditLogTypes: [],
+        selectedAuditLogTypes: [],
         note: '',
         selectedUsers: new Map(),
         selectedUsersArray: [],
@@ -31742,6 +31791,12 @@ speechSynthesis.getVoices();
 
     $app.data.groupLogsModerationTable = {
         data: [],
+        filters: [
+            {
+                prop: ['description'],
+                value: ''
+            }
+        ],
         tableProps: {
             stripe: true,
             size: 'mini'
@@ -31826,9 +31881,12 @@ speechSynthesis.getVoices();
         D.selectedUsersArray = [];
         D.selectedRoles = [];
         D.groupRef = {};
+        D.auditLogTypes = [];
+        D.selectedAuditLogTypes = [];
         API.getCachedGroup({ groupId }).then((args) => {
             D.groupRef = args.ref;
         });
+        API.getGroupAuditLogTypes({ groupId });
         this.groupMemberModerationTableForceUpdate = 0;
         D.visible = true;
         this.setGroupMemberModerationTable(this.groupDialog.members);
