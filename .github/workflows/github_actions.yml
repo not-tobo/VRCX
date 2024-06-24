@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - Nightly
+    paths-ignore:
+      - "Linux/**"
 
 concurrency:
   group: ${{ github.ref }}
