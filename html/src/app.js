@@ -28308,7 +28308,9 @@ speechSynthesis.getVoices();
         }
         if (!avatarInFavorites) {
             removeFromArray(this.localAvatarFavoritesList, avatarId);
-            database.removeAvatarFromCache(avatarId);
+            if (!this.avatarHistory.has(avatarId)) {
+                database.removeAvatarFromCache(avatarId);
+            }
         }
         database.removeAvatarFromFavorites(avatarId, group);
         if (
@@ -28543,7 +28545,9 @@ speechSynthesis.getVoices();
 
         avatarIdRemoveList.forEach((id) => {
             removeFromArray(this.localAvatarFavoritesList, id);
-            database.removeAvatarFromCache(id);
+            if (!this.avatarHistory.has(id)) {
+                database.removeAvatarFromCache(id);
+            }
         });
     };
 
