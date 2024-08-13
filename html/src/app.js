@@ -15681,11 +15681,12 @@ speechSynthesis.getVoices();
         .matchMedia('(prefers-color-scheme: dark)')
         .addEventListener('change', async () => {
             if ($app.themeMode === 'system') {
-                await $app.saveThemeMode();
+                await $app.changeThemeMode();
             }
         });
 
-    $app.methods.saveThemeMode = async function () {
+    $app.methods.saveThemeMode = async function (newThemeMode) {
+        this.themeMode = newThemeMode;
         await configRepository.setString('VRCX_ThemeMode', this.themeMode);
         await this.changeThemeMode();
     };
