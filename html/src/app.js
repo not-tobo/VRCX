@@ -30749,6 +30749,8 @@ speechSynthesis.getVoices();
                 if (typeof ref !== 'undefined') {
                     json.user = ref;
                     json.$displayName = ref.displayName;
+                } else {
+                    json.$displayName = json.user?.displayName;
                 }
             }
         }
