@@ -25719,13 +25719,6 @@ speechSynthesis.getVoices();
             return;
         }
         for (var release of json) {
-            if (
-                release.target_commitish === 'PyPyDanceCompanion' ||
-                release.prerelease
-            ) {
-                // skip old branch name and prerelease builds
-                continue;
-            }
             for (var asset of release.assets) {
                 if (
                     (asset.content_type === 'application/x-msdownload' ||
