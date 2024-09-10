@@ -2009,6 +2009,7 @@ speechSynthesis.getVoices();
                 $online_for: Date.now(),
                 $travelingToTime: Date.now(),
                 $offline_for: '',
+                $active_for: '',
                 $isVRCPlus: false,
                 $isModerator: false,
                 $isTroll: false,
@@ -9486,6 +9487,7 @@ speechSynthesis.getVoices();
             ) {
                 ctx.ref.$online_for = '';
                 ctx.ref.$offline_for = Date.now();
+                ctx.ref.$active_for = '';
                 var ts = Date.now();
                 var time = ts - $location_at;
                 var worldName = await this.getWorldName(location);
@@ -9511,6 +9513,7 @@ speechSynthesis.getVoices();
                 ctx.ref.$location_at = Date.now();
                 ctx.ref.$online_for = Date.now();
                 ctx.ref.$offline_for = '';
+                ctx.ref.$active_for = '';
                 var worldName = await this.getWorldName(newRef.location);
                 var groupName = await this.getGroupName(location);
                 var feed = {
@@ -9525,6 +9528,9 @@ speechSynthesis.getVoices();
                 };
                 this.addFeed(feed);
                 database.addOnlineOfflineToDatabase(feed);
+            }
+            if (newState === 'active') {
+                ctx.ref.$active_for = Date.now();
             }
         }
         if (ctx.state === 'online') {
@@ -9644,22 +9650,33 @@ speechSynthesis.getVoices();
 
     // ascending
     var compareByName = function (a, b) {
-        var A = String(a.name);
-        var B = String(b.name);
-        return A.localeCompare(B);
+        if (typeof a.name !== 'string' || typeof b.name !== 'string') {
+            return 0;
+        }
+        return a.name.localeCompare(b.name);
     };
 
     // ascending
     var compareByDisplayName = function (a, b) {
-        var A = String(a.displayName);
-        var B = String(b.displayName);
-        return A.localeCompare(B);
+        if (
+            typeof a.displayName !== 'string' ||
+            typeof b.displayName !== 'string'
+        ) {
+            return 0;
+        }
+        return a.displayName.localeCompare(b.displayName);
     };
 
     // descending
     var compareByUpdatedAt = function (a, b) {
-        var A = String(a.updated_at).toUpperCase();
-        var B = String(b.updated_at).toUpperCase();
+        if (
+            typeof a.updated_at !== 'string' ||
+            typeof b.updated_at !== 'string'
+        ) {
+            return 0;
+        }
+        var A = a.updated_at.toUpperCase();
+        var B = b.updated_at.toUpperCase();
         if (A < B) {
             return 1;
         }
@@ -9671,8 +9688,14 @@ speechSynthesis.getVoices();
 
     // descending
     var compareByCreatedAt = function (a, b) {
-        var A = String(a.created_at).toUpperCase();
-        var B = String(b.created_at).toUpperCase();
+        if (
+            typeof a.created_at !== 'string' ||
+            typeof b.created_at !== 'string'
+        ) {
+            return 0;
+        }
+        var A = a.created_at.toUpperCase();
+        var B = b.created_at.toUpperCase();
         if (A < B) {
             return 1;
         }
@@ -12998,7 +13021,8 @@ speechSynthesis.getVoices();
             for (var unityPackage of unityPackages) {
                 if (
                     unityPackage.variant &&
-                    unityPackage.variant !== 'standard'
+                    unityPackage.variant !== 'standard' &&
+                    unityPackage.variant !== 'security'
                 ) {
                     continue;
                 }
@@ -18277,7 +18301,8 @@ speechSynthesis.getVoices();
             for (var unityPackage of unityPackages) {
                 if (
                     unityPackage.variant &&
-                    unityPackage.variant !== 'standard'
+                    unityPackage.variant !== 'standard' &&
+                    unityPackage.variant !== 'security'
                 ) {
                     continue;
                 }
@@ -18917,7 +18942,11 @@ speechSynthesis.getVoices();
         var bundleSizes = [];
         for (let i = ref.unityPackages.length - 1; i > -1; i--) {
             var unityPackage = ref.unityPackages[i];
-            if (unityPackage.variant && unityPackage.variant !== 'standard') {
+            if (
+                unityPackage.variant &&
+                unityPackage.variant !== 'standard' &&
+                unityPackage.variant !== 'security'
+            ) {
                 continue;
             }
             if (!this.compareUnityVersion(unityPackage.unitySortNumber)) {
@@ -20031,7 +20060,8 @@ speechSynthesis.getVoices();
             for (var unityPackage of ref.unityPackages) {
                 if (
                     unityPackage.variant &&
-                    unityPackage.variant !== 'standard'
+                    unityPackage.variant !== 'standard' &&
+                    unityPackage.variant !== 'security'
                 ) {
                     continue;
                 }
@@ -21890,6 +21920,8 @@ speechSynthesis.getVoices();
     $app.methods.userOnlineFor = function (ctx) {
         if (ctx.ref.state === 'online' && ctx.ref.$online_for) {
             return Date.now() - ctx.ref.$online_for;
+        } else if (ctx.ref.state === 'active' && ctx.ref.$active_for) {
+            return Date.now() - ctx.ref.$active_for;
         } else if (ctx.ref.$offline_for) {
             return Date.now() - ctx.ref.$offline_for;
         }
@@ -21899,6 +21931,8 @@ speechSynthesis.getVoices();
     $app.methods.userOnlineForTimestamp = function (ctx) {
         if (ctx.ref.state === 'online' && ctx.ref.$online_for) {
             return ctx.ref.$online_for;
+        } else if (ctx.ref.state === 'active' && ctx.ref.$active_for) {
+            return ctx.ref.$active_for;
         } else if (ctx.ref.$offline_for) {
             return ctx.ref.$offline_for;
         }
@@ -22864,6 +22898,9 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.sortAlphabetically = function (a, b, field) {
+        if (!a[field] || !b[field]) {
+            return 0;
+        }
         return a[field].toLowerCase().localeCompare(b[field].toLowerCase());
     };
 
@@ -24624,7 +24661,11 @@ speechSynthesis.getVoices();
         var assetUrl = '';
         for (var i = ref.unityPackages.length - 1; i > -1; i--) {
             var unityPackage = ref.unityPackages[i];
-            if (unityPackage.variant && unityPackage.variant !== 'standard') {
+            if (
+                unityPackage.variant &&
+                unityPackage.variant !== 'standard' &&
+                unityPackage.variant !== 'security'
+            ) {
                 continue;
             }
             if (
@@ -24790,7 +24831,11 @@ speechSynthesis.getVoices();
         var assetUrl = '';
         for (var i = ref.unityPackages.length - 1; i > -1; i--) {
             var unityPackage = ref.unityPackages[i];
-            if (unityPackage.variant && unityPackage.variant !== 'standard') {
+            if (
+                unityPackage.variant &&
+                unityPackage.variant !== 'standard' &&
+                unityPackage.variant !== 'security'
+            ) {
                 continue;
             }
             if (
@@ -24913,7 +24958,8 @@ speechSynthesis.getVoices();
                 var unityPackage = unityPackages[i];
                 if (
                     unityPackage.variant &&
-                    unityPackage.variant !== 'standard'
+                    unityPackage.variant !== 'standard' &&
+                    unityPackage.variant !== 'security'
                 ) {
                     continue;
                 }
@@ -31991,7 +32037,11 @@ speechSynthesis.getVoices();
         var assetUrl = '';
         for (let i = D.ref.unityPackages.length - 1; i > -1; i--) {
             var unityPackage = D.ref.unityPackages[i];
-            if (unityPackage.variant && unityPackage.variant !== 'standard') {
+            if (
+                unityPackage.variant &&
+                unityPackage.variant !== 'standard' &&
+                unityPackage.variant !== 'security'
+            ) {
                 continue;
             }
             if (
