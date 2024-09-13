@@ -14629,6 +14629,12 @@ speechSynthesis.getVoices();
             {
                 prop: 'displayName',
                 value: ''
+            },
+            {
+                prop: 'type',
+                value: false,
+                filterFn: (row, filter) => 
+                    !(filter.value && row.type === 'Unfriend')
             }
         ],
         tableProps: {
@@ -15632,6 +15638,10 @@ speechSynthesis.getVoices();
         'VRCX_hideUserMemos',
         false
     );
+    $app.data.friendLogTable.filters[2].value = await configRepository.getBool(
+        'VRCX_hideUnfriends',
+        false
+    );
     $app.methods.saveOpenVROption = async function () {
         await configRepository.setBool('openVR', this.openVR);
         await configRepository.setBool('openVRAlways', this.openVRAlways);
@@ -15754,6 +15764,12 @@ speechSynthesis.getVoices();
         await configRepository.setBool(
             'VRCX_hideUserMemos',
             this.hideUserMemos
+        );
+    };
+    $app.methods.saveFriendLogOptions = async function () {
+        await configRepository.setBool(
+            'VRCX_hideUnfriends',
+            this.friendLogTable.filters[2].value
         );
     };
     $app.data.TTSvoices = speechSynthesis.getVoices();
