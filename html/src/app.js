@@ -11454,19 +11454,6 @@ speechSynthesis.getVoices();
                         }
                     });
                 }
-                if (this.vrcOSCFix) {
-                    workerTimers.setTimeout(() => {
-                        AppApi.KillInstall().then((processKilled) => {
-                            if (processKilled) {
-                                console.log('OSCFix: Killed Install.exe');
-                            } else {
-                                console.log(
-                                    'OSCFix: Nothing to kill, no Install.exe process running'
-                                );
-                            }
-                        });
-                    }, 2000);
-                }
                 break;
             case 'openvr-init':
                 this.isGameNoVR = false;
@@ -15596,10 +15583,6 @@ speechSynthesis.getVoices();
         'VRCX_vrcQuitFix',
         true
     );
-    $app.data.vrcOSCFix = await configRepository.getBool(
-        'VRCX_vrcOSCFix',
-        true
-    );
     $app.data.vrBackgroundEnabled = await configRepository.getBool(
         'VRCX_vrBackgroundEnabled',
         false
@@ -15784,7 +15767,6 @@ speechSynthesis.getVoices();
             this.relaunchVRChatAfterCrash
         );
         await configRepository.setBool('VRCX_vrcQuitFix', this.vrcQuitFix);
-        await configRepository.setBool('VRCX_vrcOSCFix', this.vrcOSCFix);
         await configRepository.setBool(
             'VRCX_vrBackgroundEnabled',
             this.vrBackgroundEnabled
