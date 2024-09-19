@@ -5237,7 +5237,9 @@ speechSynthesis.getVoices();
 
             case 'instance-queue-left':
                 console.log('instance-queue-left', content);
-                $app.instanceQueueClear();
+                var instanceId = content.instanceLocation;
+                $app.removeQueuedInstance(instanceId);
+                // $app.instanceQueueClear();
                 break;
 
             case 'content-refresh':
@@ -13762,10 +13764,11 @@ speechSynthesis.getVoices();
             this.lastLocation$ = L;
         }
         var hidePrivate = false;
-        // (L.accessType === 'group' && !L.groupAccessType) || L.groupAccessType === 'member')
         if (
             this.discordHideInvite &&
-            (L.accessType === 'invite' || L.accessType === 'invite+')
+            (L.accessType === 'invite' ||
+                L.accessType === 'invite+' ||
+                L.groupAccessType === 'members')
         ) {
             hidePrivate = true;
         }
