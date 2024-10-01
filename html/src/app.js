@@ -5438,6 +5438,18 @@ speechSynthesis.getVoices();
         return match ? match[1] : '';
     };
 
+    var extractVariantVersion = (url) => {
+        if (!url) {
+            return '';
+        }
+        try {
+            const params = new URLSearchParams(new URL(url).search);
+            return params.get('v');
+        } catch {
+            return '';
+        }
+    };
+
     var buildTreeData = (json) => {
         var node = [];
         for (var key in json) {
@@ -24940,6 +24952,7 @@ speechSynthesis.getVoices();
             return { Item1: -1, Item2: false, Item3: '' };
         }
         var assetUrl = '';
+        var variant = '';
         for (var i = ref.unityPackages.length - 1; i > -1; i--) {
             var unityPackage = ref.unityPackages[i];
             if (
@@ -24954,6 +24967,9 @@ speechSynthesis.getVoices();
                 this.compareUnityVersion(unityPackage.unitySortNumber)
             ) {
                 assetUrl = unityPackage.assetUrl;
+                if (unityPackage.variant !== 'standard') {
+                    variant = unityPackage.variant;
+                }
                 break;
             }
         }
@@ -24962,11 +24978,17 @@ speechSynthesis.getVoices();
         }
         var id = extractFileId(assetUrl);
         var version = parseInt(extractFileVersion(assetUrl), 10);
+        var variantVersion = parseInt(extractVariantVersion(assetUrl), 10);
         if (!id || !version) {
             return { Item1: -1, Item2: false, Item3: '' };
         }
 
-        return AssetBundleCacher.CheckVRChatCache(id, version);
+        return AssetBundleCacher.CheckVRChatCache(
+            id,
+            version,
+            variant,
+            variantVersion
+        );
     };
 
     API.getBundles = function (fileId) {
@@ -25110,6 +25132,7 @@ speechSynthesis.getVoices();
 
     $app.methods.deleteVRChatCache = async function (ref) {
         var assetUrl = '';
+        var variant = '';
         for (var i = ref.unityPackages.length - 1; i > -1; i--) {
             var unityPackage = ref.unityPackages[i];
             if (
@@ -25124,12 +25147,21 @@ speechSynthesis.getVoices();
                 this.compareUnityVersion(unityPackage.unitySortNumber)
             ) {
                 assetUrl = unityPackage.assetUrl;
+                if (unityPackage.variant !== 'standard') {
+                    variant = unityPackage.variant;
+                }
                 break;
             }
         }
         var id = extractFileId(assetUrl);
         var version = parseInt(extractFileVersion(assetUrl), 10);
-        await AssetBundleCacher.DeleteCache(id, version);
+        var variantVersion = parseInt(extractVariantVersion(assetUrl), 10);
+        await AssetBundleCacher.DeleteCache(
+            id,
+            version,
+            variant,
+            variantVersion
+        );
         this.getVRChatCacheSize();
         this.updateVRChatWorldCache();
         this.updateVRChatAvatarCache();
@@ -25228,6 +25260,7 @@ speechSynthesis.getVoices();
 
     $app.methods.getBundleLocation = async function (input) {
         var assetUrl = input;
+        var variant = '';
         if (assetUrl) {
             // continue
         } else if (
@@ -25249,6 +25282,9 @@ speechSynthesis.getVoices();
                     this.compareUnityVersion(unityPackage.unitySortNumber)
                 ) {
                     assetUrl = unityPackage.assetUrl;
+                    if (unityPackage.variant !== 'standard') {
+                        variant = unityPackage.variant;
+                    }
                     break;
                 }
             }
@@ -25280,13 +25316,18 @@ speechSynthesis.getVoices();
         }
         var fileId = extractFileId(assetUrl);
         var fileVersion = parseInt(extractFileVersion(assetUrl), 10);
+        var variantVersion = parseInt(extractVariantVersion(assetUrl), 10);
         var assetLocation = await AssetBundleCacher.GetVRChatCacheFullLocation(
             fileId,
-            fileVersion
+            fileVersion,
+            variant,
+            variantVersion
         );
         var cacheInfo = await AssetBundleCacher.CheckVRChatCache(
             fileId,
-            fileVersion
+            fileVersion,
+            variant,
+            variantVersion
         );
         var inCache = false;
         if (cacheInfo.Item1 > 0) {
