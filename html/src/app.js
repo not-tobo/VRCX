@@ -10371,6 +10371,8 @@ speechSynthesis.getVoices();
         this.feedTable.loading = false;
     };
 
+    $app.data.dontLogMeOut = false;
+
     API.$on('LOGIN', async function (args) {
         $app.friendLog = new Map();
         $app.feedTable.data = [];
@@ -10403,12 +10405,14 @@ speechSynthesis.getVoices();
                 await $app.initFriendLog(args.json.id);
             }
         } catch (err) {
-            $app.$message({
-                message: 'Failed to load freinds list, logging out',
-                type: 'error'
-            });
-            this.logout();
-            throw err;
+            if (!$app.dontLogMeOut) {
+                $app.$message({
+                    message: 'Failed to load freinds list, logging out',
+                    type: 'error'
+                });
+                this.logout();
+                throw err;
+            }
         }
         $app.getAvatarHistory();
         $app.getAllMemos();
