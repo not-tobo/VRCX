@@ -2908,10 +2908,13 @@ speechSynthesis.getVoices();
                 try {
                     var args = await this.getFriends(params);
                     friends = friends.concat(args.json);
-                    params.offset += 50;
                     break;
                 } catch (err) {
                     console.error(err);
+                    if (err?.message?.includes('Not Found')) {
+                        console.error('Awful workaround for awful VRC API bug');
+                        break;
+                    }
                     if (j === 9) {
                         throw err;
                     }
@@ -2920,6 +2923,7 @@ speechSynthesis.getVoices();
                     });
                 }
             }
+            params.offset += 50;
         }
         return friends;
     };
@@ -2946,10 +2950,13 @@ speechSynthesis.getVoices();
                 try {
                     var args = await this.getFriends(params);
                     friends = friends.concat(args.json);
-                    params.offset += 50;
                     break;
                 } catch (err) {
                     console.error(err);
+                    if (err?.message?.includes('Not Found')) {
+                        console.error('Awful workaround for awful VRC API bug');
+                        break;
+                    }
                     if (j === 9) {
                         throw err;
                     }
@@ -2957,6 +2964,7 @@ speechSynthesis.getVoices();
                         workerTimers.setTimeout(resolve, 5000);
                     });
                 }
+                params.offset += 50;
             }
         }
         return friends;
@@ -5446,9 +5454,11 @@ speechSynthesis.getVoices();
         }
         try {
             const params = new URLSearchParams(new URL(url).search);
-            let version = params.get('v');
-            if (version) return version;
-            return '0'
+            const version = params.get('v');
+            if (version) {
+                return version;
+            }
+            return '0';
         } catch {
             return '0';
         }
@@ -9175,7 +9185,9 @@ speechSynthesis.getVoices();
                 console.error(err);
             });
         }
-        await API.refreshFriends();
+        await API.refreshFriends().catch((err) => {
+            console.error(err);
+        });
         API.reconnectWebSocket();
     };
 
