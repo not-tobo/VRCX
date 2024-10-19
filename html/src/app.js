@@ -11290,7 +11290,7 @@ speechSynthesis.getVoices();
                 var joinTime = Date.parse(gameLog.dt);
                 var userMap = {
                     displayName: gameLog.displayName,
-                    userId,
+                    userId : gameLog.userId,
                     joinTime,
                     lastAvatar: ''
                 };
