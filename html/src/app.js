@@ -10152,10 +10152,10 @@ speechSynthesis.getVoices();
     $app.data._stringComparer = undefined;
     $app.computed.stringComparer = function () {
         if (typeof this._stringComparer === 'undefined') {
-            this._stringComparer = Intl.Collator(this.appLanguage, {
-                usage: 'search',
-                sensitivity: 'base'
-            });
+            this._stringComparer = Intl.Collator(
+                this.appLanguage.replace('_', '-'),
+                { usage: 'search', sensitivity: 'base' }
+            );
         }
         return this._stringComparer;
     };
@@ -32372,6 +32372,7 @@ speechSynthesis.getVoices();
         configRepository.setString('VRCX_appLanguage', language);
         this.applyLanguageStrings();
         this.updateVRConfigVars();
+        this._stringComparer = undefined;
     };
 
     // #endregion
