@@ -128,7 +128,8 @@ speechSynthesis.getVoices();
             isSteamVRRunning: false,
             isHmdAfk: false,
             appVersion: '',
-            latestAppVersion: ''
+            latestAppVersion: '',
+            shiftHeld: false
         },
         i18n,
         computed: {},
@@ -234,6 +235,12 @@ speechSynthesis.getVoices();
         e.preventDefault();
     });
 
+    document.addEventListener('keydown', function (e) {
+        if (e.shiftKey) {
+            $app.shiftHeld = true;
+        }
+    });
+
     document.addEventListener('keyup', function (e) {
         if (e.ctrlKey) {
             if (e.key === 'I') {
@@ -251,6 +258,10 @@ speechSynthesis.getVoices();
             $app.screenshotMetadataDialog?.visible
         ) {
             $app.screenshotMetadataCarouselChange(carouselNavigation);
+        }
+
+        if (!e.shiftKey) {
+            $app.shiftHeld = false;
         }
     });
 
@@ -7041,14 +7052,18 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.deleteFriendLog = function (row) {
+        $app.removeFromArray(this.friendLogTable.data, row);
+        database.deleteFriendLogHistory(row.rowId);
+    };
+
+    $app.methods.deleteFriendLogPrompt = function (row) {
         this.$confirm('Continue? Delete Log', 'Confirm', {
             confirmButtonText: 'Confirm',
             cancelButtonText: 'Cancel',
             type: 'info',
             callback: (action) => {
                 if (action === 'confirm') {
-                    $app.removeFromArray(this.friendLogTable.data, row);
-                    database.deleteFriendLogHistory(row.rowId);
+                    this.deleteFriendLog(row);
                 }
             }
         });
@@ -7118,17 +7133,20 @@ speechSynthesis.getVoices();
     });
 
     $app.methods.deletePlayerModeration = function (row) {
-        // FIXME: 메시지 수정
-        this.$confirm('Continue? Delete Moderation', 'Confirm', {
+        API.deletePlayerModeration({
+            moderated: row.targetUserId,
+            type: row.type
+        });
+    };
+
+    $app.methods.deletePlayerModerationPrompt = function (row) {
+        this.$confirm(`Continue? Delete Moderation ${row.type}`, 'Confirm', {
             confirmButtonText: 'Confirm',
             cancelButtonText: 'Cancel',
             type: 'info',
             callback: (action) => {
                 if (action === 'confirm') {
-                    API.deletePlayerModeration({
-                        moderated: row.targetUserId,
-                        type: row.type
-                    });
+                    this.deletePlayerModeration(row);
                 }
             }
         });
@@ -7286,43 +7304,51 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.hideNotification = function (row) {
+        if (row.type === 'ignoredFriendRequest') {
+            API.deleteHiddenFriendRequest(
+                {
+                    notificationId: row.id
+                },
+                row.senderUserId
+            );
+        } else {
+            API.hideNotification({
+                notificationId: row.id
+            });
+        }
+    };
+
+    $app.methods.hideNotificationPrompt = function (row) {
         this.$confirm(`Continue? Decline ${row.type}`, 'Confirm', {
             confirmButtonText: 'Confirm',
             cancelButtonText: 'Cancel',
             type: 'info',
             callback: (action) => {
                 if (action === 'confirm') {
-                    if (row.type === 'ignoredFriendRequest') {
-                        API.deleteHiddenFriendRequest(
-                            {
-                                notificationId: row.id
-                            },
-                            row.senderUserId
-                        );
-                    } else {
-                        API.hideNotification({
-                            notificationId: row.id
-                        });
-                    }
+                    this.hideNotification(row);
                 }
             }
         });
     };
 
     $app.methods.deleteNotificationLog = function (row) {
+        $app.removeFromArray(this.notificationTable.data, row);
+        if (
+            row.type !== 'friendRequest' &&
+            row.type !== 'ignoredFriendRequest'
+        ) {
+            database.deleteNotification(row.id);
+        }
+    };
+
+    $app.methods.deleteNotificationLogPrompt = function (row) {
         this.$confirm(`Continue? Delete ${row.type}`, 'Confirm', {
             confirmButtonText: 'Confirm',
             cancelButtonText: 'Cancel',
             type: 'info',
             callback: (action) => {
                 if (action === 'confirm') {
-                    $app.removeFromArray(this.notificationTable.data, row);
-                    if (
-                        row.type !== 'friendRequest' &&
-                        row.type !== 'ignoredFriendRequest'
-                    ) {
-                        database.deleteNotification(row.id);
-                    }
+                    this.deleteNotificationLog(row);
                 }
             }
         });
@@ -18015,27 +18041,30 @@ speechSynthesis.getVoices();
         return displayName;
     };
 
-    $app.methods.confirmDeleteGameLogUserInstance = function (row) {
-        this.$confirm('Continue? Delete', 'Confirm', {
-            confirmButtonText: 'Confirm',
-            cancelButtonText: 'Cancel',
-            type: 'info',
-            callback: (action) => {
-                if (action === 'confirm') {
-                    database.deleteGameLogInstance({
-                        id: this.previousInstancesUserDialog.userRef.id,
-                        displayName:
-                            this.previousInstancesUserDialog.userRef
-                                .displayName,
-                        location: row.location
-                    });
-                    $app.removeFromArray(
-                        this.previousInstancesUserDialogTable.data,
-                        row
-                    );
+    $app.methods.deleteGameLogUserInstance = function (row) {
+        database.deleteGameLogInstance({
+            id: this.previousInstancesUserDialog.userRef.id,
+            displayName: this.previousInstancesUserDialog.userRef.displayName,
+            location: row.location
+        });
+        $app.removeFromArray(this.previousInstancesUserDialogTable.data, row);
+    };
+
+    $app.methods.deleteGameLogUserInstancePrompt = function (row) {
+        this.$confirm(
+            'Continue? Delete User From GameLog Instance',
+            'Confirm',
+            {
+                confirmButtonText: 'Confirm',
+                cancelButtonText: 'Cancel',
+                type: 'info',
+                callback: (action) => {
+                    if (action === 'confirm') {
+                        this.deleteGameLogUserInstance(row);
+                    }
                 }
             }
-        });
+        );
     };
 
     // #endregion
@@ -18103,20 +18132,21 @@ speechSynthesis.getVoices();
         });
     };
 
-    $app.methods.confirmDeleteGameLogWorldInstance = function (row) {
-        this.$confirm('Continue? Delete', 'Confirm', {
+    $app.methods.deleteGameLogWorldInstance = function (row) {
+        database.deleteGameLogInstanceByInstanceId({
+            location: row.location
+        });
+        $app.removeFromArray(this.previousInstancesWorldDialogTable.data, row);
+    };
+
+    $app.methods.deleteGameLogWorldInstancePrompt = function (row) {
+        this.$confirm('Continue? Delete GameLog Instance', 'Confirm', {
             confirmButtonText: 'Confirm',
             cancelButtonText: 'Cancel',
             type: 'info',
             callback: (action) => {
                 if (action === 'confirm') {
-                    database.deleteGameLogInstanceByInstanceId({
-                        location: row.location
-                    });
-                    $app.removeFromArray(
-                        this.previousInstancesWorldDialogTable.data,
-                        row
-                    );
+                    this.deleteGameLogWorldInstance(row);
                 }
             }
         });
