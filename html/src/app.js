@@ -4497,6 +4497,10 @@ speechSynthesis.getVoices();
             if (typeof ref !== 'undefined') {
                 ctx.name = ref.displayName;
             }
+            if (!this.friendLogInitStatus) {
+                this.updateFriendDelayedCheck(ctx, location, $location_at);
+                return;
+            }
             // prevent status flapping
             if (ctx.pendingOffline) {
                 if (this.debugFriendState) {
@@ -11328,6 +11332,9 @@ speechSynthesis.getVoices();
             case 'Change Tags':
                 this.showSetWorldTagsDialog();
                 break;
+            case 'Change Allowed Domains':
+                this.showWorldAllowedDomainsDialog();
+                break;
             case 'Download Unity Package':
                 this.openExternalLink(
                     this.replaceVrcPackageUrl(
@@ -15805,7 +15812,7 @@ speechSynthesis.getVoices();
         this.VRChatConfigList = {
             cache_size: {
                 name: $t('dialog.config_json.max_cache_size'),
-                default: '20',
+                default: '30',
                 type: 'number',
                 min: 20
             },
@@ -21857,6 +21864,37 @@ speechSynthesis.getVoices();
     });
 
     // #endregion
+
+    $app.data.worldAllowedDomainsDialog = {
+        visible: false,
+        worldId: '',
+        urlList: []
+    };
+
+    $app.methods.showWorldAllowedDomainsDialog = function () {
+        this.$nextTick(() =>
+            $app.adjustDialogZ(this.$refs.worldAllowedDomainsDialog.$el)
+        );
+        var D = this.worldAllowedDomainsDialog;
+        D.worldId = this.worldDialog.id;
+        D.urlList = this.worldDialog.ref?.urlList ?? [];
+        D.visible = true;
+    };
+
+    $app.methods.saveWorldAllowedDomains = function () {
+        var D = this.worldAllowedDomainsDialog;
+        API.saveWorld({
+            id: D.worldId,
+            urlList: D.urlList
+        }).then((args) => {
+            this.$message({
+                message: 'Allowed Video Player Domains updated',
+                type: 'success'
+            });
+            return args;
+        });
+        D.visible = false;
+    };
 
     $app.data.ossDialog = false;
 
