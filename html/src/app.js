@@ -7652,6 +7652,10 @@ speechSynthesis.getVoices();
         'VRCX_feedTableVIPFilter',
         false
     );
+    $app.data.gameLogTable.vip = await configRepository.getBool(
+        'VRCX_gameLogTableVIPFilter',
+        false
+    );
     $app.data.gameLogTable.filter = JSON.parse(
         await configRepository.getString('VRCX_gameLogTableFilters', '[]')
     );
