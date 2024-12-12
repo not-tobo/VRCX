@@ -6084,6 +6084,14 @@ speechSynthesis.getVoices();
 
     $app.methods.setNowPlaying = function (ctx) {
         if (this.nowPlaying.url !== ctx.videoUrl) {
+            if (!ctx.userId && ctx.displayName) {
+                for (var ref of API.cachedUsers.values()) {
+                    if (ref.displayName === ctx.displayName) {
+                        ctx.userId = ref.id;
+                        break;
+                    }
+                }
+            }
             this.queueGameLogNoty(ctx);
             this.addGameLog(ctx);
             database.addGamelogVideoPlayToDatabase(ctx);
