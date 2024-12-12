@@ -1279,7 +1279,7 @@ speechSynthesis.getVoices();
                     throw err;
                 }
                 $app.$message({
-                    message: "you're not allowed to access this instance.",
+                    message: $t('message.instance.not_allowed'),
                     type: 'error'
                 });
                 throw err;
@@ -5423,7 +5423,7 @@ speechSynthesis.getVoices();
         } catch (err) {
             if (!$app.dontLogMeOut) {
                 $app.$message({
-                    message: 'Failed to load friends list, logging out',
+                    message: $t('message.friend.load_failed'),
                     type: 'error'
                 });
                 this.logout();
@@ -9474,7 +9474,7 @@ speechSynthesis.getVoices();
             D.isMuteChat = true;
         }
         $app.$message({
-            message: 'User moderated',
+            message: $t('message.user.moderated'),
             type: 'success'
         });
     });
@@ -10796,16 +10796,30 @@ speechSynthesis.getVoices();
                 this.setPlayerModeration(D.id, 5);
             }
         } else {
-            this.$confirm(`Continue? ${command}`, 'Confirm', {
-                confirmButtonText: 'Confirm',
-                cancelButtonText: 'Cancel',
-                type: 'info',
-                callback: (action) => {
-                    if (action === 'confirm') {
-                        performUserDialogCommand(command, D.id);
+            const i18nPreFix = 'dialog.user.actions.';
+            const formattedCommand = command.toLowerCase().replace(/ /g, '_');
+            const displayCommandText = $t(
+                `${i18nPreFix}${formattedCommand}`
+            ).includes('i18nPreFix')
+                ? command
+                : $t(`${i18nPreFix}${formattedCommand}`);
+
+            this.$confirm(
+                $t('confirm.message', {
+                    command: displayCommandText
+                }),
+                $t('confirm.title'),
+                {
+                    confirmButtonText: $t('confirm.confirm_button'),
+                    cancelButtonText: $t('confirm.cancel_button'),
+                    type: 'info',
+                    callback: (action) => {
+                        if (action === 'confirm') {
+                            performUserDialogCommand(command, D.id);
+                        }
                     }
                 }
-            });
+            );
         }
     };
 
@@ -13790,7 +13804,7 @@ speechSynthesis.getVoices();
         if (files[0].size >= 100000000) {
             // 100MB
             $app.$message({
-                message: 'File size too large',
+                message: $t('message.file.too_large'),
                 type: 'error'
             });
             clearFile();
@@ -13798,7 +13812,7 @@ speechSynthesis.getVoices();
         }
         if (!files[0].type.match(/image.*/)) {
             $app.$message({
-                message: "File isn't an image",
+                message: $t('message.file.not_image'),
                 type: 'error'
             });
             clearFile();
@@ -13809,7 +13823,7 @@ speechSynthesis.getVoices();
             var base64Body = btoa(r.result);
             API.uploadVRCPlusIcon(base64Body).then((args) => {
                 $app.$message({
-                    message: 'Icon uploaded',
+                    message: $t('message.icon.uploaded'),
                     type: 'success'
                 });
                 return args;
@@ -13858,7 +13872,7 @@ speechSynthesis.getVoices();
         if (files[0].size >= 100000000) {
             // 100MB
             $app.$message({
-                message: 'File size too large',
+                message: $t('message.file.too_large'),
                 type: 'error'
             });
             this.clearInviteImageUpload();
@@ -13866,7 +13880,7 @@ speechSynthesis.getVoices();
         }
         if (!files[0].type.match(/image.*/)) {
             $app.$message({
-                message: "File isn't a png",
+                message: $t('message.file.not_image'),
                 type: 'error'
             });
             this.clearInviteImageUpload();
@@ -14948,7 +14962,7 @@ speechSynthesis.getVoices();
         if (files[0].size >= 100000000) {
             // 100MB
             $app.$message({
-                message: 'File size too large',
+                message: $t('message.file.too_large'),
                 type: 'error'
             });
             clearFile();
@@ -14956,7 +14970,7 @@ speechSynthesis.getVoices();
         }
         if (!files[0].type.match(/image.*/)) {
             $app.$message({
-                message: "File isn't a png",
+                message: $t('message.file.not_image'),
                 type: 'error'
             });
             clearFile();
@@ -14981,7 +14995,7 @@ speechSynthesis.getVoices();
             var fileId = $utils.extractFileId(imageUrl);
             if (!fileId) {
                 $app.$message({
-                    message: 'Current avatar image invalid',
+                    message: $t('message.avatar.image_invalid'),
                     type: 'error'
                 });
                 clearFile();
@@ -15284,7 +15298,7 @@ speechSynthesis.getVoices();
         if (files[0].size >= 100000000) {
             // 100MB
             $app.$message({
-                message: 'File size too large',
+                message: $t('message.file.too_large'),
                 type: 'error'
             });
             clearFile();
@@ -15292,7 +15306,7 @@ speechSynthesis.getVoices();
         }
         if (!files[0].type.match(/image.*/)) {
             $app.$message({
-                message: "File isn't a png",
+                message: $t('message.file.not_image'),
                 type: 'error'
             });
             clearFile();
@@ -15317,7 +15331,7 @@ speechSynthesis.getVoices();
             var fileId = $utils.extractFileId(imageUrl);
             if (!fileId) {
                 $app.$message({
-                    message: 'Current world image invalid',
+                    message: $t('message.world.image_invalid'),
                     type: 'error'
                 });
                 clearFile();
@@ -15605,7 +15619,7 @@ speechSynthesis.getVoices();
         $app.changeAvatarImageDialogLoading = false;
         if (args.json.imageUrl === args.params.imageUrl) {
             $app.$message({
-                message: 'Avatar image changed',
+                message: $t('message.avatar.image_changed'),
                 type: 'success'
             });
             $app.displayPreviousImages('Avatar', 'Change');
@@ -15619,7 +15633,7 @@ speechSynthesis.getVoices();
         $app.changeWorldImageDialogLoading = false;
         if (args.json.imageUrl === args.params.imageUrl) {
             $app.$message({
-                message: 'World image changed',
+                message: $t('message.world.image_changed'),
                 type: 'success'
             });
             $app.displayPreviousImages('World', 'Change');
@@ -16495,7 +16509,7 @@ speechSynthesis.getVoices();
         var D = this.screenshotMetadataDialog;
         if (D.metadata.fileSizeBytes > 10000000) {
             $app.$message({
-                message: 'File size too large',
+                message: $t('message.file.too_large'),
                 type: 'error'
             });
             return;
@@ -16506,7 +16520,7 @@ speechSynthesis.getVoices();
                 API.uploadGalleryImage(base64Body)
                     .then((args) => {
                         $app.$message({
-                            message: 'Gallery image uploaded',
+                            message: $t('message.gallery.uploaded'),
                             type: 'success'
                         });
                         return args;
@@ -16517,7 +16531,7 @@ speechSynthesis.getVoices();
             })
             .catch((err) => {
                 $app.$message({
-                    message: 'Failed to upload gallery image',
+                    message: $t('message.gallery.failed'),
                     type: 'error'
                 });
                 console.error(err);
@@ -17490,7 +17504,7 @@ speechSynthesis.getVoices();
         if (files[0].size >= 100000000) {
             // 100MB
             $app.$message({
-                message: 'File size too large',
+                message: $t('message.file.too_large'),
                 type: 'error'
             });
             clearFile();
@@ -17498,7 +17512,7 @@ speechSynthesis.getVoices();
         }
         if (!files[0].type.match(/image.*/)) {
             $app.$message({
-                message: "File isn't an image",
+                message: $t('message.file.not_image'),
                 type: 'error'
             });
             clearFile();
@@ -17509,7 +17523,7 @@ speechSynthesis.getVoices();
             var base64Body = btoa(r.result);
             API.uploadGalleryImage(base64Body).then((args) => {
                 $app.$message({
-                    message: 'Gallery image uploaded',
+                    message: $t('message.gallery.uploaded'),
                     type: 'success'
                 });
                 return args;
@@ -17601,7 +17615,7 @@ speechSynthesis.getVoices();
         if (files[0].size >= 100000000) {
             // 100MB
             $app.$message({
-                message: 'File size too large',
+                message: $t('message.file.too_large'),
                 type: 'error'
             });
             clearFile();
@@ -17609,7 +17623,7 @@ speechSynthesis.getVoices();
         }
         if (!files[0].type.match(/image.*/)) {
             $app.$message({
-                message: "File isn't an image",
+                message: $t('message.file.not_image'),
                 type: 'error'
             });
             clearFile();
@@ -17624,7 +17638,7 @@ speechSynthesis.getVoices();
             var base64Body = btoa(r.result);
             API.uploadSticker(base64Body, params).then((args) => {
                 $app.$message({
-                    message: 'Sticker uploaded',
+                    message: $t('message.sticker.uploaded'),
                     type: 'success'
                 });
                 return args;
@@ -17759,7 +17773,7 @@ speechSynthesis.getVoices();
         if (files[0].size >= 100000000) {
             // 100MB
             $app.$message({
-                message: 'File size too large',
+                message: $t('message.file.too_large'),
                 type: 'error'
             });
             clearFile();
@@ -17767,7 +17781,7 @@ speechSynthesis.getVoices();
         }
         if (!files[0].type.match(/image.*/)) {
             $app.$message({
-                message: "File isn't an image",
+                message: $t('message.file.not_image'),
                 type: 'error'
             });
             clearFile();
@@ -17787,7 +17801,7 @@ speechSynthesis.getVoices();
             var base64Body = btoa(r.result);
             API.uploadPrint(base64Body, params).then((args) => {
                 $app.$message({
-                    message: 'Print uploaded',
+                    message: $t('message.print.uploaded'),
                     type: 'success'
                 });
                 return args;
@@ -17971,7 +17985,7 @@ speechSynthesis.getVoices();
         if (files[0].size >= 100000000) {
             // 100MB
             $app.$message({
-                message: 'File size too large',
+                message: $t('message.file.too_large'),
                 type: 'error'
             });
             clearFile();
@@ -17979,7 +17993,7 @@ speechSynthesis.getVoices();
         }
         if (!files[0].type.match(/image.*/)) {
             $app.$message({
-                message: "File isn't an image",
+                message: $t('message.file.not_image'),
                 type: 'error'
             });
             clearFile();
@@ -18004,7 +18018,7 @@ speechSynthesis.getVoices();
             var base64Body = btoa(r.result);
             API.uploadEmoji(base64Body, params).then((args) => {
                 $app.$message({
-                    message: 'Emoji uploaded',
+                    message: $t('message.emoji.uploaded'),
                     type: 'success'
                 });
                 return args;
@@ -21420,7 +21434,9 @@ speechSynthesis.getVoices();
         API.queuedInstances.forEach((ref) => {
             if (ref.location !== instanceId) {
                 $app.$message({
-                    message: `Removed instance ${ref.$worldName} from queue`,
+                    message: $t('message.instance.removed_form_queue', {
+                        worldName: ref.$worldName
+                    }),
                     type: 'info'
                 });
                 ref.$msgBox?.close();
@@ -21707,7 +21723,7 @@ speechSynthesis.getVoices();
                     }
                 } else {
                     $app.$message({
-                        message: 'Failed to change avatar moderation',
+                        message: $t('message.avatar.change_moderation_failed'),
                         type: 'error'
                     });
                 }
@@ -22197,7 +22213,7 @@ speechSynthesis.getVoices();
     API.$on('INSTANCE:CLOSE', function (args) {
         if (args.json) {
             $app.$message({
-                message: 'Instance closed',
+                message: $t('message.instance.closed'),
                 type: 'success'
             });
 
@@ -22376,7 +22392,7 @@ speechSynthesis.getVoices();
     API.$on('BADGE:UPDATE', function (args) {
         if (args.json) {
             $app.$message({
-                message: 'Badge updated',
+                message: $t('message.badge.updated'),
                 type: 'success'
             });
         }
