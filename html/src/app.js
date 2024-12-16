@@ -16722,7 +16722,6 @@ speechSynthesis.getVoices();
             var unityPackage = ref.unityPackages[i];
             if (
                 unityPackage.variant &&
-                unityPackage.variant !== 'standard' &&
                 unityPackage.variant !== 'security'
             ) {
                 continue;
