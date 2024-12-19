@@ -7084,6 +7084,10 @@ speechSynthesis.getVoices();
             `VRCX_friendNumber_${currentUser.id}`,
             0
         );
+        var maxFriendLogNumber = await database.getMaxFriendLogNumber();
+        if (this.friendNumber < maxFriendLogNumber) {
+            this.friendNumber = maxFriendLogNumber;
+        }
 
         var friendLogCurrentArray = await database.getFriendLogCurrent();
         for (var friend of friendLogCurrentArray) {
