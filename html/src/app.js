@@ -1332,6 +1332,7 @@ speechSynthesis.getVoices();
                 roleRestricted: false, // only present with group instance type
                 instancePersistenceEnabled: null,
                 playerPersistenceEnabled: null,
+                ageGate: null,
                 // VRCX
                 $fetchedAt: '',
                 ...json
@@ -12556,6 +12557,7 @@ speechSynthesis.getVoices();
             'instanceDialogGroupAccessType',
             'plus'
         ),
+        ageGate: await configRepository.getBool('instanceDialogAgeGate', false),
         strict: false,
         location: '',
         shortName: '',
@@ -12729,6 +12731,9 @@ speechSynthesis.getVoices();
                 params.canRequestInvite = true;
             }
         }
+        if (D.ageGate) {
+            params.ageGate = true;
+        }
         try {
             var args = await API.createInstance(params);
             D.location = args.json.location;
@@ -12811,6 +12816,10 @@ speechSynthesis.getVoices();
         await configRepository.setBool(
             'instanceDialogQueueEnabled',
             this.newInstanceDialog.queueEnabled
+        );
+        await configRepository.setBool(
+            'instanceDialogAgeGate',
+            this.newInstanceDialog.ageGate
         );
     };
 
@@ -16720,10 +16729,7 @@ speechSynthesis.getVoices();
         var variant = '';
         for (var i = ref.unityPackages.length - 1; i > -1; i--) {
             var unityPackage = ref.unityPackages[i];
-            if (
-                unityPackage.variant &&
-                unityPackage.variant !== 'security'
-            ) {
+            if (unityPackage.variant && unityPackage.variant !== 'security') {
                 continue;
             }
             if (
