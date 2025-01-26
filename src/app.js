@@ -3186,6 +3186,7 @@ console.log(`isLinux: ${LINUX}`);
             console.error(err);
         }
         this.expireFavorites();
+        this.cachedFavoriteGroupsByTypeName.clear();
         this.bulk({
             fn: 'getFavorites',
             N: -1,
@@ -7160,9 +7161,16 @@ console.log(`isLinux: ${LINUX}`);
         if (!objectId) {
             return;
         }
+        this.favoriteDialog.visible = true;
         API.deleteFavorite({
             objectId
-        });
+        })
+            .then(() => {
+                this.favoriteDialog.visible = false;
+            })
+            .finally(() => {
+                this.favoriteDialog.loading = false;
+            });
     };
 
     $app.methods.clearFavoriteGroup = function (ctx) {
@@ -12619,11 +12627,15 @@ console.log(`isLinux: ${LINUX}`);
             favoriteId: D.objectId,
             tags: group.name
         })
+            .then(() => {
+                D.visible = false;
+                new Noty({
+                    type: 'success',
+                    text: 'Favorite added'
+                }).show();
+            })
             .finally(() => {
                 D.loading = false;
-            })
-            .then((args) => {
-                return args;
             });
     };
 
@@ -19645,9 +19657,22 @@ console.log(`isLinux: ${LINUX}`);
                 if (!date) {
                     return '-';
                 }
-                var dt = new Date(date);
+                const dt = new Date(date);
                 if (format === 'long') {
-                    return dt.toISOString();
+                    const formatDate = (date) => {
+                        const padZero = (num) => String(num).padStart(2, '0');
+
+                        const year = date.getFullYear();
+                        const month = padZero(date.getMonth() + 1);
+                        const day = padZero(date.getDate());
+                        const hours = padZero(date.getHours());
+                        const minutes = padZero(date.getMinutes());
+                        const seconds = padZero(date.getSeconds());
+
+                        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+                    };
+
+                    return formatDate(dt);
                 } else if (format === 'short') {
                     return dt
                         .toLocaleDateString('en-nz', {
