@@ -106,7 +106,7 @@ jobs:
       - name: Upload Electron AppImage artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Electron-Release
+          name: Electron-AppImage
           path: "build/VRCX_${{ needs.set_version.outputs.version }}.AppImage"
 
   create_setup:
@@ -151,7 +151,7 @@ jobs:
       - name: Download Electron AppImage artifacts
         uses: actions/download-artifact@v4
         with:
-          name: Electron-Release
+          name: Electron-AppImage
 
       - name: Generate hashes
         run: |
