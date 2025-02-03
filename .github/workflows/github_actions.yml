@@ -97,7 +97,7 @@ jobs:
       - name: Build Electron-html
         run: npm run prod-linux
       - name: Download Electron dotnet artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: Electron-Release
           path: build/Electron
@@ -121,12 +121,12 @@ jobs:
       - name: Set plugin permissions
         run: sudo chown -R $(whoami) /usr/share/nsis/Plugins/
       - name: Download Cef dotnet artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: Cef-Release
           path: build/Cef
       - name: Download Cef-html artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: Cef-html
           path: build/Cef/html
@@ -149,7 +149,7 @@ jobs:
           echo "Zip FileName: ${file_name}"
 
       - name: Download Electron AppImage artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: Electron-AppImage
 
