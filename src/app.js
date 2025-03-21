@@ -4086,7 +4086,8 @@ console.log(`isLinux: ${LINUX}`);
 
     $app.methods.quickSearchRemoteMethod = function (query) {
         if (!query) {
-            this.quickSearchItems = [];
+            this.quickSearchItems = this.quickSearchUserHistory();
+            return;
         }
 
         const results = [];
@@ -4182,7 +4183,6 @@ console.log(`isLinux: ${LINUX}`);
             } else {
                 this.showUserDialog(value);
             }
-            this.quickSearchUserHistory();
         }
     };
 
@@ -4206,7 +4206,7 @@ console.log(`isLinux: ${LINUX}`);
                 });
             }
         });
-        this.quickSearchItems = results;
+        return results;
     };
 
     // #endregion
@@ -8958,6 +8958,7 @@ console.log(`isLinux: ${LINUX}`);
             });
         this.showUserDialogHistory.delete(userId);
         this.showUserDialogHistory.add(userId);
+        this.quickSearchItems = this.quickSearchUserHistory();
     };
 
     $app.methods.applyUserDialogLocation = function (updateInstanceOccupants) {
